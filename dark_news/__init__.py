@@ -12,6 +12,9 @@ from . import pdg
 from . import const
 from . import fourvec
 
+# Experimental setups
+from . import exp
+
 # Monte Carlo modules
 from . import MC
 

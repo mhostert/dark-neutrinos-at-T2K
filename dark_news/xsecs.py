@@ -28,15 +28,15 @@ def Sqrt(x):
 
 class dsigma_zprime(vg.BatchIntegrand):
 
-			def __init__(self, dim, Enu, MC_case):
+			def __init__(self, dim, params, Enu, MA, Z, nu_produced=pdg.neutrino4, h_upscattered=-1):
 				self.dim = dim
 				self.Enu = Enu
-				self.MC_case = MC_case
-				params = MC_case.params
-				self.h_upscattered = MC_case.h_upscattered
+				self.params = params
+				self.h_upscattered = h_upscattered
+				self.MA = MA
+				self.Z  = Z
 
-
-				if MC_case.nu_produced==pdg.neutrino6:
+				if nu_produced==pdg.neutrino6:
 					self.mh = params.m6
 					###########################33
 					# THESE ENTER INTO SCATTERING
@@ -45,33 +45,7 @@ class dsigma_zprime(vg.BatchIntegrand):
 					self.dij=params.UD6*params.Umu6*params.gprime
 					self.dji=self.dij
 
-					# Which outgoing neutrino?
-					if MC_case.nu_outgoing==pdg.nue:
-						self.Cih = params.ce6/2.0
-						self.Dih = params.de6/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.numu:
-						self.Cih = params.cmu6/2.0
-						self.Dih = params.dmu6/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.nutau:
-						self.Cih = params.ctau6/2.0
-						self.Dih = params.dtau6/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==const.neutrino_light:
-						self.Cih = params.clight6/2.0
-						self.Dih = params.dlight/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.neutrino4:
-						self.Cih = params.c46/2.0
-						self.Dih = params.d46/2.0
-						self.mf = params.m4
-					elif MC_case.nu_outgoing==pdg.neutrino5:
-						self.Cih = params.c56/2.0
-						self.Dih = params.d56/2.0
-						self.mf = params.m5
-				
-				elif MC_case.nu_produced==pdg.neutrino5:
+				elif nu_produced==pdg.neutrino5:
 					self.mh = params.m5
 
 					###########################33
@@ -81,29 +55,7 @@ class dsigma_zprime(vg.BatchIntegrand):
 					self.dij=params.UD5*params.Umu5*params.gprime
 					self.dji=self.dij
 
-					# Which outgoing neutrino?
-					if MC_case.nu_outgoing==pdg.nue:
-						self.Cih = params.ce5/2.0
-						self.Dih = params.de5/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.numu:
-						self.Cih = params.cmu5/2.0
-						self.Dih = params.dmu5/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.nutau:
-						self.Cih = params.ctau5/2.0
-						self.Dih = params.dtau5/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==const.neutrino_light:
-						self.Cih = params.clight5/2.0
-						self.Dih = params.dlight5/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.neutrino4:
-						self.Cih = params.c45/2.0
-						self.Dih = params.d45/2.0
-						self.mf = params.m4
-
-				elif MC_case.nu_produced==pdg.neutrino4:
+				elif nu_produced==pdg.neutrino4:
 					self.mh = params.m4
 
 					###########################33
@@ -112,27 +64,6 @@ class dsigma_zprime(vg.BatchIntegrand):
 					self.cji=self.cij
 					self.dij=params.UD4*params.Umu4*params.gprime
 					self.dji=self.dij
-
-
-					# Which outgoing neutrino?
-					if MC_case.nu_outgoing==pdg.nue:
-						self.Cih = params.ce4/2.0
-						self.Dih = params.de4/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.numu:
-						self.Cih = params.cmu4/2.0
-						self.Dih = params.dmu4/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.nutau:
-						self.Cih = params.ctau4/2.0
-						self.Dih = params.dtau4/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==const.neutrino_light:
-						self.Cih = params.clight4/2.0
-						self.Dih = params.dlight4/2.0
-						self.mf = 0.0
-					elif MC_case.nu_outgoing==pdg.neutrino4:
-						print('ERROR! (nu4 -> nu4 l l) is kinematically not allowed!')
 
 
 			def __call__(self, x):
@@ -149,10 +80,10 @@ class dsigma_zprime(vg.BatchIntegrand):
 				dij = self.dij
 				dji = self.dji
 
-				MA = self.MC_case.MA
-				Z = self.MC_case.Z
-				params = self.MC_case.params
-				Mn = self.MC_case.Mn
+				MA = self.MA
+				Z = self.Z
+				params = self.params
+				Mn = self.mh
 				
 
 				Enu = self.Enu
@@ -249,15 +180,20 @@ class dsigma_zprime(vg.BatchIntegrand):
 				####################################
 				return dsigma
 
-def get_sigma_zprime(Enu,MC_case):
-
+def get_sigma_zprime(params, Enu, MA, Z, nu_produced=pdg.neutrino4, h_upscattered=-1):
+	
+	if nu_produced ==pdg.neutrino4:
+		Mn = params.m4
+	elif nu_produced ==pdg.neutrino5:
+		Mn = params.m5
+	elif nu_produced ==pdg.neutrino6:
+		Mn = params.m6
+	
 	#############################
 	# THRESHOLD
-	Mn = MC_case.Mn
-	MA = MC_case.MA
 	if (Enu > Mn**2/2.0/MA + Mn):
 		dim = 1
-		batch_f = dsigma_zprime(dim=dim,Enu=Enu, MC_case= MC_case)
+		batch_f = dsigma_zprime(dim=dim, params=params, Enu=Enu, MA=MA, Z=Z, nu_produced=nu_produced, h_upscattered=h_upscattered)
 
 		integ = vg.Integrator(dim*[[0.0, 1.0]])
 

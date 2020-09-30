@@ -15,12 +15,6 @@ DIFRH=4
 MAJORANA=0
 DIRAC   =1
 
-# experiment 
-CHARMII    = "charmii"
-MINERVA_LE = "minerva_le"
-MINERVA_ME = "minerva_me"
-MINIBOONE  = "miniboone"
-uBOONE     = "uboone"
 
 # fix experiment to use
 THREEPLUSONE = 89
