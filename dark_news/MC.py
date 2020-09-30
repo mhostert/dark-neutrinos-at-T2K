@@ -22,7 +22,6 @@ from . import Cfourvec as Cfv
 from . import C_MC
 
 from . import fourvec
-from . import hist_plot
 from . import fluxes
 from . import decay_rates
 from . import const 

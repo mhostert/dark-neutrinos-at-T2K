@@ -23,9 +23,6 @@ from . import model
 from . import decay_rates
 from . import xsecs
 
-# Analysis and plotting modules 
-from . import hist_plot
-
 # for printing HEPEVT files
 from . import hepevt
 
