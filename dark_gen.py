@@ -8,7 +8,7 @@ import sys, getopt
 
 # Dark Neutrino and MC stuff
 from dark_news import *
-from dark_analysis import *
+from exp_analysis import *
 
 
 def main(argv):
