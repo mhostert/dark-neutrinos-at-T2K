@@ -12,7 +12,7 @@ pyximport.install(
     )
 from . import Cfourvec as Cfv
 
-def generate_muboone_HEPEVT_files(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_proper=0.0):
+def print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_proper=0.0):
 
 	# events
 	pN   = bag['P3']
@@ -61,21 +61,21 @@ def generate_muboone_HEPEVT_files(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_
 	# scaling it to a smaller size around the central value
 	restriction = 0.3 
 
-	xmax = xmax - restriction*(xmax -xmin)
-	ymax = ymax - restriction*(ymax -ymin)
-	zmax = zmax - restriction*(zmax -zmin)
-	tmax = tmax - restriction*(tmax -tmin)
+	# xmax = xmax - restriction*(xmax -xmin)
+	# ymax = ymax - restriction*(ymax -ymin)
+	# zmax = zmax - restriction*(zmax -zmin)
+	# tmax = tmax - restriction*(tmax -tmin)
 
-	xmin = xmin + restriction*(xmax-xmin)
-	ymin = ymin + restriction*(ymax-ymin)
-	zmin = zmin + restriction*(zmax-zmin)
-	tmin = tmin + restriction*(tmax-tmin)
+	# xmin = xmin + restriction*(xmax-xmin)
+	# ymin = ymin + restriction*(ymax-ymin)
+	# zmin = zmin + restriction*(zmax-zmin)
+	# tmin = tmin + restriction*(tmax-tmin)
 
 	# generating entries
-	x = xmin + (xmax -xmin)*np.random.rand(size) 
-	y = ymin + (ymax -ymin)*np.random.rand(size) 
-	z = zmin + (zmax -zmin)*np.random.rand(size) 
-	t = tmin + (tmax -tmin)*np.random.rand(size) 
+	x = 0.0*(xmin + (xmax -xmin)*np.random.rand(size))
+	y = 0.0*(ymin + (ymax -ymin)*np.random.rand(size))
+	z = 0.0*(zmin + (zmax -zmin)*np.random.rand(size))
+	t = 0.0*(tmin + (tmax -tmin)*np.random.rand(size))
 
 
 	# direction of N

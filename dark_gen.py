@@ -219,30 +219,28 @@ def main(argv):
 		regime = bag['flags']
 
 
-		### NAMING 
-		## HEPEVT Event file name
-		if EXP_FLAG == exp.uBOONE:
-			PATH_data = 'data/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
-			PATH = 'plots/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
-		elif EXP_FLAG == exp.MINIBOONE:
-			PATH_data = 'data/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
-			PATH = 'plots/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
-		else:
-			print("Error! No experiment chosen.")
+		# ### NAMING 
+		# ## HEPEVT Event file name
+		# if EXP_FLAG == exp.uBOONE:
+		# 	PATH_data = 'data/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
+		# 	PATH = 'plots/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
+		# elif EXP_FLAG == exp.MINIBOONE:
+		# 	PATH_data = 'data/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
+		# 	PATH = 'plots/'+EXP_FLAG+'/3plus2/M4_'+str(round(M4,4))+'_M5_'+str(round(M5,4))+'_mzprime_'+str(round(MZPRIME,4))+'/'
+		# else:
+		# 	print("Error! No experiment chosen.")
 
 		# efile_name = 'data/ubooneHEPevt/uboone_Zpmass_'+format(MZPRIME,'0.8g')+"_nu4mass_"+format(M5,'.8g')+".dat"
-		efile_name = PATH_data+EXP_FLAG+"_M4_"+format(M4,'.8g')+"_M5_"+format(M5,'.8g')+"_mzprime_"+format(MZPRIME,'.8g')+".dat"
+		# efile_name = PATH_data+EXP_FLAG+"_M4_"+format(M4,'.8g')+"_M5_"+format(M5,'.8g')+"_mzprime_"+format(MZPRIME,'.8g')+".dat"
 		
-		# title for plots
-		title = r"$m_{4} = \,$"+str(int(round(M4*1000,4)))+r" MeV,\quad $m_{5} = \,$"+str(int(round(M5*1000,4)))+r" MeV,\quad $m_{6} = \,$"+str(int(round(M6*1000,4)))+r" MeV"
+		# # title for plots
+		# title = r"$m_{4} = \,$"+str(int(round(M4*1000,4)))+r" MeV,\quad $m_{5} = \,$"+str(int(round(M5*1000,4)))+r" MeV,\quad $m_{6} = \,$"+str(int(round(M6*1000,4)))+r" MeV"
 
 
 	############################################################################
-	# HEPEVT 
+	# Print events to file -- currently in data/exp/m4____mzprime____.dat 
 	#############################################################################
-	# print(MODEL)
-	# print(PATH_data)
-	hepevt.generate_muboone_HEPEVT_files(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=l_decay_proper)
+	hepevt.print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=l_decay_proper)
 
 if __name__ == "__main__":
 	try:
