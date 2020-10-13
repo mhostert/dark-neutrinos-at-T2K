@@ -503,7 +503,7 @@ class threebody(vg.BatchIntegrand):
 				# return dgamma*2.0
 				return dsigma*self.flux(Enu)*dgamma/2.0
 
-def cascade_phase_space(samples=None, MC_case=None, params=None):
+def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
 	Q2p = np.array(samples[0])
 	Enup =  np.array(samples[1])
@@ -511,6 +511,7 @@ def cascade_phase_space(samples=None, MC_case=None, params=None):
 	sample_size = np.shape(Enup)[0]
 
 	MA = MC_case.MA
+	mh = MC_case.Mn
 	Z = MC_case.Z
 	params = MC_case.params
 	Mzprime = params.Mzprime

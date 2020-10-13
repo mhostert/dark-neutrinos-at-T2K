@@ -100,9 +100,9 @@ class experiment():
 			self.EMAX = 20.0
 			# Detector targets
 			self.POTS = 12.34e20
-			self.MATERIALS_NAME=['H1','C12','O16','Fe56','Pb208']
-			self.MATERIALS_A=[1,12,16,56,208]
-			self.MATERIALS_Z=[1,6,8,26,82]
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208']
+			self.MATERIALS_A=[1, 12, 16, 63.546, 65.38, 207.2]
+			self.MATERIALS_Z=[1, 6, 8, 29, 30, 82]
 			self.MATERIALS_MASS =[
 								2.9e6*2.0/18.0,
 								0,
@@ -118,9 +118,9 @@ class experiment():
 			self.EMAX = 20.0
 			# Detector targets
 			self.POTS = 12.34e20
-			self.MATERIALS_NAME=['H1','C12','O16','Fe56','Pb208']
-			self.MATERAILS_A=[1,12,16,56,208]
-			self.MATERIALS_Z=[1,6,8,26,82]
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208']
+			self.MATERIALS_A=[1, 12, 16, 63.546, 65.38, 207.2]
+			self.MATERIALS_Z=[1, 6, 8, 29, 30, 82]
 			self.MATERIALS_MASS =[
 								2.9e6*2.0/18.0,
 								0,

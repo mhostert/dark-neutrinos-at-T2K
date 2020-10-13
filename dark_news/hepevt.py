@@ -1,6 +1,7 @@
-import numpy as np
 import os
-import sys, getopt
+import sys
+import numpy as np
+import pandas as pd
 
 from . import const
 from . import pdg
@@ -12,7 +13,7 @@ pyximport.install(
     )
 from . import Cfourvec as Cfv
 
-def print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_proper=0.0):
+def print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):
 
 	# events
 	pN   = bag['P3']
@@ -44,22 +45,21 @@ def print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_proper=0.
 	######################
 	d_decay = np.random.exponential(scale=ctau/gammabeta_inv)*1e2 # centimeters
 
-
 	########################## HEPevt format
 	# Detector geometry -- choose random position
-	xmin=0;xmax=256. # cm
-	ymin=-115.;ymax=115. # cm
-	zmin=0.;zmax=1045. # cm
+	# xmin=0;xmax=256. # cm
+	# ymin=-115.;ymax=115. # cm
+	# zmin=0.;zmax=1045. # cm
 
 	########
 	# Using initial time of the det only! 
 	# CROSS CHECK THIS VALUE
-	tmin=3.200e3;tmax=3.200e3 # ticks? ns?
+	# tmin=3.200e3;tmax=3.200e3 # ticks? ns?
 
 
 	#####################
 	# scaling it to a smaller size around the central value
-	restriction = 0.3 
+	# restriction = 0.3 
 
 	# xmax = xmax - restriction*(xmax -xmin)
 	# ymax = ymax - restriction*(ymax -ymin)
@@ -72,11 +72,15 @@ def print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_proper=0.
 	# tmin = tmin + restriction*(tmax-tmin)
 
 	# generating entries
-	x = 0.0*(xmin + (xmax -xmin)*np.random.rand(size))
-	y = 0.0*(ymin + (ymax -ymin)*np.random.rand(size))
-	z = 0.0*(zmin + (zmax -zmin)*np.random.rand(size))
-	t = 0.0*(tmin + (tmax -tmin)*np.random.rand(size))
+	# x = 0.0*(xmin + (xmax -xmin)*np.random.rand(size))
+	# y = 0.0*(ymin + (ymax -ymin)*np.random.rand(size))
+	# z = 0.0*(zmin + (zmax -zmin)*np.random.rand(size))
+	# t = 0.0*(tmin + (tmax -tmin)*np.random.rand(size))
 
+	x = np.zeros(d_decay.shape)
+	y = np.zeros(d_decay.shape)
+	z = np.zeros(d_decay.shape)
+	t = np.zeros(d_decay.shape)
 
 	# direction of N
 	x_decay = x + Cfv.get_3direction(pN)[:,0]*d_decay
@@ -92,15 +96,45 @@ def print_events_to_file(PATH_data, bag, TOT_EVENTS, BSMparams,l_decay_proper=0.
 
 	###############################################
 	# SAVE ALL EVENTS AS AN ARRAY TO A BINARY FILE 
-	npy_file_name = PATH_data+"MC_m4_"+format(BSMparams.m4,'.8g')+"_mzprime_"+format(BSMparams.Mzprime,'.8g')
+	npy_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}"
 	X = np.array([
 		plm,
 		plp,
 		pnu,
 		pHad,
-		np.array([t,x,y,z]).T,
+		# np.array([t,x,y,z]).T,
 		np.array([t_decay,x_decay,y_decay,z_decay]).T])
-	np.save(npy_file_name,X,allow_pickle=True)
+	np.save(npy_file_name, X, allow_pickle=True)
+
+	###############################################
+	# SAVE ALL EVENTS AS A PANDAS DATAFRAME
+	df_dict = {}
+	df_dict['plm_E'] = plm[:, 0]
+	df_dict['plm_px'] = plm[:, 1]
+	df_dict['plm_py'] = plm[:, 2]
+	df_dict['plm_pz'] = plm[:, 3]
+
+	df_dict['plp_E'] = plp[:, 0]
+	df_dict['plp_px'] = plp[:, 1]
+	df_dict['plp_py'] = plp[:, 2]
+	df_dict['plp_pz'] = plp[:, 3]
+
+	df_dict['pnu_E'] = pnu[:, 0]
+	df_dict['pnu_px'] = pnu[:, 1]
+	df_dict['pnu_py'] = pnu[:, 2]
+	df_dict['pnu_pz'] = pnu[:, 3]
+
+	df_dict['pHad_E'] = pHad[:, 0]
+	df_dict['pHad_px'] = pHad[:, 1]
+	df_dict['pHad_py'] = pHad[:, 2]
+	df_dict['pHad_pz'] = pHad[:, 3]
+
+	df_dict['t_decay'] = t_decay
+	df_dict['x_decay'] = x_decay
+	df_dict['y_decay'] = y_decay
+	df_dict['z_decay'] = z_decay
+
+	pd.DataFrame(df_dict).to_pickle(npy_file_name)
 
 	###############################################
 	# SAVE ALL EVENTS AS A HEPEVT .dat file
