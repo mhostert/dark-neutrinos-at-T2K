@@ -197,7 +197,7 @@ def main(argv):
 	############################################################################
 	# Print events to file -- currently in data/exp/m4____mzprime____.dat 
 	#############################################################################
-	hepevt.print_events_to_file(PATH_data, bag, args.nevents, BSMparams, l_decay_proper=args.ldecay)
+	printer.print_events_to_pandas(PATH_data, bag, args.nevents, BSMparams, l_decay_proper=args.ldecay)
 
 if __name__ == "__main__":
 	try:

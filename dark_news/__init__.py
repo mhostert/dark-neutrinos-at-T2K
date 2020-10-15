@@ -1,9 +1,15 @@
-#CYTHON
+#CYTHON -- MAC OS X FIX --	FOLLOW https://github.com/cython/cython/issues/1725
+import numpy
+import os
 import pyximport
+numpy_path = numpy.get_include()
+os.environ['CFLAGS'] = "-I" + numpy_path
 pyximport.install(
 	language_level=3,
     pyimport=False,
+    setup_args={'include_dirs': numpy.get_include()}
     )
+
 from . import Cfourvec as Cfv
 from . import C_MC
 
@@ -23,6 +29,9 @@ from . import model
 from . import decay_rates
 from . import xsecs
 
-# for printing HEPEVT files
-from . import hepevt
+# for output of MC 
+from . import printer
+from . import decayer
+from . import geom
+
 

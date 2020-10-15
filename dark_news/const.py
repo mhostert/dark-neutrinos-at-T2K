@@ -120,8 +120,7 @@ Vtb = 1
 NAvo = 6.022*1e23
 # from GeV^-2 to cm^2
 GeV2_to_cm2 = 3.9204e-28
-# print(np.sqrt(GeV2_to_cm2))
-# print(np.sqrt(GeV2_to_cm2*Gf))
+
 # speed of light (PDG) m/s
 c_LIGHT = 299792458
 
@@ -210,53 +209,3 @@ def Fpauli_blocking(Q2,MA):
 	qvec = np.sqrt(Q2*(1+Q2/4.0/MA/MA))
 	kf = 0.300
 	return np.piecewise(qvec, [qvec <= 2*kf, qvec > 2*kf],[lambda x: 3.0/2.0*x/2.0/kf - 0.5*(x/2.0/kf)*(x/2.0/kf)*(x/2.0/kf), lambda x: 1])
-
-#########################################
-# EXPERIMENTAL PARAMETERS
-
-############### MiniBooNE ###############
-# signal def
-MB_THRESHOLD = 0.03 # GeV
-MB_ANGLE_MAX = 8 # degrees
-# cuts
-MB_ENU_MIN = 0.14 # GeV
-MB_ENU_MAX = 1.5 # GeV
-
-MB_Evis_MIN = 0.14 # GeV
-MB_Evis_MAX = 2 # GeV
-
-MB_Q2   = 1e10 # GeV^2
-MB_ANALYSIS_TH = 0.2 # GeV
-# resolutions
-MB_STOCHASTIC = 0.12
-MB_NOISE = 0.01
-MB_ANGULAR = 2*np.pi/180.0
-
-############### MINERVA ###############
-# signal def
-MV_THRESHOLD = 0.030 # GeV
-MV_ANGLE_MAX = 8 # degrees
-# cuts
-MV_ETHETA2     = 0.0032 # GeV
-MV_Q2          = 0.02 # GeV^2
-MV_ANALYSIS_TH = 0.8 # GeV
-# resolutions
-MV_STOCHASTIC = 0.034
-MV_NOISE      = 0.059
-MV_ANGULAR    = 1*np.pi/180.0
-
-########### CHARM-II ###############
-# signal def
-CH_THRESHOLD = 0.2 # GeV
-CH_ANGLE_MAX = 4 # degrees
-
-# cuts
-CH_ANALYSIS_TH = 3.0 # GeV
-CH_ANALYSIS_EMAX = 24.0 # GeV
-CH_ETHETA2   = 0.03 # GeV
-# resolutions
-CH_STOCHASTIC = 0.09
-CH_NOISE = 0.15
-# For Charm's angular resolution, see CH_smear function in cuts.py
-CH_ANGULAR = 2*np.pi/180.0
-

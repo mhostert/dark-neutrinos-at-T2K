@@ -5,6 +5,7 @@ import pandas as pd
 
 from . import const
 from . import pdg
+from . import decayer
 #CYTHON
 import pyximport
 pyximport.install(
@@ -14,7 +15,6 @@ pyximport.install(
 from . import Cfourvec as Cfv
 
 def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):
-
 	# events
 	pN   = bag['P3']
 	pnu   = bag['P2_decay']
@@ -26,12 +26,8 @@ def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper
 	I = bag['I']
 	regime = bag['flags']
 
-	size = np.shape(plm)[0]
-
-	# Create target Directory if it doesn't exist
-	if not os.path.exists(PATH_data):
-	    os.makedirs(PATH_data)
-	npy_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}"
+	# Decay events
+	t_decay,x_decay,y_decay,z_decay = decayer.decay_position(pN, l_decay_proper_cm=l_decay_proper)
 
 	###############################################
 	# SAVE ALL EVENTS AS A PANDAS DATAFRAME
@@ -64,12 +60,18 @@ def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper
 	df_dict['y_decay'] = y_decay
 	df_dict['z_decay'] = z_decay
 
+	# Create target Directory if it doesn't exist
+	if not os.path.exists(PATH_data):
+	    os.makedirs(PATH_data)
+	npy_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}"
+
 	pd.DataFrame(df_dict).to_pickle(npy_file_name)
 
 
 
-def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):ßßßßß
-
+#######
+# not relevant anymore. 
+def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):
 	# events
 	pN   = bag['P3']
 	pnu   = bag['P2_decay']
@@ -86,18 +88,14 @@ def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_d
 	AccEntries = np.random.choice(AllEntries, size=TOT_EVENTS, replace=True, p=w/np.sum(w))
 	pN, plp, plm, pnu, pHad, w, regime  = pN[AccEntries], plp[AccEntries], plm[AccEntries], pnu[AccEntries], pHad[AccEntries], w[AccEntries], regime[AccEntries]
 
+	# sample size (# of events)
 	size = np.shape(plm)[0]
 
-	# decay the heavy nu
-	M4 = np.sqrt(Cfv.dot4(pN,pN))
-	MZPRIME = np.sqrt(Cfv.dot4(pZ,pZ))
-	Mhad = np.sqrt(Cfv.dot4(pHad,pHad))
-	gammabeta_inv = M4/(np.sqrt(pN[:,0]**2 -  M4*M4 ))
-	######################
-	# *PROPER* decay length -- BY HAND AT THE MOMENT!
-	ctau = l_decay_proper
-	######################
-	d_decay = np.random.exponential(scale=ctau/gammabeta_inv)*1e2 # centimeters
+	# get scattering positions
+	t,x,y,z = old_geometry_muboone(size)
+
+	# decay events
+	t_decay,x_decay,y_decay,z_decay = decayer.decay_position(pN, l_decay_proper_cm=l_decay_proper)
 
 	###############################################
 	# SAVE ALL EVENTS AS A HEPEVT .dat file
@@ -119,3 +117,4 @@ def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_d
 		else:
 			print('Error! Cannot find regime of event ', i)
 	f.close()
+
