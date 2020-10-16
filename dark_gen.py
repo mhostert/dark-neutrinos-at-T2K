@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -98,7 +98,7 @@ def main(argv):
 
 	####################################################
 	# Set the model to use
-	if (args.M5 > args.M4 and args.M5 < args.mzprime):
+	if ((args.M5 > args.M4) and (args.M5 < args.mzprime)):
 		MODEL = const.THREEPLUSTWO
 		print('Model used 3+2')
 	elif (((args.M4 < args.mzprime) and (args.M5 > args.mzprime)) or ((args.M4 > args.mzprime) and (args.M5 >= 1e5))):
@@ -111,7 +111,7 @@ def main(argv):
 	# Run MC and get events
 	if MODEL==const.THREEPLUSONE:
 
-		bag = MC.run_MC(BSMparams, myexp, [pdg.numu])
+		bag = MC.run_MC(BSMparams, myexp, [pdg.numu], INCLUDE_DIF=False)
 
 		### NAMING 
 		## HEPEVT Event file name

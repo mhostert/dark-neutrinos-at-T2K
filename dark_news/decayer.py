@@ -14,7 +14,7 @@ pyximport.install(
     )
 from . import Cfourvec as Cfv
 
-def decay_position(pN, l_decay_proper_cm=5):
+def decay_position(pN, l_decay_proper_cm):
 
 	# decay the particle
 	M4 = np.sqrt(Cfv.dot4(pN,pN))
