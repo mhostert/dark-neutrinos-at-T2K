@@ -49,8 +49,8 @@ class experiment():
 			self.P_per_target = 18.0
 			self.TARGETS = 60.0e6 * const.NAvo / self.Nucleons_per_target
 			self.POTS = 13.2e20 
-			self.A_NUMBER = 40.0
-			self.Z_NUMBER = 18.0
+			self.MATERIALS_A = [40.0]
+			self.MATERIALS_Z = [18.0]
 		
 		elif self.EXP_FLAG == MINERVA_LE:
 			self.FLUXFILE="fluxes/MINERVA_LE_numu_flux.dat"

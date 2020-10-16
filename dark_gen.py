@@ -193,7 +193,9 @@ def main(argv):
 		# regime = bag['flags']
 
 
-
+	print(np.sum(bag['w']))
+	print(np.size(bag['w']))
+	print(Cfv.dot4(bag['P2_decay'],bag['P2_decay']))
 	############################################################################
 	# Print events to file -- currently in data/exp/m4____mzprime____.dat 
 	#############################################################################
