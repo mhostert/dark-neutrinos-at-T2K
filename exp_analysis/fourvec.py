@@ -32,7 +32,17 @@ def get_direction(x):
 	return get_3vec(x)/np.sqrt(dot3(x,x))
 
 
+def dot4_df(df1, df2):
+	return df1['t']*df2['t'] - df1['x']*df2['x'] - df1['y']*df2['y'] - df1['z']*df2['z']
 
+def dot3_df(df1, df2):
+	return df1['x']*df2['x'] + df1['y']*df2['y'] + df1['z']*df2['z']
+
+def costheta(df1, df2):
+	return dot3_df(df1, df2)/np.sqrt(dot3_df(df1, df1) * dot3_df(df2, df2))
+
+def inv_mass(df):
+	return np.sqrt(dot4_df(df, df))
 
 
 

@@ -5,7 +5,7 @@ import pandas as pd
 
 from . import const
 from . import pdg
-from . import decayer
+from dark_news.decayer import decay_position
 #CYTHON
 import pyximport
 pyximport.install(
@@ -13,6 +13,8 @@ pyximport.install(
     pyimport=False,
     )
 from . import Cfourvec as Cfv
+from dark_news.geom import old_geometry_muboone
+from dark_news.fourvec import dot4
 
 def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):
 	# events
@@ -27,46 +29,46 @@ def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper
 	regime = bag['flags']
 
 	# Decay events
-	t_decay,x_decay,y_decay,z_decay = decayer.decay_position(pN, l_decay_proper_cm=l_decay_proper)
+	t_decay, x_decay, y_decay, z_decay = decay_position(pN, l_decay_proper_cm=l_decay_proper)
 
 	###############################################
 	# SAVE ALL EVENTS AS A PANDAS DATAFRAME
-	df_dict = {}
-	df_dict['plm_E'] = plm[:, 0]
-	df_dict['plm_px'] = plm[:, 1]
-	df_dict['plm_py'] = plm[:, 2]
-	df_dict['plm_pz'] = plm[:, 3]
+	columns = [['plm', 'plp', 'pnu', 'pHad', 'decay_point'], ['t', 'x', 'y', 'z']]
+	columns_index = pd.MultiIndex.from_product(columns)
+	aux_data = [plm[:, 0],
+			plm[:, 1],
+			plm[:, 2],
+			plm[:, 3],
+			plp[:, 0],
+			plp[:, 1],
+			plp[:, 2],
+			plp[:, 3],
+			pnu[:, 0],
+			pnu[:, 1],
+			pnu[:, 2],
+			pnu[:, 3],
+			pHad[:, 0],
+			pHad[:, 1],
+			pHad[:, 2],
+			pHad[:, 3],
+			t_decay,
+			x_decay,
+			y_decay,
+			z_decay,]
+	
+	aux_df = pd.DataFrame(np.stack(aux_data, axis=-1), columns=columns_index)
+	aux_df.loc[:, 'weight'] = w
+	# aux_df.loc[:, 'regime'] = regime
 
-	df_dict['plp_E'] = plp[:, 0]
-	df_dict['plp_px'] = plp[:, 1]
-	df_dict['plp_py'] = plp[:, 2]
-	df_dict['plp_pz'] = plp[:, 3]
-
-	df_dict['pnu_E'] = pnu[:, 0]
-	df_dict['pnu_px'] = pnu[:, 1]
-	df_dict['pnu_py'] = pnu[:, 2]
-	df_dict['pnu_pz'] = pnu[:, 3]
-
-	df_dict['pHad_E'] = pHad[:, 0]
-	df_dict['pHad_px'] = pHad[:, 1]
-	df_dict['pHad_py'] = pHad[:, 2]
-	df_dict['pHad_pz'] = pHad[:, 3]
-
-	df_dict['w'] = w
-	df_dict['regime'] = regime
-
-	df_dict['t_decay'] = t_decay
-	df_dict['x_decay'] = x_decay
-	df_dict['y_decay'] = y_decay
-	df_dict['z_decay'] = z_decay
 
 	# Create target Directory if it doesn't exist
 	if not os.path.exists(PATH_data):
 	    os.makedirs(PATH_data)
-	npy_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}"
+	if PATH_data[-1] != '/':
+		PATH_data += '/'
+	out_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}.pckl"
 
-	pd.DataFrame(df_dict).to_pickle(npy_file_name)
-
+	aux_df.to_pickle(out_file_name)
 
 
 #######
@@ -79,6 +81,7 @@ def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_d
 	plm  = bag['P3_decay']
 	plp  = bag['P4_decay']
 	pHad = bag['P4']
+	Mhad = np.sqrt(dot4(pHad, pHad))
 	w = bag['w']
 	I = bag['I']
 	regime = bag['flags']
@@ -95,7 +98,7 @@ def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_d
 	t,x,y,z = old_geometry_muboone(size)
 
 	# decay events
-	t_decay,x_decay,y_decay,z_decay = decayer.decay_position(pN, l_decay_proper_cm=l_decay_proper)
+	t_decay,x_decay,y_decay,z_decay = decay_position(pN, l_decay_proper_cm=l_decay_proper)
 
 	###############################################
 	# SAVE ALL EVENTS AS A HEPEVT .dat file
