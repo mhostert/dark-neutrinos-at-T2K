@@ -1,3 +1,9 @@
+# profiler
+stats
+
+# mac non-sense
+.DS_Store
+ 
 # data folder
 data/*
 
