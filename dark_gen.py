@@ -22,26 +22,26 @@ def main(argv):
 	####################
 	# User specified
 	parser = argparse.ArgumentParser(description="Generate dark nu events")
-	parser.add_argument("--mzprime", type=float, help="Z' mass", default=1.25)
-	parser.add_argument("--M4", type=float, help="mass of the fourth neutrino", default=0.100)
+	parser.add_argument("--mzprime", type=float, help="Z' mass", default=0.03)
+	parser.add_argument("--M4", type=float, help="mass of the fourth neutrino", default=0.420)
 	parser.add_argument("--M5", type=float, help="mass of the fifth neutrino", default=1e5)
 	parser.add_argument("--M6", type=float, help="mass of the sixth neutrino", default=1e5)
 
-	parser.add_argument("--UMU4", type=float, help="Umu4", default=np.sqrt(13.6e-8))
+	parser.add_argument("--UMU4", type=float, help="Umu4", default=np.sqrt(9.0e-7))
 	parser.add_argument("--UMU5", type=float, help="Umu5", default=np.sqrt(26.5e-8))
 	parser.add_argument("--UMU6", type=float, help="Umu6", default=np.sqrt(123.0e-8*0.0629))
-	parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*0.32))
+	parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*1/4.0))
 
-	parser.add_argument("--UTAU4", type=float, help="UTAU4", default=np.sqrt(7.8e-4)*0)
-	parser.add_argument("--UTAU5", type=float, help="UTAU5", default=np.sqrt(7.8e-4)*0)
-	parser.add_argument("--UTAU6", type=float, help="UTAU6", default=np.sqrt(7.8e-4)*0)
-	parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(5.94e-4))
+	parser.add_argument("--UTAU4", type=float, help="UTAU4", default=0)
+	parser.add_argument("--UTAU5", type=float, help="UTAU5", default=0)
+	parser.add_argument("--UTAU6", type=float, help="UTAU6", default=0)
+	parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(2e-10/const.alphaQED)/const.cw)
 
 	parser.add_argument("--UD4", type=float, help="UD4", default=1.0)
 	parser.add_argument("--UD5", type=float, help="UD5", default= 1.0)
 	parser.add_argument("--UD6", type=float, help="UD6", default= 1.0)
 
-	parser.add_argument("--ldecay", type=float, help="ctau of the fourth neutrino", default=0.05)
+	parser.add_argument("--ldecay", type=float, help="ctau of the fourth neutrino in cm", default=0.00)
 	parser.add_argument("--exp", type=str, help="experiment", choices=["charmii",
 																		"minerva_le",
 																		"minerva_me",
@@ -56,15 +56,21 @@ def main(argv):
 	parser.add_argument("--noplot", help="no plot", action="store_true")
 	parser.add_argument("--HNLtype", type=int, help="HNLtype: 1 is DIRAC, 0 is MAJORANA", choices=[0, 1], default=0)
 	
-	parser.add_argument("--nevents", type=int, help="number of events to generate", default=100)
+	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e5)
+	parser.add_argument("--nint", type=int, help="number of adaptive iterations", default=20)
+	parser.add_argument("--neval_warmup", type=int, help="number of evaluations of integrand in warmup", default=1e3)
+	parser.add_argument("--nint_warmup", type=int, help="number of adaptive iterations in warmup", default=10)
+
+	parser.add_argument("--hepevt_events", type=int, help="number of events to accept in HEPEVT format", default=1e2)
+
 	args = parser.parse_args()
 
 	##########################
 	# MC evaluations and iterations
-	MC.NEVAL_warmup = 1e3
-	MC.NINT_warmup = 100
-	MC.NEVAL = 1e4
-	MC.NINT  = 100
+	MC.NEVAL_warmup = args.neval_warmup
+	MC.NINT_warmup = args.nint_warmup
+	MC.NEVAL = args.neval
+	MC.NINT  = args.nint
 		
 	#########################
 	# Set BSM parameters
@@ -193,13 +199,15 @@ def main(argv):
 		# regime = bag['flags']
 
 
-	print(np.sum(bag['w']))
-	print(np.size(bag['w']))
-	print(Cfv.dot4(bag['P2_decay'],bag['P2_decay']))
+
+	print(np.sum(bag['w'])/const.GeV2_to_cm2)
+	print(np.sum(bag['w'])*const.NAvo*12e6*13e20)
 	############################################################################
 	# Print events to file -- currently in data/exp/m4____mzprime____.dat 
 	#############################################################################
-	printer.print_events_to_pandas(PATH_data, bag, args.nevents, BSMparams, l_decay_proper=args.ldecay)
+	printer.print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=args.ldecay)
+	# HEPEVT_events = args.hepevt_events
+	# printer.print_unweighted_events_to_HEPEVT(PATH_data, bag, HEPEVT_events, BSMparams, l_decay_proper=args.ldecay)
 
 if __name__ == "__main__":
 	try:

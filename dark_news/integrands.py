@@ -97,11 +97,12 @@ class cascade(vg.BatchIntegrand):
 			# dsigma *= 16*F2*FA*Q2*(2*Power(MA,2) + Power(Mn,2) + Q2 - 2*s) + 8*F1*(4*FA*Power(MA,2)*Q2 - (Power(Mn,2) + Q2)*(F2*Power(Mn,2) - 2*(F2 + FA)*Q2) - 4*FA*Q2*s) + 8*Power(FA,2)*(2*Power(MA,4) + Q2*(Power(Mn,2) + Q2) + 4*Power(MA,2)*(Power(Mn,2) + Q2 - s) - 2*(Power(Mn,2) + Q2)*s + 2*Power(s,2)) + 8*Power(F1,2)*(Q2*(Power(Mn,2) + Q2) + 2*(Power(MA,4) - (2*Power(MA,2) + Power(Mn,2) + Q2)*s + Power(s,2))) + (Power(F2,2)*(4*Power(MA,4)*Q2 - 4*Power(MA,2)*(Power(Mn,4) - Power(Mn,2)*Q2 + 2*Q2*(-Q2 + s)) + Q2*(Power(Mn,4) + Power(Mn,2)*(Q2 - 4*s) + 4*s*(-Q2 + s))))/Power(MA,2)
 
 		else:
-			F1 = const.Fcoh(np.sqrt(Q2),MA)
+			F1 = const.FEMcoh(np.sqrt(Q2),MA)
 			F2 = 0
 			FA = 0
 			dsigma *= Z*Z*4.0*Power(F1,2)*(4*Power(MA,4) + Power(Mn,4) + Power(Mn,2)*Q2 - 4*(2*Power(MA,2) + Power(Mn,2) + Q2)*s + 4*Power(s,2))
 			# dsigma *= Z*Z*4*Power(F1,2)*(4*Power(MA,4) + Power(Mn,4) + Power(Mn,2)*Q2 - 4*(2*Power(MA,2) + Power(Mn,2) + Q2)*s + 4*Power(s,2))
+			
 		betaPS = np.sqrt(1.0 - 2*(Mn**2 + MA**2)/s + (Mn**2 - MA**2)**2/s**2)
 		dsigma *= betaPS/(32.0*np.pi**2)
 		
@@ -116,7 +117,6 @@ class cascade(vg.BatchIntegrand):
 		#######################
 		## Heavy N Decay
 		cost = -1.0 + (2.0) * x[:, 2]
-
 		dgamma = 2*UD4**2*(params.Ue4**2 + params.Umu4**2 + params.Utau4**2)*alphaD*4*np.pi*(Mn**2 - 2*Mzprime**2 + Mn**4/Mzprime**2)/2.0/Mn/32.0/np.pi**2*(1.0-Mzprime**2/Mn**2) 
 	
 		############# If Dirac, include more stuff! ###################
@@ -132,6 +132,7 @@ class cascade(vg.BatchIntegrand):
 		dgammaZprime *= 2*np.pi*2 # integral over angles
 
 		return dsigma*self.flux(Enu)*dgamma*dgammaZprime
+		# return dgamma*dgammaZprime
 		# return const.Gf**2*(2.0*Enu*const.Me)/4.0/np.pi *flux(Enu)
 
 
@@ -505,9 +506,9 @@ class threebody(vg.BatchIntegrand):
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
-	Q2p = np.array(samples[0])
-	Enup =  np.array(samples[1])
-	costZ = np.array(samples[2])
+	Q2p = samples[0]
+	Enup =  samples[1]
+	costZ = samples[2]
 	sample_size = np.shape(Enup)[0]
 
 	MA = MC_case.MA
@@ -620,17 +621,6 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 	phie   = Cfv.random_generator(sample_size, 0.0, 2*np.pi)
 
 
-	# P1CM_decayZ = [ [E1CM_decayZ[i],
-	# 		  		p1CM_decayZ[i]*np.cos(phie[i])*np.sin(thetae[i]), 
-	# 		  		p1CM_decayZ[i]*np.sin(phie[i])*np.sin(thetae[i]), 
-	# 		  		p1CM_decayZ[i]*np.cos(thetae[i])] for i in range(0,np.size(thetae))]
-	
-	# P2CM_decayZ = [ [E2CM_decayZ[i],
-	# 		  		-p2CM_decayZ[i]*np.cos(phie[i])*np.sin(thetae[i]), 
-	# 		  		-p2CM_decayZ[i]*np.sin(phie[i])*np.sin(thetae[i]), 
-	# 		  		-p2CM_decayZ[i]*np.cos(thetae[i])] for i in range(0,np.size(thetae))]
-
-
 	P1CM_decayZ = Cfv.build_fourvec(E1CM_decayZ, p1CM_decayZ, cthetae, phie)
 	P2CM_decayZ = Cfv.build_fourvec(E1CM_decayZ, -p1CM_decayZ, cthetae, phie)
 
@@ -646,21 +636,33 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 							-np.sqrt( EZ_LAB**2 - Mzprime**2)/EZ_LAB, 
 							costZ_LAB,  
 							phiZ_LAB)
+
 	##########################################################################
 
 	# return P3LAB, P2LAB_decay, P1LAB_decayZ, P2LAB_decayZ, P1LAB_decay, P4LAB
 	# returing dictionary
-	return  {"P1" : P1LAB,
-			"P2" : P2LAB,
-			"P3" : P3LAB,
-			"P4" : P4LAB,
-			"P1_decay" : P1LAB_decay, 
-			"P2_decay" : P2LAB_decay, 
-			"P3_decay" : P1LAB_decayZ, 
-			"P4_decay" : P2LAB_decayZ,
+	# return  {"P1" : P1LAB,
+	# 		"P2" : P2LAB,
+	# 		"P3" : P3LAB,
+	# 		"P4" : P4LAB,
+	# 		"P1_decay" : P1LAB_decay, 
+	# 		"P2_decay" : P2LAB_decay, 
+	# 		"P3_decay" : P1LAB_decayZ, 
+	# 		"P4_decay" : P2LAB_decayZ,
+	# 		"w" : w,
+	# 		"I" : I}
+	# returing dictionary
+	return  {"P_scatterer" : P1LAB, 
+			"P_target" : P2LAB, 
+			"P_outgoing_HNL" : P3LAB, 
+			"P_outgoing_target" : P4LAB, 
+			"P_HNL" : P1LAB_decay, 
+			"P_mediator" : P2LAB_decay, 
+			"P_out_nu" : P1LAB_decay, 
+			"P_em" : P1LAB_decayZ, 
+			"P_ep" : P2LAB_decayZ,
 			"w" : w,
 			"I" : I}
-	
 
 def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 
@@ -795,14 +797,14 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 								phiN_LAB)	
 
 		# returing dictionary
-		return  {"P1" : P1LAB,
-				"P2" : P2LAB,
-				"P3" : P3LAB,
-				"P4" : P4LAB,
-				"P1_decay" : P1LAB_decay, 
-				"P2_decay" : P2LAB_decay, 
-				"P3_decay" : P3LAB_decay, 
-				"P4_decay" : P4LAB_decay,
+		return  {"P_scatterer" : P1LAB,
+				"P_target" : P2LAB,
+				"P_outgoing_HNL" : P3LAB,
+				"P_outgoing_target" : P4LAB,
+				"P_HNL" : P1LAB_decay, 
+				"P_out_nu" : P2LAB_decay, 
+				"P_em" : P3LAB_decay, 
+				"P_ep" : P4LAB_decay,
 				"w" : w,
 				"I" : I}
 	

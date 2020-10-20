@@ -181,15 +181,8 @@ def F3_WEAK(Q2):
 	return f
 
 
-
-def Fcoh(Q,MA):
-	a = 0.523/0.197 # GeV^-1
-	r0 = 1.03*(MA**(1.0/3.0))/0.197 # GeV^-1
-	return 3.0*np.pi*a/(r0**2 + np.pi**2 * a**2) * (np.pi*a *(1.0/np.tanh(np.pi*a*Q))*np.sin(Q*r0) - r0*np.cos(Q*r0))/(Q*r0*np.sinh(np.pi*Q*a))
-
-
+a = 0.523/0.197 # GeV^-1
 def FEMcoh(Q,MA):
-	a = 0.523/0.197 # GeV^-1
 	r0 = 1.03*(MA**(1.0/3.0))/0.197 # GeV^-1
 	return 3.0*np.pi*a/(r0**2 + np.pi**2 * a**2) * (np.pi*a *(1.0/np.tanh(np.pi*a*Q))*np.sin(Q*r0) - r0*np.cos(Q*r0))/(Q*r0*np.sinh(np.pi*Q*a))
 

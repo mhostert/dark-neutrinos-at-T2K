@@ -16,14 +16,14 @@ from . import Cfourvec as Cfv
 from dark_news.geom import old_geometry_muboone
 from dark_news.fourvec import dot4
 
-def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):
+def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
 	# events
-	pN   = bag['P3']
-	pnu   = bag['P2_decay']
-	pZ   = bag['P3_decay']+bag['P4_decay']
-	plm  = bag['P3_decay']
-	plp  = bag['P4_decay']
-	pHad = bag['P4']
+	pN   = bag['P_outgoing_HNL']
+	pnu   = bag['P_out_nu']
+	pZ   = bag['P_em']+bag['P_ep']
+	plm  = bag['P_em']
+	plp  = bag['P_ep']
+	pHad = bag['P_outgoing_target']
 	w = bag['w']
 	I = bag['I']
 	regime = bag['flags']
@@ -57,7 +57,8 @@ def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper
 			z_decay,]
 	
 	aux_df = pd.DataFrame(np.stack(aux_data, axis=-1), columns=columns_index)
-	aux_df.loc[:, 'weight'] = w
+	print(np.shape(np.stack(aux_data, axis=-1)))
+	# aux_df.loc[:, 'weight'] = w
 	# aux_df.loc[:, 'regime'] = regime
 
 
@@ -75,12 +76,12 @@ def print_events_to_pandas(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper
 # not relevant anymore. 
 def print_unweighted_events_to_HEPEVT(PATH_data, bag, TOT_EVENTS, BSMparams, l_decay_proper=0.0):
 	# events
-	pN   = bag['P3']
-	pnu   = bag['P2_decay']
-	pZ   = bag['P3_decay']+bag['P4_decay']
-	plm  = bag['P3_decay']
-	plp  = bag['P4_decay']
-	pHad = bag['P4']
+	pN   = bag['P_outgoing_HNL']
+	pnu  = bag['P_out_nu']
+	pZ   = bag['P_em']+bag['P_ep']
+	plm  = bag['P_em']
+	plp  = bag['P_ep']
+	pHad = bag['P_outgoing_target']
 	Mhad = np.sqrt(dot4(pHad, pHad))
 	w = bag['w']
 	I = bag['I']

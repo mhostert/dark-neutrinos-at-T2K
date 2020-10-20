@@ -110,13 +110,13 @@ class MC_events:
 			print("WARNING! Unable to set charged lepton mass. Assuming massless.")
 			self.m_ell = 0
 
-		#############################
-		# DECAY PROPERTIES
-		self.decay_prop = decay_rates.HeavyNu(params,self.nu_produced)
-		self.decay_prop.compute_rates()
-		self.decay_prop.total_rate()
-		self.decay_prop.compute_BR()
-		# print(self.decay_prop.array_R)
+		if self.Mn - self.Mn_outgoing < params.Mzprime: # else, very simple expressions can be used.
+			#############################
+			# DECAY PROPERTIES
+			self.decay_prop = decay_rates.HeavyNu(params,self.nu_produced)
+			self.decay_prop.compute_rates() # -- uses quad integrate -- slow!!
+			self.decay_prop.total_rate()
+			self.decay_prop.compute_BR()
 
 		###############################
 		# set helicity here
@@ -154,7 +154,7 @@ class MC_events:
 			result = integ(batch_f,  nitn = NINT, neval = NEVAL, minimize_mem = False)
 			
 			# final integral
-			integral = result.mean/self.decay_prop.total_rate()/decay_rates.Z_total(params)
+			integral = result.mean/decay_rates.N_total(params)/decay_rates.Z_total(params)
 			##########################################################################
 		elif Mn - Mn_outgoing < Mzprime:
 
@@ -182,7 +182,7 @@ class MC_events:
 		SAMPLES,weights = C_MC.get_samples(DIM, integ, batch_f)
 
 		if Mn - Mn_outgoing > Mzprime:
-			weights *= 1.0/self.decay_prop.total_rate()/decay_rates.Z_total(params)
+			weights *= 1.0/decay_rates.N_total(params)/decay_rates.Z_total(params)
 			return integrands.cascade_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=result.mean*const.GeV2_to_cm2)
 		elif Mn - Mn_outgoing < Mzprime:
 			weights *= 1.0/self.decay_prop.total_rate()
