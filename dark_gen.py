@@ -10,7 +10,7 @@ import argparse
 
 # Dark Neutrino and MC stuff
 from dark_news import *
-from exp_analysis import *
+# from exp_analysis import *
 
 
 def main(argv):
@@ -27,15 +27,19 @@ def main(argv):
 	parser.add_argument("--M5", type=float, help="mass of the fifth neutrino", default=1e5)
 	parser.add_argument("--M6", type=float, help="mass of the sixth neutrino", default=1e5)
 
-	parser.add_argument("--UMU4", type=float, help="Umu4", default=np.sqrt(9.0e-7))
-	parser.add_argument("--UMU5", type=float, help="Umu5", default=np.sqrt(26.5e-8))
-	parser.add_argument("--UMU6", type=float, help="Umu6", default=np.sqrt(123.0e-8*0.0629))
-	parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*1/4.0))
+	parser.add_argument("--UMU4", type=float, help="Umu4 square", default=9.0e-7)
+	parser.add_argument("--UMU5", type=float, help="Umu5 square", default=26.5e-8)
+	parser.add_argument("--UMU6", type=float, help="Umu6 square", default=123.0e-8*0.0629)
+	# parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*1/4.0))
+	# parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(2e-10/const.alphaQED)/const.cw)
+	parser.add_argument("--alpha_dark", type=float, help="alpha_dark", default=0.25)
+	parser.add_argument("--alpha_epsilon2", type=float, help="Product of alpha QED times epsilon^2", default=2e-10)
+	parser.add_argument("--epsilon2", type=float, help="epsilon^2")
 
 	parser.add_argument("--UTAU4", type=float, help="UTAU4", default=0)
 	parser.add_argument("--UTAU5", type=float, help="UTAU5", default=0)
 	parser.add_argument("--UTAU6", type=float, help="UTAU6", default=0)
-	parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(2e-10/const.alphaQED)/const.cw)
+	
 
 	parser.add_argument("--UD4", type=float, help="UD4", default=1.0)
 	parser.add_argument("--UD5", type=float, help="UD5", default= 1.0)
@@ -70,22 +74,25 @@ def main(argv):
 	MC.NEVAL_warmup = args.neval_warmup
 	MC.NINT_warmup = args.nint_warmup
 	MC.NEVAL = args.neval
-	MC.NINT  = args.nint
+	MC.NINT = args.nint
 		
 	#########################
 	# Set BSM parameters
 	BSMparams = model.model_params()
 
-	BSMparams.gprime = args.GPRIME
-	BSMparams.chi = args.CHI
+	BSMparams.gprime = np.sqrt(4*np.pi*args.alpha_dark)
+	if args.epsilon2:
+		BSMparams.chi = np.sqrt(args.epsilon2)/const.cw
+	else:
+		BSMparams.chi = np.sqrt(args.alpha_epsilon2/const.alphaQED)/const.cw
 	BSMparams.Ue4 = 0.0
-	BSMparams.Umu4 = args.UMU4 
+	BSMparams.Umu4 = np.sqrt(args.UMU4)
 	BSMparams.Utau4 = args.UTAU4
 	BSMparams.Ue5 = 0.0
-	BSMparams.Umu5 = args.UMU5
+	BSMparams.Umu5 = np.sqrt(args.UMU5)
 	BSMparams.Utau5 = args.UTAU5
 	BSMparams.Ue6 = 0.0
-	BSMparams.Umu6 = args.UMU6
+	BSMparams.Umu6 = np.sqrt(args.UMU6)
 	BSMparams.Utau6 = args.UTAU6
 	BSMparams.UD4 = args.UD4
 	BSMparams.UD5 = args.UD5

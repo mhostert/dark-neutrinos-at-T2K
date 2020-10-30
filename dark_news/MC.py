@@ -200,7 +200,7 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 		if x=='w':
 			dic[x] = cases[0][x]*Ifactors[0]
 		elif x=='I':
-			dic[x]	= cases[0][x]*Ifactors[0]
+			dic[x] = cases[0][x]*Ifactors[0]
 		else:
 			dic[x]= cases[0][x]
 		
@@ -213,7 +213,7 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 			if x=='w':
 				dic[x] = np.array( np.append(dic[x], cases[i][x]*Ifactors[i], axis=0) )
 			elif x=='I':
-				dic[x]	= dic[x] + cases[i][x]*Ifactors[i]
+				dic[x] = dic[x] + cases[i][x]*Ifactors[i]
 			else:
 				dic[x]=np.array( np.append(dic[x], cases[i][x], axis=0) )
 			
@@ -221,10 +221,8 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 
 	return dic
 
-
-#############################3
 # THIS FUNCTION NEEDS SOME OPTIMIZING... currently setting event flags by hand.
-def run_MC(BSMparams,exp,FLAVOURS,INCLUDE_HC=True,INCLUDE_HF=False,INCLUDE_COH=True,INCLUDE_DIF=True):
+def run_MC(BSMparams, exp, FLAVOURS, INCLUDE_HC=True, INCLUDE_HF=False, INCLUDE_COH=True, INCLUDE_DIF=False):
 	cases = []
 	flags = []
 	for flavour in FLAVOURS:
@@ -232,37 +230,57 @@ def run_MC(BSMparams,exp,FLAVOURS,INCLUDE_HC=True,INCLUDE_HF=False,INCLUDE_COH=T
 
 			# include helicity conserving scattering
 			if INCLUDE_HC:
-				cases.append(MC_events(BSMparams,
-										exp,
-										None,
-										MA=exp.MATERIALS_A[i]*const.MAVG,
-										Z=exp.MATERIALS_Z[i],
-										nu_scatterer=flavour,
-										nu_produced=pdg.neutrino4,
-										nu_outgoing=pdg.numu,
-										final_lepton=pdg.electron,
-										h_upscattered=-1))
-				if (exp.MATERIALS_Z[i] >1):
-					flags.append(const.COHLH)
-				else:
+				if INCLUDE_DIF:
+					cases.append(MC_events(BSMparams,
+											exp,
+											None,
+											MA=const.MAVG,
+											Z=1,
+											nu_scatterer=flavour,
+											nu_produced=pdg.neutrino4,
+											nu_outgoing=pdg.numu,
+											final_lepton=pdg.electron,
+											h_upscattered=-1))
 					flags.append(const.DIFLH)
+				if INCLUDE_COH:
+					cases.append(MC_events(BSMparams,
+											exp,
+											None,
+											MA=exp.MATERIALS_A[i]*const.MAVG,
+											Z=exp.MATERIALS_Z[i],
+											nu_scatterer=flavour,
+											nu_produced=pdg.neutrino4,
+											nu_outgoing=pdg.numu,
+											final_lepton=pdg.electron,
+											h_upscattered=-1))
+					flags.append(const.COHLH)
 
 			# include helicity flipping scattering
 			if INCLUDE_HF:
-				cases.append(MC_events(BSMparams,
-										exp,
-										None,
-										MA=exp.MATERIALS_A[i]*const.MAVG,
-										Z=exp.MATERIALS_Z[i],
-										nu_scatterer=flavour,
-										nu_produced=pdg.neutrino4,
-										nu_outgoing=pdg.numu,
-										final_lepton=pdg.electron,
-										h_upscattered=+1))
-				if (exp.MATERIALS_Z[i] >1):
-					flags.append(const.COHRH)
-				else:
+				if INCLUDE_DIF:
+					cases.append(MC_events(BSMparams,
+											exp,
+											None,
+											MA=const.MAVG,
+											Z=1,
+											nu_scatterer=flavour,
+											nu_produced=pdg.neutrino4,
+											nu_outgoing=pdg.numu,
+											final_lepton=pdg.electron,
+											h_upscattered=+1))
 					flags.append(const.DIFRH)
+				if INCLUDE_COH:
+					cases.append(MC_events(BSMparams,
+											exp,
+											None,
+											MA=exp.MATERIALS_A[i]*const.MAVG,
+											Z=exp.MATERIALS_Z[i],
+											nu_scatterer=flavour,
+											nu_produced=pdg.neutrino4,
+											nu_outgoing=pdg.numu,
+											final_lepton=pdg.electron,
+											h_upscattered=+1))
+					flags.append(const.COHRH)
 
 	cases_events = [cases[i].get_MC_events() for i in range(np.size(cases))]
 	

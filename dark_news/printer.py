@@ -28,12 +28,9 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
 	I = bag['I']
 	regime = bag['flags']
 
-	# Decay events
-	t_decay, x_decay, y_decay, z_decay = decay_position(pN, l_decay_proper_cm=l_decay_proper)
-
 	###############################################
 	# SAVE ALL EVENTS AS A PANDAS DATAFRAME
-	columns = [['plm', 'plp', 'pnu', 'pHad', 'decay_point'], ['t', 'x', 'y', 'z']]
+	columns = [['plm', 'plp', 'pnu', 'pHad'], ['t', 'x', 'y', 'z']]
 	columns_index = pd.MultiIndex.from_product(columns)
 	aux_data = [plm[:, 0],
 			plm[:, 1],
@@ -50,16 +47,13 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
 			pHad[:, 0],
 			pHad[:, 1],
 			pHad[:, 2],
-			pHad[:, 3],
-			t_decay,
-			x_decay,
-			y_decay,
-			z_decay,]
+			pHad[:, 3],]
 	
 	aux_df = pd.DataFrame(np.stack(aux_data, axis=-1), columns=columns_index)
 	print(np.shape(np.stack(aux_data, axis=-1)))
-	# aux_df.loc[:, 'weight'] = w
-	# aux_df.loc[:, 'regime'] = regime
+
+	aux_df['weight', ''] = w
+	aux_df['regime', ''] = regime
 
 
 	# Create target Directory if it doesn't exist
