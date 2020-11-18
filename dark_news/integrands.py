@@ -547,8 +547,8 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 	###########
 	# if scan mode, then get all bsm param samples
 	param_samples = np.empty(sample_size)
-	if params.scan == True:
-		m4 = samples[4]*(params.M4_min-params.M4_min) + params.M4_min
+	if params.scan:
+		m4 = samples[4]*(params.M4_max-params.M4_min) + params.M4_min
 		mzprime = samples[3]*(np.minimum(params.mzprime_max,m4)-params.mzprime_min) + params.mzprime_min
 
 
@@ -678,7 +678,6 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 							phiZ_LAB)
 
 	##########################################################################
-
 	# return P3LAB, P2LAB_decay, P1LAB_decayZ, P2LAB_decayZ, P1LAB_decay, P4LAB
 	# returing dictionary
 	# return  {"P1" : P1LAB,
@@ -722,7 +721,7 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 		# if scan mode, then get all bsm param samples
 		m4 = np.empty(sample_size)
 		mzprime = np.empty(sample_size)
-		if params.scan == True:
+		if params.scan:
 			m4 = (params.M4_max-params.M4_min)*samples[7]+params.M4_min
 			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[6]+np.maximum(m4,params.mzprime_min)
 			param_samples = np.array([mzprime,m4])

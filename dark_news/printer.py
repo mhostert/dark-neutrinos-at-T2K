@@ -58,6 +58,8 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0, out_fi
 	aux_df['m4', ''] = m4
 	aux_df['mzprime', ''] = mzprime
 
+	print(m4)
+	print(mzprime)
 
 	# Create target Directory if it doesn't exist
 	if not os.path.exists(PATH_data):
