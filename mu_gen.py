@@ -50,7 +50,11 @@ def main(argv):
 	parser.add_argument("--UMU6_min", type=float, help="Umu6 square min", default=None)
 	parser.add_argument("--UMU6_max", type=float, help="Umu6 square max", default=None)
 
-	parser.add_argument("--hierarchy", type=str, help="light or heavy Z' case", default=const.HM)
+	parser.add_argument("--hierarchy",
+						 type=str,
+						 help="light or heavy Z' case",
+						 default=const.HM,
+						 choices=['light_mediator', 'heavy_mediator'])
 
 	# parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*1/4.0))
 	# parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(2e-10/const.alphaQED)/const.cw)
@@ -75,7 +79,7 @@ def main(argv):
 																		"uboone",
 																		"nd280_nu",
 																		"nd280_nubar"],
-																		default="miniboone")
+																		default="nd280_nu")
 
 	parser.add_argument("--nodif", help="remove diffractive events", action="store_true")
 	parser.add_argument("--nocoh", help="remove coherent events", action="store_true")
