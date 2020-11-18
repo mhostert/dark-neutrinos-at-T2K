@@ -1,7 +1,8 @@
 import numpy as np
 import vegas as vg
 import gvar as gv
-
+import pandas as pd 
+import os
 import random
 
 from scipy import interpolate
@@ -64,8 +65,8 @@ def plot(MLIGHT,MZPRIME,color='dodgerblue'):
 
 	EnuH= 3.0 # GeV
 	
-	h_plus = MC.MC_events(mh=BSMparams.m4, mf=0.0, mp=const.Me, mm=const.Me, EnuH=EnuH, helicity=1, BSMparams=BSMparams)
-	h_minus = MC.MC_events(mh=BSMparams.m4, mf=0.0, mp=const.Me, mm=const.Me, EnuH=EnuH, helicity=-1, BSMparams=BSMparams)
+	h_plus = MC.MC_events(ENmin=BSMparams.m4+0.01, mh=BSMparams.m4, mf=0.0, mp=const.Me, mm=const.Me, helicity=1, BSMparams=BSMparams)
+	h_minus = MC.MC_events(ENmin=BSMparams.m4+0.01, mh=BSMparams.m4, mf=0.0, mp=const.Me, mm=const.Me, helicity=-1, BSMparams=BSMparams)
 
 	def Combine_MC_output(case0, case1, Ifactor_case0=1.0, Ifactor_case1=1.0, case0_flag=0, case1_flag=1):
 		phnlp, pnuprimep, pe1p, pe2p, wp, Ip = case0
@@ -77,7 +78,7 @@ def plot(MLIGHT,MZPRIME,color='dodgerblue'):
 		pe2 = np.array( np.append(pe2m, pe2p, axis=0) )
 		w	= np.array( np.append(wp*Ifactor_case0, wm*Ifactor_case1, axis=0) )
 		I	= Ip*Ifactor_case0 + Im*Ifactor_case1
-		flags = np.append(np.ones(np.shape(phnl)[0])*case0_flag,  np.ones(np.shape(phnl)[0])*case1_flag )
+		flags = np.append(np.ones(np.shape(phnlp)[0])*case0_flag,  np.ones(np.shape(phnlm)[0])*case1_flag )
 
 		return phnl, pnuprime, pe1, pe2, w, I, flags
 
@@ -90,26 +91,56 @@ def plot(MLIGHT,MZPRIME,color='dodgerblue'):
 								case0_flag=0, \
 								case1_flag=1)
 
-	phnl, pnuprime, pe1, pe2, w, I, regime = bag
-	size_samples=np.size(w)
+	phnl, pnu, plm, plp, w, I, regime = bag
+	size_samples=np.shape(regime)[0]
 
+	###############################################
+	# SAVE ALL EVENTS AS A PANDAS DATAFRAME
+	columns = [['plm', 'plp', 'pnu', 'pHad'], ['t', 'x', 'y', 'z']]
+	columns_index = pd.MultiIndex.from_product(columns)
+	aux_data = [plm[:, 0],
+			plm[:, 1],
+			plm[:, 2],
+			plm[:, 3],
+			plp[:, 0],
+			plp[:, 1],
+			plp[:, 2],
+			plp[:, 3],
+			pnu[:, 0],
+			pnu[:, 1],
+			pnu[:, 2],
+			pnu[:, 3],
+			pnu[:, 0]*0,
+			pnu[:, 1]*0,
+			pnu[:, 2]*0,
+			pnu[:, 3]*0,]
+	
+	aux_df = pd.DataFrame(np.stack(aux_data, axis=-1), columns=columns_index)
+	print(np.shape(np.stack(aux_data, axis=-1)))
 
-	# Accept/reject method -- samples distributed according to their weights
-	TOT_EVENTS=int(1e4)
-	AllEntries = np.array(range(np.shape(pe1)[0]))
-	AccEntries = np.random.choice(AllEntries, size=TOT_EVENTS, replace=True, p=w/np.sum(w))
+	aux_df['weight', ''] = w
+	aux_df['regime', ''] = regime
 
-	phnl, pnuprime, pe1, pe2, w, regime = phnl[AccEntries], pnuprime[AccEntries], pe1[AccEntries], pe2[AccEntries], w[AccEntries], regime[AccEntries]
-	w=np.ones(np.size(w))
-	size_samples = np.shape(phnl)[0]
+	PATH_data = 'data/'
+	# Create target Directory if it doesn't exist
+	if not os.path.exists(PATH_data):
+	    os.makedirs(PATH_data)
+	if PATH_data[-1] != '/':
+		PATH_data += '/'
+	out_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}.pckl"
+
+	aux_df.to_pickle(out_file_name)
+
+	pe1=plp
+	pe2=plm
+	pep=plp
+	pem=plm
 
 
 	Eshower = np.array([ fourvec.dot4(pe1[i],fourvec.k0)+fourvec.dot4(pe2[i],fourvec.k0) for i in range(size_samples)])
 	invmassSQR = np.array([ fourvec.dot4(pe1[i]+pe2[i],pe1[i]+pe2[i]) for i in range(size_samples)])
 
 
-	pep=pe1
-	pem=pe2
 
 	# electron kinematics
 	Eep = np.array([ fourvec.dot4(pep[i],fourvec.k0) for i in range(size_samples)])

@@ -110,17 +110,25 @@ class MC_events:
 			print("WARNING! Unable to set charged lepton mass. Assuming massless.")
 			self.m_ell = 0
 
-		if self.Mn - self.Mn_outgoing < params.Mzprime: # else, very simple expressions can be used.
-			#############################
-			# DECAY PROPERTIES
-			self.decay_prop = decay_rates.HeavyNu(params,self.nu_produced)
-			self.decay_prop.compute_rates() # -- uses quad integrate -- slow!!
-			self.decay_prop.total_rate()
-			self.decay_prop.compute_BR()
 
 		###############################
 		# set helicity here
 		self.h_upscattered = h_upscattered
+
+		###############################
+		# Set hierarchy here
+		# if self.Mn - self.Mn_outgoing < params.Mzprime:
+		# 	self.hierarchy = const.HM
+		# elif self.Mn - self.Mn_outgoing > params.Mzprime:
+		# 	self.hierarchy = const.LM		
+		self.hierarchy = params.hierarchy
+		# if self.hierarchy == const.HM: # else, very simple expressions can be used.
+			#############################
+			# DECAY PROPERTIES
+			# self.decay_prop = decay_rates.HeavyNu(params,self.nu_produced)
+			# self.decay_prop.compute_rates() # -- uses quad integrate -- slow!!
+			# self.decay_prop.total_rate()
+			# self.decay_prop.compute_BR()
 
 
 	def get_MC_events(self):
@@ -136,13 +144,16 @@ class MC_events:
 		prod=self.final_lepton
 
 
-		if Mn - Mn_outgoing > Mzprime:
+		if self.hierarchy == const.LM:
 
-			print("M_4 = %s GeV\nM_5 = %s GeV\nm_zprime = %s GeV\nm_Had = %s GeV\nUsing cascade of 2-body decays."%(params.m4,params.m5,params.Mzprime,MA))
 
 			#########################################################################
 			# BATCH SAMPLE INTEGRAN OF INTEREST
 			DIM =3
+
+			if params.scan:
+				DIM += params.number_of_scanned_params
+
 			batch_f = integrands.cascade(dim=DIM, Emin=self.EMIN, Emax=self.EMAX, MC_case=self)
 			integ = vg.Integrator(DIM*[[0.0, 1.0]])
 			##########################################################################
@@ -152,15 +163,20 @@ class MC_events:
 
 			# Sample again, now saving result
 			result = integ(batch_f,  nitn = NINT, neval = NEVAL, minimize_mem = False)
-			
 			# final integral
-			integral = result.mean/decay_rates.N_total(params)/decay_rates.Z_total(params)
+			# integral = result.mean/decay_rates.N_total(params)/decay_rates.Z_total(params)
+			integral = result['full integrand']/result['decay rate N']
 			##########################################################################
-		elif Mn - Mn_outgoing < Mzprime:
+		
+		elif self.hierarchy == const.HM:
 
 			#########################################################################
 			# BATCH SAMPLE INTEGRAN OF INTEREST
 			DIM = 6
+			
+			if params.scan:
+				DIM += params.number_of_scanned_params
+				
 			batch_f = integrands.threebody(dim=DIM, Emin=self.EMIN, Emax=self.EMAX, MC_case=self)
 			integ = vg.Integrator(DIM*[[0.0, 1.0]])
 			##########################################################################
@@ -174,26 +190,28 @@ class MC_events:
 			# final integral
 			####################################################################
 			# print("integral:", result.mean, ", decay rate: ", self.decay_prop.total_rate(), ", rates: ",self.decay_prop.array_R[:-1])
-			integral = result.mean/self.decay_prop.total_rate()
+			# integral = result.mean/self.decay_prop.total_rate()
+			integral = result['full integrand'].mean/result['decay rate N'].mean
 			####################################################################
 
 		#########################
 		# Get the int variables and weights
 		SAMPLES,weights = C_MC.get_samples(DIM, integ, batch_f)
 
-		if Mn - Mn_outgoing > Mzprime:
-			weights *= 1.0/decay_rates.N_total(params)/decay_rates.Z_total(params)
-			return integrands.cascade_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=result.mean*const.GeV2_to_cm2)
-		elif Mn - Mn_outgoing < Mzprime:
-			weights *= 1.0/self.decay_prop.total_rate()
-			return integrands.three_body_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=result.mean*const.GeV2_to_cm2)
+		if params.hierarchy == const.LM:
+			# weights *= 1.0/decay_rates.N_total(params)/decay_rates.Z_total(params)
+			weights *= 1.0/result['decay rate N'].mean
+			return integrands.cascade_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=integral*const.GeV2_to_cm2)
+		elif params.hierarchy == const.HM:
+			# weights *= 1.0/self.decay_prop.total_rate()
+			weights *= 1.0/result['decay rate N'].mean
+			return integrands.three_body_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=integral*const.GeV2_to_cm2)
 
 
 def Combine_MC_output(cases, Ifactors=None, flags=None):
     
 	# merged dic
 	dic ={}
-
 	
 	# initialize with first case
 	for x in cases[0]:
@@ -214,6 +232,8 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 				dic[x] = np.array( np.append(dic[x], cases[i][x]*Ifactors[i], axis=0) )
 			elif x=='I':
 				dic[x] = dic[x] + cases[i][x]*Ifactors[i]
+			elif x=='param_samples':
+				dic[x]=np.array( np.append(dic[x], cases[i][x], axis=0) )
 			else:
 				dic[x]=np.array( np.append(dic[x], cases[i][x], axis=0) )
 			

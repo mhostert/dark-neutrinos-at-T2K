@@ -36,7 +36,7 @@ def get_samples(int DIM, object integ, object batch_f):
         SAMPLES = [[] for i in range(DIM)]
         weights = []
         for x, wgt in integ.random_batch():
-            weights = np.concatenate((weights,wgt*batch_f(x)))
+            weights = np.concatenate((weights,wgt*batch_f(x)['full integrand']))
             for i in range(DIM):
                 SAMPLES[i] = np.concatenate((SAMPLES[i],x[:,i]))
 

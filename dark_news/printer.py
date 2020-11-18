@@ -16,7 +16,7 @@ from . import Cfourvec as Cfv
 from dark_news.geom import old_geometry_muboone
 from dark_news.fourvec import dot4
 
-def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
+def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0, out_file_name='samples'):
 	# events
 	pN   = bag['P_outgoing_HNL']
 	pnu   = bag['P_out_nu']
@@ -26,6 +26,8 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
 	pHad = bag['P_outgoing_target']
 	w = bag['w']
 	I = bag['I']
+	m4 = bag['m4_scan']
+	mzprime = bag['mzprime_scan']
 	regime = bag['flags']
 
 	###############################################
@@ -47,13 +49,14 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
 			pHad[:, 0],
 			pHad[:, 1],
 			pHad[:, 2],
-			pHad[:, 3],]
-	
+			pHad[:, 3],
+			]
 	aux_df = pd.DataFrame(np.stack(aux_data, axis=-1), columns=columns_index)
-	print(np.shape(np.stack(aux_data, axis=-1)))
 
 	aux_df['weight', ''] = w
 	aux_df['regime', ''] = regime
+	aux_df['m4', ''] = m4
+	aux_df['mzprime', ''] = mzprime
 
 
 	# Create target Directory if it doesn't exist
@@ -61,9 +64,9 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0):
 	    os.makedirs(PATH_data)
 	if PATH_data[-1] != '/':
 		PATH_data += '/'
-	out_file_name = PATH_data+f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}.pckl"
+	full_file_name = PATH_data+out_file_name
 
-	aux_df.to_pickle(out_file_name)
+	aux_df.to_pickle(full_file_name)
 
 
 #######

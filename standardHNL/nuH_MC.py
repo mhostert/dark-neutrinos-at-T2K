@@ -33,12 +33,13 @@ def lam(a,b,c):
 
 
 class MC_events:
-	def __init__(self, EnuH = 2.0, mh=0.150, mf=0.05, mp=const.Me, mm=const.Me, helicity=-1, BSMparams=None):
+	def __init__(self, ENmin = 0.0, ENmax=10.0, mh=0.150, mf=0.0, mp=const.Me, mm=const.Me, helicity=-1, BSMparams=None):
 		
 		self.params = BSMparams
 		
 		# set target properties
-		self.EnuH = EnuH
+		self.ENmin = ENmin
+		self.ENmax = ENmax
 		self.mh = mh
 		self.mf = mf
 		self.mp = mp
@@ -54,9 +55,9 @@ class MC_events:
 		print("Running three body decays case.")
 		#########################################################################
 		# BATCH SAMPLE INTEGRAN OF INTEREST
-		DIM =4
+		DIM =5
 		batch_f = integrands.nu5_to_nu4_ee(dim=DIM, MC_case=self)
-		integ = vg.Integrator([ [0.0, 1.0], [0.0, 1.0], [0.0, 1.0], [0.0, 1.0]])
+		integ = vg.Integrator(DIM*[[0.0, 1.0]])
 		##########################################################################
 		# COMPUTE TOTAL INTEGRAL
 		# Sample the integrand to adapt integrator

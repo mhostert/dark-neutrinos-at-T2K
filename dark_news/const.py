@@ -15,6 +15,9 @@ DIFRH=4
 MAJORANA=0
 DIRAC   =1
 
+HM = 'heavy_mediator'
+LM = 'light_mediator'
+
 
 # fix experiment to use
 THREEPLUSONE = 89

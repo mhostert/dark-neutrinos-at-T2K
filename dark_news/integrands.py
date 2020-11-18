@@ -25,7 +25,6 @@ def Sqrt(x):
 	return np.sqrt(x)
 
 
-
 class cascade(vg.BatchIntegrand):
 
 	def __init__(self, dim, Emin, Emax, MC_case):
@@ -40,6 +39,8 @@ class cascade(vg.BatchIntegrand):
 		MA = self.MC_case.MA
 		Z = self.MC_case.Z
 		params = self.MC_case.params
+		
+
 		Mzprime = params.Mzprime
 		if self.MC_case.nu_produced==pdg.neutrino4:
 			Mn = params.m4
@@ -47,13 +48,22 @@ class cascade(vg.BatchIntegrand):
 			Mn = params.m5
 		else:
 			print("Could not specify upscattered neutrino mass.")
+		
+
 		m_ell = self.MC_case.m_ell
 		alphaD = params.gprime**2/4.0/np.pi
 		Umu4 = params.Umu4
 		epsilon = params.chi * const.cw
 		UD4     = params.UD4
 
-		Enu = (self.Emax - self.Emin) * x[:, 1] + self.Emin
+		########################
+		# Get range of mass parameters for KDE scan
+		if params.scan == True:
+			Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
+			Mzprime = (np.minimum(params.mzprime_max,Mn)-params.mzprime_min) * x[:,-2] + params.mzprime_min
+
+		Emin = 1.05*(Mn**2/2.0/MA + Mn)
+		Enu = (self.Emax - Emin) * x[:, 1] + Emin
 
 		#######################
 		# Upscattering N decay
@@ -112,7 +122,7 @@ class cascade(vg.BatchIntegrand):
 		# Integrated over phi 
 		dsigma *= 2*np.pi
 		dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
-		dsigma *= (self.Emax - self.Emin)
+		dsigma *= (self.Emax - Emin)
 
 		#######################
 		## Heavy N Decay
@@ -131,9 +141,17 @@ class cascade(vg.BatchIntegrand):
 		dgammaZprime = (const.alphaQED*(epsilon*epsilon)*np.sqrt(-4*(m_ell*m_ell) + Mzprime*Mzprime)*(5*(m_ell*m_ell) + 2*(Mzprime*Mzprime))*np.pi)/(24.*(Mzprime*Mzprime)*(np.pi*np.pi))
 		dgammaZprime *= 2*np.pi*2 # integral over angles
 
-		return dsigma*self.flux(Enu)*dgamma*dgammaZprime
+
+		#############
+		# JACOBIAN for scan
+		# dsigma *= (params.M4_max-params.M4_min)*(np.minimum(params.mzprime_max,Mn)-params.mzprime_min)
+
+		# return dsigma*self.flux(Enu)*dgamma*dgammaZprime
 		# return dgamma*dgammaZprime
 		# return const.Gf**2*(2.0*Enu*const.Me)/4.0/np.pi *flux(Enu)
+		return {'full integrand' : dsigma*self.flux(Enu)*dgamma,
+				'cross section' : dsigma,
+				'decay rate N' : dgamma}
 
 
 
@@ -335,13 +353,20 @@ class threebody(vg.BatchIntegrand):
 				dij = self.dij
 				dji = self.dji
 
+				params = self.MC_case.params
 				MA = self.MC_case.MA
 				Z = self.MC_case.Z
-				params = self.MC_case.params
 				Mn = self.MC_case.Mn
 				Mn_outgoing = self.MC_case.Mn_outgoing
+				Mzprime = params.Mzprime
 
-				Enu = (self.Emax - self.Emin) * x[:, 1] + self.Emin
+				if params.scan == True:
+					Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
+					Mzprime = (params.mzprime_max-np.maximum(Mn,params.mzprime_min))* x[:,-2] + np.maximum(Mn,params.mzprime_min)
+
+
+				Emin = 1.05*(Mn**2/2.0/MA + Mn)
+				Enu = (self.Emax - Emin) * x[:, 1] + Emin
 
 				s = MA**2 + 2*Enu*MA
 
@@ -361,7 +386,7 @@ class threebody(vg.BatchIntegrand):
 
 					M=MA
 					mHNL=Mn
-					Mzprime=params.Mzprime
+					Mzprime=Mzprime
 					g = const.g
 					pi=np.pi
 					mzprime=Mzprime
@@ -406,7 +431,6 @@ class threebody(vg.BatchIntegrand):
 
 					M=MA
 					mHNL=Mn
-					Mzprime=params.Mzprime
 					mzprime=Mzprime
 					MZPRIME=Mzprime
 					cw = const.cw
@@ -431,7 +455,7 @@ class threebody(vg.BatchIntegrand):
 						# averaged
 						# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((mHNL*mHNL*mHNL*mHNL + (M*M - s)*(M*M - s) - 2*(mHNL*mHNL)*(M*M + s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) - 2*(((-(M*M) + s)*(2*(M*M) + mHNL*mHNL - 2*s - t))/2. + ((2*(M*M) + mHNL*mHNL - 2*s - t)*(-(M*M) - mHNL*mHNL + s + t))/2.))*(Z*Z))/(16.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
 
-				dsigma *= (self.Emax - self.Emin)
+				dsigma *= (self.Emax - Emin)
 				dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
 
 				#######################
@@ -464,7 +488,7 @@ class threebody(vg.BatchIntegrand):
 				Ca = params.ceA
 				Dv = params.deV
 				Da = params.deA
-				MZPRIME = params.Mzprime
+				MZPRIME = Mzprime
 
 				h = self.h_upscattered
 
@@ -498,23 +522,39 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= 2
 				dgamma *= 2*np.pi
 
+				#############
+				# JACOBIAN for scan
+				# dsigma *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))
+
+
 				####################################
 				####################################
 				# FACTOR of 1/2 to compensate the total rate -- checked that BR = 100% is returning only dgamma/2.0
-				# return dgamma*2.0
-				return dsigma*self.flux(Enu)*dgamma/2.0
+				# return dsigma*self.flux(Enu)*dgamma*2.0
+				return {'full integrand' : dsigma*self.flux(Enu)*dgamma,
+						'cross section' : dsigma,
+						'decay rate N' : dgamma}
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
+
+	params = MC_case.params
 
 	Q2p = samples[0]
 	Enup =  samples[1]
 	costZ = samples[2]
 	sample_size = np.shape(Enup)[0]
 
+	###########
+	# if scan mode, then get all bsm param samples
+	param_samples = np.empty(sample_size)
+	if params.scan == True:
+		m4 = samples[4]*(params.M4_min-params.M4_min) + params.M4_min
+		mzprime = samples[3]*(np.minimum(params.mzprime_max,m4)-params.mzprime_min) + params.mzprime_min
+
+
 	MA = MC_case.MA
 	mh = MC_case.Mn
 	Z = MC_case.Z
-	params = MC_case.params
 	Mzprime = params.Mzprime
 	if MC_case.nu_produced==pdg.neutrino4:
 		Mn = params.m4
@@ -661,6 +701,8 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 			"P_out_nu" : P1LAB_decay, 
 			"P_em" : P1LAB_decayZ, 
 			"P_ep" : P2LAB_decayZ,
+			"m4_scan" : m4,
+			"mzprime_scan" : mzprime,
 			"w" : w,
 			"I" : I}
 
@@ -672,8 +714,19 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 		up = np.array(samples[3])
 		c3p = np.array(samples[4])
 		phi34p = np.array(samples[5])
-	
+
 		sample_size = np.shape(Enup)[0]
+
+		params = MC_case.params
+		###########
+		# if scan mode, then get all bsm param samples
+		m4 = np.empty(sample_size)
+		mzprime = np.empty(sample_size)
+		if params.scan == True:
+			m4 = (params.M4_max-params.M4_min)*samples[7]+params.M4_min
+			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[6]+np.maximum(m4,params.mzprime_min)
+			param_samples = np.array([mzprime,m4])
+
 
 		mh = MC_case.Mn
 		MA = MC_case.MA
@@ -706,8 +759,6 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 		costN = ( -Q2 - mh*mh + 2*E1CM*E3CM) / (2*p1CM*p3CM)
 		beta = -p2CM/E2CM # ATTENTION TO MINUS SIGNS HERE
 		gamma = 1.0/np.sqrt(1.0 - beta*beta)
-
-
 
 		phiN = Cfv.random_generator(sample_size, 0.0, 2*np.pi)
 		# 
@@ -805,6 +856,8 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 				"P_out_nu" : P2LAB_decay, 
 				"P_em" : P3LAB_decay, 
 				"P_ep" : P4LAB_decay,
+				"m4_scan" : m4,
+				"mzprime_scan" : mzprime,
 				"w" : w,
 				"I" : I}
 	

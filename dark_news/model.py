@@ -26,6 +26,22 @@ class model_params():
 		self.Mzprime	= 1.0
 		self.Dirac		= 0.0
 
+		self.scan      = False
+
+	def set_KDEscan_mode_on(self,args,hierarchy=const.LM):
+		self.scan = True
+		
+		self.M4_min	= args.M4_min		
+		self.M4_max	= args.M4_max
+
+		self.mzprime_min = args.mzprime_min
+		self.mzprime_max = args.mzprime_max
+
+		self.number_of_scanned_params = 2
+		
+		print('** Running in scan mode **\n')
+
+
 	def set_high_level_variables(self):
 		self.Ue1 = np.sqrt(1.0-self.Ue4*self.Ue4-self.Ue5*self.Ue5)
 		self.Umu1 = np.sqrt(1.0-self.Umu4*self.Umu4-self.Umu5*self.Umu5)
