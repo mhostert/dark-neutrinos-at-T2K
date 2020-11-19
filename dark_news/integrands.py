@@ -546,7 +546,9 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
 	###########
 	# if scan mode, then get all bsm param samples
-	param_samples = np.empty(sample_size)
+	# param_samples = np.empty(sample_size)
+	m4 = np.empty(sample_size)
+	mzprime = np.empty(sample_size)
 	if params.scan:
 		m4 = samples[4]*(params.M4_max-params.M4_min) + params.M4_min
 		mzprime = samples[3]*(np.minimum(params.mzprime_max,m4)-params.mzprime_min) + params.mzprime_min
@@ -724,8 +726,7 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 		if params.scan:
 			m4 = (params.M4_max-params.M4_min)*samples[7]+params.M4_min
 			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[6]+np.maximum(m4,params.mzprime_min)
-			param_samples = np.array([mzprime,m4])
-
+			# param_samples = np.array([mzprime,m4])			
 
 		mh = MC_case.Mn
 		MA = MC_case.MA

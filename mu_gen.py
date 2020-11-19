@@ -161,9 +161,11 @@ def main(argv):
 	#############################################################################
 	print("TEST -- sum of weights = ", np.sum(bag['w'])/const.GeV2_to_cm2)
 	print("TEST -- events/12t /13e20 POT = ", np.sum(bag['w'])*const.NAvo*818e6*18e20/12)
+	out_file_name = f'{args.M4_min:.3g}_m4_{args.M4_max:.3g}_{args.mzprime_min:.3g}_mzprime_{args.mzprime_max:.3g}_nevt_{args.neval}.pckl'
 	printer.print_events_to_pandas(PATH_data, bag, BSMparams, 
 									l_decay_proper=args.ldecay,
-									out_file_name=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%Hh-%Mmin-%Ss.pckl'))
+									out_file_name=out_file_name)
+									# out_file_name=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%Hh-%Mmin-%Ss.pckl'))
 	# HEPEVT_events = args.hepevt_events
 	# printer.print_unweighted_events_to_HEPEVT(PATH_data, bag, HEPEVT_events, BSMparams, l_decay_proper=args.ldecay)
 

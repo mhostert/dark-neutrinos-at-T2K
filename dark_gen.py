@@ -67,7 +67,11 @@ def main(argv):
 
 	parser.add_argument("--hepevt_events", type=int, help="number of events to accept in HEPEVT format", default=1e2)
 
-	parser.add_argument("--hierarchy", type=str, help="light or heavy Z' case", default=const.HM)
+	parser.add_argument("--hierarchy",
+						 type=str,
+						 help="light or heavy Z' case",
+						 default=const.HM,
+						 choices=['light_mediator', 'heavy_mediator'])
 
 	args = parser.parse_args()
 
