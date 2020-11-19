@@ -129,11 +129,11 @@ class cascade(vg.BatchIntegrand):
 		cost = -1.0 + (2.0) * x[:, 2]
 		dgamma = 2*UD4**2*(params.Ue4**2 + params.Umu4**2 + params.Utau4**2)*alphaD*4*np.pi*(Mn**2 - 2*Mzprime**2 + Mn**4/Mzprime**2)/2.0/Mn/32.0/np.pi**2*(1.0-Mzprime**2/Mn**2) 
 	
-		############# If Dirac, include more stuff! ###################
+		############# If Dirac, include angular dependence ###################
 		dgamma *= ( 1.0 - params.Dirac*(Mn**2 - 2*Mzprime**2)/(Mn**2 + 2*Mzprime**2)*cost) 
 		################################
 
-		dgamma *= 2*np.pi
+		dgamma *= 2*np.pi* (cost/cost)
 		dgamma *= 2 # Jacobian
 
 		#######################
@@ -149,8 +149,8 @@ class cascade(vg.BatchIntegrand):
 		# return dsigma*self.flux(Enu)*dgamma*dgammaZprime
 		# return dgamma*dgammaZprime
 		# return const.Gf**2*(2.0*Enu*const.Me)/4.0/np.pi *flux(Enu)
-		return {'full integrand' : dsigma*self.flux(Enu)*dgamma,
-				'cross section' : dsigma,
+		return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma,
+				'cross section' : const.GeV2_to_cm2*dsigma,
 				'decay rate N' : dgamma}
 
 
@@ -531,8 +531,8 @@ class threebody(vg.BatchIntegrand):
 				####################################
 				# FACTOR of 1/2 to compensate the total rate -- checked that BR = 100% is returning only dgamma/2.0
 				# return dsigma*self.flux(Enu)*dgamma*2.0
-				return {'full integrand' : dsigma*self.flux(Enu)*dgamma,
-						'cross section' : dsigma,
+				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma,
+						'cross section' : const.GeV2_to_cm2*dsigma,
 						'decay rate N' : dgamma}
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
@@ -546,24 +546,28 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
 	###########
 	# if scan mode, then get all bsm param samples
-	param_samples = np.empty(sample_size)
 	if params.scan:
 		m4 = samples[4]*(params.M4_max-params.M4_min) + params.M4_min
 		mzprime = samples[3]*(np.minimum(params.mzprime_max,m4)-params.mzprime_min) + params.mzprime_min
+		mh=m4
+		Mn=m4
+		Mzprime=mzprime
 
-
-	MA = MC_case.MA
-	mh = MC_case.Mn
-	Z = MC_case.Z
-	Mzprime = params.Mzprime
-	if MC_case.nu_produced==pdg.neutrino4:
-		Mn = params.m4
-	elif MC_case.nu_produced==pdg.neutrino5:
-		Mn = params.m5
 	else:
-		print("Could not specify upscattered neutrino mass.")
+		MA = MC_case.MA
+		mh = MC_case.Mn
+		Z = MC_case.Z
+		Mzprime = params.Mzprime
+		if MC_case.nu_produced==pdg.neutrino4:
+			Mn = params.m4
+		elif MC_case.nu_produced==pdg.neutrino5:
+			Mn = params.m5
+		else:
+			print("Could not specify upscattered neutrino mass.")
+		
+		m4 = np.empty(sample_size)
+		mzprime = np.empty(sample_size)
 
-	Mn = params.m4
 	MA = MC_case.MA
 	m_ell = MC_case.m_ell
 	
@@ -677,20 +681,6 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 							costZ_LAB,  
 							phiZ_LAB)
 
-	##########################################################################
-	# return P3LAB, P2LAB_decay, P1LAB_decayZ, P2LAB_decayZ, P1LAB_decay, P4LAB
-	# returing dictionary
-	# return  {"P1" : P1LAB,
-	# 		"P2" : P2LAB,
-	# 		"P3" : P3LAB,
-	# 		"P4" : P4LAB,
-	# 		"P1_decay" : P1LAB_decay, 
-	# 		"P2_decay" : P2LAB_decay, 
-	# 		"P3_decay" : P1LAB_decayZ, 
-	# 		"P4_decay" : P2LAB_decayZ,
-	# 		"w" : w,
-	# 		"I" : I}
-	# returing dictionary
 	return  {"P_scatterer" : P1LAB, 
 			"P_target" : P2LAB, 
 			"P_outgoing_HNL" : P3LAB, 
@@ -701,11 +691,10 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 			"P_em" : P1LAB_decayZ, 
 			"P_ep" : P2LAB_decayZ,
 			"m4_scan" : m4,
-			"mzprime_scan" : mzprime,
-			"w" : w,
-			"I" : I}
+			"mzprime_scan" : mzprime
+			}
 
-def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
+def three_body_phase_space(samples=None, MC_case=None):
 
 		Q2p = np.array(samples[0])
 		Enup =  np.array(samples[1])
@@ -719,15 +708,15 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 		params = MC_case.params
 		###########
 		# if scan mode, then get all bsm param samples
-		m4 = np.empty(sample_size)
-		mzprime = np.empty(sample_size)
 		if params.scan:
 			m4 = (params.M4_max-params.M4_min)*samples[7]+params.M4_min
 			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[6]+np.maximum(m4,params.mzprime_min)
-			param_samples = np.array([mzprime,m4])
+			mh=m4
+		else:
+			m4 = np.empty(sample_size)
+			mzprime = np.empty(sample_size)
+			mh = MC_case.Mn
 
-
-		mh = MC_case.Mn
 		MA = MC_case.MA
 		m_ell = MC_case.m_ell
 
@@ -856,7 +845,6 @@ def three_body_phase_space(samples=None, MC_case=None, w=None, I=None):
 				"P_em" : P3LAB_decay, 
 				"P_ep" : P4LAB_decay,
 				"m4_scan" : m4,
-				"mzprime_scan" : mzprime,
-				"w" : w,
-				"I" : I}
+				"mzprime_scan" : mzprime
+				}
 	

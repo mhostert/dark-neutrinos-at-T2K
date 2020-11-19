@@ -60,14 +60,14 @@ def main(argv):
 	parser.add_argument("--noplot", help="no plot", action="store_true")
 	parser.add_argument("--HNLtype", type=int, help="HNLtype: 1 is DIRAC, 0 is MAJORANA", choices=[0, 1], default=0)
 	
-	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e5)
+	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e6)
 	parser.add_argument("--nint", type=int, help="number of adaptive iterations", default=20)
 	parser.add_argument("--neval_warmup", type=int, help="number of evaluations of integrand in warmup", default=1e3)
 	parser.add_argument("--nint_warmup", type=int, help="number of adaptive iterations in warmup", default=10)
 
 	parser.add_argument("--hepevt_events", type=int, help="number of events to accept in HEPEVT format", default=1e2)
 
-	parser.add_argument("--hierarchy", type=str, help="light or heavy Z' case", default=const.HM)
+	parser.add_argument("--hierarchy", type=str, help="light or heavy Z' case", default=const.LM)
 
 	args = parser.parse_args()
 
@@ -211,8 +211,7 @@ def main(argv):
 
 
 
-	print(np.sum(bag['w'])/const.GeV2_to_cm2)
-	print(np.sum(bag['w'])*const.NAvo*1e6*13e20/207)
+	print(bag['I']/bag['I_decay']*const.NAvo*1e6*13e20/207)
 	############################################################################
 	# Print events to file -- currently in data/exp/m4____mzprime____.dat 
 	#############################################################################

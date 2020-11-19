@@ -25,7 +25,9 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0, out_fi
 	plp  = bag['P_ep']
 	pHad = bag['P_outgoing_target']
 	w = bag['w']
+	w_decay = bag['w_decay']
 	I = bag['I']
+	I_decay = bag['I_decay']
 	m4 = bag['m4_scan']
 	mzprime = bag['mzprime_scan']
 	regime = bag['flags']
@@ -54,12 +56,11 @@ def print_events_to_pandas(PATH_data, bag, BSMparams, l_decay_proper=0.0, out_fi
 	aux_df = pd.DataFrame(np.stack(aux_data, axis=-1), columns=columns_index)
 
 	aux_df['weight', ''] = w
+	aux_df['weight_decay', ''] = w_decay
 	aux_df['regime', ''] = regime
 	aux_df['m4', ''] = m4
 	aux_df['mzprime', ''] = mzprime
 
-	print(m4)
-	print(mzprime)
 
 	# Create target Directory if it doesn't exist
 	if not os.path.exists(PATH_data):
