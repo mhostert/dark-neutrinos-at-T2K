@@ -723,7 +723,7 @@ def three_body_phase_space(samples=None, MC_case=None):
 
 		######################
 		# SCATTERING
-		Emin = 1.05*(Mn**2/2.0/MA + Mn)
+		Emin = 1.05*(m4**2/2.0/MA + m4)
 		Enu = Enup*(MC_case.EMAX - Emin) + Emin
 
 		# print Enup
