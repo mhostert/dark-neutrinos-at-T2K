@@ -133,7 +133,7 @@ class cascade(vg.BatchIntegrand):
 		dgamma *= ( 1.0 - params.Dirac*(Mn**2 - 2*Mzprime**2)/(Mn**2 + 2*Mzprime**2)*cost) 
 		################################
 
-		dgamma *= 2*np.pi* (cost/cost)
+		dgamma *= 2*np.pi 
 		dgamma *= 2 # Jacobian
 
 		#######################
@@ -360,7 +360,7 @@ class threebody(vg.BatchIntegrand):
 				Mn_outgoing = self.MC_case.Mn_outgoing
 				Mzprime = params.Mzprime
 
-				if params.scan == True:
+				if params.scan:
 					Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
 					Mzprime = (params.mzprime_max-np.maximum(Mn,params.mzprime_min))* x[:,-2] + np.maximum(Mn,params.mzprime_min)
 
@@ -575,7 +575,8 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
 	######################
 	# SCATTERING
-	Enu = Enup*(MC_case.EMAX - MC_case.EMIN) + MC_case.EMIN
+	Emin = 1.05*(Mn**2/2.0/MA + Mn)
+	Enu = Enup*(MC_case.EMAX - Emin) + Emin
 
 	# print Enup
 	s = MA**2 + 2*Enu*MA
@@ -722,7 +723,8 @@ def three_body_phase_space(samples=None, MC_case=None):
 
 		######################
 		# SCATTERING
-		Enu = Enup*(MC_case.EMAX - MC_case.EMIN) + MC_case.EMIN
+		Emin = 1.05*(Mn**2/2.0/MA + Mn)
+		Enu = Enup*(MC_case.EMAX - Emin) + Emin
 
 		# print Enup
 		s = MA**2 + 2*Enu*MA

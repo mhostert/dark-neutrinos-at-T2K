@@ -1,7 +1,7 @@
 #!/bin/sh
 
 python3 mu_gen.py --hierarchy="light_mediator"\
-				--mzprime_min=0.001 \
+				--mzprime_min=0.002 \
 				--mzprime_max=0.400 \
 				--M4_min=0.010 \
 				--M4_max=0.800 \
