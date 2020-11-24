@@ -177,13 +177,14 @@ class MC_events:
 			nstrat = integ.nstrat
 			nstrat[-1] = 1
 			nstrat[-2] = 1
-			integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
+			warmup = integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
 
 		# Sample again, now saving result
 		result = integ(batch_f, nitn=NINT, neval=NEVAL)
 		print('nstrat =', np.array(integ.nstrat))
 		if params.scan:
 			nstrat = integ.nstrat
+			nstrat[:-2] = int((NEVAL)**(1/(DIM-2)))
 			nstrat[-1] = 1
 			nstrat[-2] = 1
 			result = integ(batch_f, nitn=NINT, neval=NEVAL, nstrat=nstrat)
@@ -208,6 +209,17 @@ class MC_events:
 		dic['I'] =  np.sum(weights['full integrand'])
 		dic['I_decay'] = np.sum(weights['decay rate N'])
 
+		print("Total samples from vegas: ", np.shape(dic['w']))
+		# print(integ.random_batch())
+		# for x, wgt, hcube in integ.random_batch(yield_hcube=True):
+		# 	print(np.shape(x))
+		# 	wgt_fx = wgt * batch_f(x)['full integrand']
+
+		# 	for i in range(hcube[0], hcube[-1] + 1):
+		# 		idx = (hcube == i)          # select array items for h-cube i
+		# 		nwf = np.sum(idx)           # number of points in h-cube i
+				# print(nwf)
+				# print(np.shape(wgt_fx[idx]))
 		# print("testing each case:    I=", np.sum(weights['full integrand']), integral, "Gamma = ", np.sum(weights['decay rate N']), decay_rates)
 
 		return dic
