@@ -25,8 +25,8 @@ def main(argv):
 	parser = argparse.ArgumentParser(description="Generate dark nu events")
 	parser.add_argument("--mzprime", type=float, help="Z' mass", default=0.03)
 
-	parser.add_argument("--mzprime_min", type=float, help="Z' mass min", default=1.230)
-	parser.add_argument("--mzprime_max", type=float, help="Z' mass max", default=1.232)
+	parser.add_argument("--mzprime_min", type=float, help="Z' mass min", default=1.250)
+	parser.add_argument("--mzprime_max", type=float, help="Z' mass max", default=1.252)
 	
 	parser.add_argument("--M4", type=float, help="fourth neutrino mass", default=0.100)
 	parser.add_argument("--M5", type=float, help="fifth neutrino mass", default=1e6)

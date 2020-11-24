@@ -22,18 +22,18 @@ def main(argv):
 	####################
 	# User specified
 	parser = argparse.ArgumentParser(description="Generate dark nu events")
-	parser.add_argument("--mzprime", type=float, help="Z' mass", default=0.03)
+	parser.add_argument("--mzprime", type=float, help="Z' mass", default=1.25)
 	parser.add_argument("--M4", type=float, help="mass of the fourth neutrino", default=0.100)
 	parser.add_argument("--M5", type=float, help="mass of the fifth neutrino", default=1e5)
 	parser.add_argument("--M6", type=float, help="mass of the sixth neutrino", default=1e5)
 
-	parser.add_argument("--UMU4", type=float, help="Umu4 square", default=8.0e-9)
+	parser.add_argument("--UMU4", type=float, help="Umu4 square", default=2.2e-7)
 	parser.add_argument("--UMU5", type=float, help="Umu5 square", default=26.5e-8)
 	parser.add_argument("--UMU6", type=float, help="Umu6 square", default=123.0e-8*0.0629)
 	# parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*1/4.0))
 	# parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(2e-10/const.alphaQED)/const.cw)
-	parser.add_argument("--alpha_dark", type=float, help="alpha_dark", default=0.25)
-	parser.add_argument("--alpha_epsilon2", type=float, help="Product of alpha QED times epsilon^2", default=2e-10)
+	parser.add_argument("--alpha_dark", type=float, help="alpha_dark", default=0.4)
+	parser.add_argument("--alpha_epsilon2", type=float, help="Product of alpha QED times epsilon^2", default=4.6e-4*const.alphaQED)
 	parser.add_argument("--epsilon2", type=float, help="epsilon^2")
 
 	parser.add_argument("--UTAU4", type=float, help="UTAU4", default=0)
@@ -60,7 +60,7 @@ def main(argv):
 	parser.add_argument("--noplot", help="no plot", action="store_true")
 	parser.add_argument("--HNLtype", type=int, help="HNLtype: 1 is DIRAC, 0 is MAJORANA", choices=[0, 1], default=0)
 	
-	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e6)
+	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e5)
 	parser.add_argument("--nint", type=int, help="number of adaptive iterations", default=20)
 	parser.add_argument("--neval_warmup", type=int, help="number of evaluations of integrand in warmup", default=1e3)
 	parser.add_argument("--nint_warmup", type=int, help="number of adaptive iterations in warmup", default=10)
