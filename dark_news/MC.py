@@ -8,6 +8,9 @@ from scipy import interpolate
 import scipy.stats
 from scipy.integrate import quad
 
+from collections import defaultdict
+from functools import partial
+
 import matplotlib.pyplot as plt
 from matplotlib import rc, rcParams
 from matplotlib.pyplot import *
@@ -145,67 +148,69 @@ class MC_events:
 
 
 		if self.hierarchy == const.LM:
-
-
 			#########################################################################
 			# BATCH SAMPLE INTEGRAN OF INTEREST
 			DIM =3
-
 			if params.scan:
 				DIM += params.number_of_scanned_params
 
 			batch_f = integrands.cascade(dim=DIM, Emin=self.EMIN, Emax=self.EMAX, MC_case=self)
 			integ = vg.Integrator(DIM*[[0.0, 1.0]])
-			##########################################################################
-			# COMPUTE TOTAL INTEGRAL
-			# Sample the integrand to adapt integrator
-			integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup)
 
-			# Sample again, now saving result
-			result = integ(batch_f,  nitn = NINT, neval = NEVAL, minimize_mem = False)
-			# final integral
-			# integral = result.mean/decay_rates.N_total(params)/decay_rates.Z_total(params)
-			integral = result['full integrand']/result['decay rate N']
-			##########################################################################
-		
 		elif self.hierarchy == const.HM:
-
 			#########################################################################
 			# BATCH SAMPLE INTEGRAN OF INTEREST
 			DIM = 6
-			
 			if params.scan:
 				DIM += params.number_of_scanned_params
 				
 			batch_f = integrands.threebody(dim=DIM, Emin=self.EMIN, Emax=self.EMAX, MC_case=self)
 			integ = vg.Integrator(DIM*[[0.0, 1.0]])
-			##########################################################################
-			# COMPUTE TOTAL INTEGRAL
-			# Sample the integrand to adapt integrator
-			integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup)
+		
+		##########################################################################
+		# COMPUTE TOTAL INTEGRAL
+		# Sample the integrand to adapt integrator
+		# nstrat = DIM*[1]
+		integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup)
+		print('nstrat =', np.array(integ.nstrat))
+		# if params.scan:
+		# 	nstrat = integ.nstrat
+		# 	nstrat[-1] = 1
+		# 	nstrat[-2] = 1
+		# 	integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
 
-			# Sample again, now saving result
-			result = integ(batch_f,  nitn = NINT, neval = NEVAL, minimize_mem = False)
-			
-			# final integral
-			####################################################################
-			# print("integral:", result.mean, ", decay rate: ", self.decay_prop.total_rate(), ", rates: ",self.decay_prop.array_R[:-1])
-			# integral = result.mean/self.decay_prop.total_rate()
-			integral = result['full integrand'].mean/result['decay rate N'].mean
-			####################################################################
+		# Sample again, now saving result
+		result = integ(batch_f, nitn=NINT, neval=NEVAL)
+		print('nstrat =', np.array(integ.nstrat))
+		# if params.scan:
+		# 	nstrat = integ.nstrat
+		# 	nstrat[-1] = 1
+		# 	nstrat[-2] = 1
+		# 	result = integ(batch_f, nitn=NINT, neval=NEVAL, nstrat=nstrat)
 
 		#########################
 		# Get the int variables and weights
 		SAMPLES,weights = C_MC.get_samples(DIM, integ, batch_f)
-
+		
 		if params.hierarchy == const.LM:
-			# weights *= 1.0/decay_rates.N_total(params)/decay_rates.Z_total(params)
-			weights *= 1.0/result['decay rate N'].mean
-			return integrands.cascade_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=integral*const.GeV2_to_cm2)
-		elif params.hierarchy == const.HM:
-			# weights *= 1.0/self.decay_prop.total_rate()
-			weights *= 1.0/result['decay rate N'].mean
-			return integrands.three_body_phase_space(samples=SAMPLES, MC_case=self, w=weights*const.GeV2_to_cm2, I=integral*const.GeV2_to_cm2)
+			dic = integrands.cascade_phase_space(samples=SAMPLES, MC_case=self)
+			decay_rates=result['decay rate N'] # the Zprime width is trivially accounted for
+		
+		elif params.hierarchy == const.HM:			
+			dic = integrands.three_body_phase_space(samples=SAMPLES, MC_case=self)
+			decay_rates=result['decay rate N']
+
+		integral = result['full integrand']
+
+		# Append the two kinds of weights and the total integral
+		dic['w'] = weights['full integrand']
+		dic['w_decay'] = weights['decay rate N']
+		dic['I'] =  np.sum(weights['full integrand'])
+		dic['I_decay'] = np.sum(weights['decay rate N'])
+
+		# print("testing each case:    I=", np.sum(weights['full integrand']), integral, "Gamma = ", np.sum(weights['decay rate N']), decay_rates)
+
+		return dic
 
 
 def Combine_MC_output(cases, Ifactors=None, flags=None):
@@ -215,9 +220,9 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 	
 	# initialize with first case
 	for x in cases[0]:
-		if x=='w':
+		if (x=='w' or x=='w_decays'):
 			dic[x] = cases[0][x]*Ifactors[0]
-		elif x=='I':
+		elif (x=='I' or x=='I_decays'):
 			dic[x] = cases[0][x]*Ifactors[0]
 		else:
 			dic[x]= cases[0][x]
@@ -228,18 +233,18 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 	# append all subsequent ones
 	for i in range(1,np.shape(cases)[0]):
 		for x in cases[0]:
-			if x=='w':
+			if (x=='w' or x=='w_decay'):
 				dic[x] = np.array( np.append(dic[x], cases[i][x]*Ifactors[i], axis=0) )
-			elif x=='I':
+			elif (x=='I' or x=='I_decay'):
 				dic[x] = dic[x] + cases[i][x]*Ifactors[i]
-			elif x=='param_samples':
-				dic[x]=np.array( np.append(dic[x], cases[i][x], axis=0) )
 			else:
 				dic[x]=np.array( np.append(dic[x], cases[i][x], axis=0) )
 			
 		dic['flags'] = np.append(dic['flags'], np.ones(np.shape(cases[i]['w'])[0])*flags[i] )
 
 	return dic
+
+
 
 # THIS FUNCTION NEEDS SOME OPTIMIZING... currently setting event flags by hand.
 def run_MC(BSMparams, exp, FLAVOURS, INCLUDE_HC=True, INCLUDE_HF=False, INCLUDE_COH=True, INCLUDE_DIF=False):
