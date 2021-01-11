@@ -173,21 +173,21 @@ class MC_events:
 		# nstrat = DIM*[1]
 		integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup)
 		print('nstrat =', np.array(integ.nstrat))
-		if params.scan:
-			nstrat = integ.nstrat
-			nstrat[-1] = 1
-			nstrat[-2] = 1
-			warmup = integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
+		# if params.scan:
+		# 	nstrat = integ.nstrat
+		# 	nstrat[-1] = 1
+		# 	nstrat[-2] = 1
+		# 	warmup = integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
 
 		# Sample again, now saving result
 		result = integ(batch_f, nitn=NINT, neval=NEVAL)
 		print('nstrat =', np.array(integ.nstrat))
-		if params.scan:
-			nstrat = integ.nstrat
-			nstrat[:-2] = int((NEVAL)**(1/(DIM-2)))
-			nstrat[-1] = 1
-			nstrat[-2] = 1
-			result = integ(batch_f, nitn=NINT, neval=NEVAL, nstrat=nstrat)
+		# if params.scan:
+		# 	nstrat = integ.nstrat
+		# 	nstrat[:-2] = int((NEVAL)**(1/(DIM-2)))
+		# 	nstrat[-1] = 1
+		# 	nstrat[-2] = 1
+		# 	result = integ(batch_f, nitn=NINT, neval=NEVAL, nstrat=nstrat)
 
 		#########################
 		# Get the int variables and weights
