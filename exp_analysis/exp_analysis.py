@@ -253,7 +253,8 @@ def kde_Nd_weights(x, x_i, smoothing):
     x_i = np.expand_dims(x_i, axis=list(range(1, len(x.shape))))
     x_dist = (x - x_i)
     smoothing = np.diag(smoothing)**2
-    kde_weights = x_span * multivariate_normal.pdf(x_dist, cov=smoothing)
+    random_weights = multivariate_normal.pdf(x_dist, cov=smoothing)
+    kde_weights = x_span * random_weights
     return kde_weights
 
 def mu_sigma2_of_theta(df, m4, mz, ctau, smooth_m4, smooth_mz, selection_step='cut_based_geometric'):
@@ -271,3 +272,60 @@ def mu_sigma2_of_theta(df, m4, mz, ctau, smooth_m4, smooth_mz, selection_step='c
         weight_values *= decay_in_tpc(df, ctau)
 
     return weight_values.sum(), (weight_values**2).sum()
+
+def gaussian1d(x, mu, sigma):
+    return np.exp(-0.5*((x-mu)/sigma)**2)/np.sqrt(2*np.pi)/sigma
+
+def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
+    decay_x = int_x + ctau*length_x
+    decay_y = int_y + ctau*length_y
+    decay_z = int_z + ctau*length_z
+    out = (((p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
+        (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
+        (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
+        (detector_splitting[0][0] < decay_x) & (decay_x < detector_splitting[0][1]) &\
+        (detector_splitting[1][0] < decay_y) & (decay_y < detector_splitting[1][1])
+    return out
+
+def mu_sigma2_of_theta_fast(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smoothing_1, actual_weights):
+    total_weights = actual_weights
+    mask = total_weights != 0
+    total_weights = total_weights[mask]
+    x_i_0 = x_i_0[mask]
+    x_i_1 = x_i_1[mask]
+    total_weights != 0
+    random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
+    random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
+    this_kde_weights = span_2d * random_weights_0 * random_weights_1
+    
+    weight_values = this_kde_weights * total_weights
+
+    return weight_values.sum(), (weight_values**2).sum()
+
+def mu_sigma2_of_theta_full(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smoothing_1, actual_weights, ctau, int_x, int_y, int_z, length_x, length_y, length_z, mu):
+    geometric_weights = decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau)
+    total_weights = actual_weights * geometric_weights
+    total_weights = actual_weights
+    mask = total_weights != 0
+    total_weights = total_weights[mask]
+    x_i_0 = x_i_0[mask]
+    x_i_1 = x_i_1[mask]
+    total_weights != 0
+    random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
+    random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
+    this_kde_weights = span_2d * random_weights_0 * random_weights_1
+    
+    weight_values = this_kde_weights * total_weights * mu
+
+    return weight_values.sum(), (weight_values**2).sum()
+
+def gamma_light(m4, mz, Valpha4):
+    return Valpha4/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
+
+def ctau_light(m4, mz, Valpha4):
+    aux = Valpha4/2 * m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
+    return 197.3 * 10**(-16) / aux
+    
+def gamma_to_ctau(gamma):
+    '''Convert gamma [GeV] to ctau [cm]'''
+    return 197.3 * 10**(-16) / gamma
