@@ -376,11 +376,19 @@ class threebody(vg.BatchIntegrand):
 				p1CM = E1CM # massless
 				p3CM = np.sqrt(E3CM**2 - Mn**2)
 
-				Q2lmin = np.log(-(Mn**2 - 2 * ( E1CM*E3CM - p1CM*p3CM) ))
-				Q2lmax = np.log(-(Mn**2 - 2 * ( E1CM*E3CM + p1CM*p3CM)))
 
-				Q2l = (Q2lmax - Q2lmin) * x[:, 0] + Q2lmin
-				Q2 = np.exp(Q2l)
+				# Q2 log
+				# Q2lmin = np.log(-(Mn**2 - 2 * ( E1CM*E3CM - p1CM*p3CM) ))
+				# Q2lmax = np.log(-(Mn**2 - 2 * ( E1CM*E3CM + p1CM*p3CM)))
+
+				# Q2l = (Q2lmax - Q2lmin) * x[:, 0] + Q2lmin
+				# Q2 = np.exp(Q2l)
+
+				# Q2 log
+				Q2min = -(Mn**2 - 2 * ( E1CM*E3CM - p1CM*p3CM))
+				Q2max = -(Mn**2 - 2 * ( E1CM*E3CM + p1CM*p3CM))
+				Q2 = (Q2max - Q2min) * x[:, 0] + Q2min
+
 
 				if Z == 1:
 
@@ -456,7 +464,8 @@ class threebody(vg.BatchIntegrand):
 						# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((mHNL*mHNL*mHNL*mHNL + (M*M - s)*(M*M - s) - 2*(mHNL*mHNL)*(M*M + s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) - 2*(((-(M*M) + s)*(2*(M*M) + mHNL*mHNL - 2*s - t))/2. + ((2*(M*M) + mHNL*mHNL - 2*s - t)*(-(M*M) - mHNL*mHNL + s + t))/2.))*(Z*Z))/(16.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
 
 				dsigma *= (self.Emax - Emin)
-				dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
+				# dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
+				dsigma *= (Q2max - Q2min)
 
 				#######################
 				## Decay  nu_4 to nualpha ell ell
@@ -739,12 +748,18 @@ def three_body_phase_space(samples=None, MC_case=None):
 		p3CM = np.sqrt(E3CM**2 - mh**2)
 		p4CM = np.sqrt(E4CM**2 - MA**2)
 
-		Q2lmin = np.log(-(mh**2 - 2 * ( E1CM*E3CM - p1CM*p3CM) ))
-		Q2lmax = np.log(-(mh**2 - 2 * ( E1CM*E3CM + p1CM*p3CM) ))
-
-		Q2l = (Q2lmax - Q2lmin) * Q2p + Q2lmin
-		Q2 = np.exp(Q2l)
+		# Log Q2
+		# Q2lmin = np.log(-(mh**2 - 2 * ( E1CM*E3CM - p1CM*p3CM) ))
+		# Q2lmax = np.log(-(mh**2 - 2 * ( E1CM*E3CM + p1CM*p3CM) ))
+		# Q2l = (Q2lmax - Q2lmin) * Q2p + Q2lmin
+		# Q2 = np.exp(Q2l)
+	
+		# Q2
+		Q2min = -(mh**2 - 2 * ( E1CM*E3CM - p1CM*p3CM) )
+		Q2max = -(mh**2 - 2 * ( E1CM*E3CM + p1CM*p3CM) )
+		Q2 = (Q2max - Q2min) * Q2p + Q2min
 		
+
 		# KINEMATICS TO LAB FRAME
 		costN = ( -Q2 - mh*mh + 2*E1CM*E3CM) / (2*p1CM*p3CM)
 		beta = -p2CM/E2CM # ATTENTION TO MINUS SIGNS HERE
