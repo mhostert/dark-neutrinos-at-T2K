@@ -362,7 +362,7 @@ class threebody(vg.BatchIntegrand):
 
 				if params.scan:
 					Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
-					Mzprime = (params.mzprime_max-np.maximum(Mn,params.mzprime_min))* x[:,-2] + np.maximum(Mn,params.mzprime_min)
+					Mzprime = (params.mzprime_max-np.maximum(2*Mn,params.mzprime_min))* x[:,-2] + np.maximum(2*Mn,params.mzprime_min)
 
 
 				Emin = 1.05*(Mn**2/2.0/MA + Mn)
@@ -720,7 +720,7 @@ def three_body_phase_space(samples=None, MC_case=None):
 		# if scan mode, then get all bsm param samples
 		if params.scan:
 			m4 = (params.M4_max-params.M4_min)*samples[7]+params.M4_min
-			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[6]+np.maximum(m4,params.mzprime_min)
+			mzprime = (params.mzprime_max-np.maximum(2*m4,params.mzprime_min))*samples[6]+np.maximum(2*m4,params.mzprime_min)
 			mh=m4
 		else:
 			m4 = np.empty(sample_size)
