@@ -7,6 +7,9 @@ stats
 # data folder
 data/*
 
+# fig folder
+fig
+
 # vscode settings
 .vscode/*
 
