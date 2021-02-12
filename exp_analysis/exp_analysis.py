@@ -319,13 +319,46 @@ def mu_sigma2_of_theta_full(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smooth
 
     return weight_values.sum(), (weight_values**2).sum()
 
+def mu_sigma2_of_theta_debug(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smoothing_1, actual_weights, ctau, int_x, int_y, int_z, length_x, length_y, length_z, mu):
+    geometric_weights = decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau)
+    total_weights = actual_weights * geometric_weights
+    total_weights = actual_weights
+    mask = total_weights != 0
+    total_weights = total_weights[mask]
+    x_i_0 = x_i_0[mask]
+    x_i_1 = x_i_1[mask]
+    total_weights != 0
+    random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
+    random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
+    this_kde_weights = span_2d * random_weights_0 * random_weights_1
+    
+    weight_values = this_kde_weights * total_weights * mu
+
+    return weight_values
+
 def gamma_light(m4, mz, Valpha4):
     return Valpha4/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
 
 def ctau_light(m4, mz, Valpha4):
     aux = Valpha4/2 * m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     return 197.3 * 10**(-16) / aux
-    
+
+def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
+    return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
+
+def ctau_heavy(m4, mz, Valpha4_alphaepsilon2):
+    aux =  Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
+    return 197.3 * 10**(-16) / aux
+
 def gamma_to_ctau(gamma):
     '''Convert gamma [GeV] to ctau [cm]'''
     return 197.3 * 10**(-16) / gamma
+
+def points_on_triangle(N_points, m4_limits, mz_limits, hierarchy='heavy'):
+    rvs = np.random.random((N_points, 2))
+    if hierarchy == 'heavy':
+        rvs = np.where(rvs[:, 0, None]<rvs[:, 1, None], rvs, rvs[:, ::-1])
+    elif hierarchy == 'light':
+        rvs = np.where(rvs[:, 0, None]>rvs[:, 1, None], rvs, rvs[:, ::-1])
+    
+    return np.array((m4_limits[0], mz_limits[0])) + rvs*(m4_limits[1]-m4_limits[0], mz_limits[1]-mz_limits[0])
