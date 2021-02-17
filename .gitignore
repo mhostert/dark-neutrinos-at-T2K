@@ -6,6 +6,7 @@ stats
  
 # data folder
 data/*
+standardHNL/data/*
 
 # fig folder
 fig
