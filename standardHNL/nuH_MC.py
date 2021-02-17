@@ -20,11 +20,11 @@ import model
 import nuH_integrands as integrands
 
 # Integration parameters
-NINT = 100
-NEVAL = 1e4
+NINT = 20
+NEVAL = 1e5
 
-NINT_warmup = 1e1
-NEVAL_warmup = 1e3
+NINT_warmup = 20
+NEVAL_warmup = 1e4
 
 def Power(x,n):
 	return x**n
@@ -33,18 +33,20 @@ def lam(a,b,c):
 
 
 class MC_events:
-	def __init__(self, ENmin = 0.0, ENmax=10.0, mh=0.150, mf=0.0, mp=const.Me, mm=const.Me, helicity=-1, BSMparams=None):
+	def __init__(self, HNLtype= const.MAJORANA, EN=1.0, ENmin = 0.0, ENmax=10.0, mh=0.150, mf=0.0, mp=const.Me, mm=const.Me, helicity=-1, BSMparams=None):
 		
 		self.params = BSMparams
 		
 		# set target properties
 		self.ENmin = ENmin
 		self.ENmax = ENmax
+		self.EN = EN
 		self.mh = mh
 		self.mf = mf
 		self.mp = mp
 		self.mm = mm		
 		self.helicity = helicity
+		self.HNLtype = HNLtype
 
 
 	def get_MC_events(self):
@@ -55,7 +57,7 @@ class MC_events:
 		print("Running three body decays case.")
 		#########################################################################
 		# BATCH SAMPLE INTEGRAN OF INTEREST
-		DIM =5
+		DIM =4
 		batch_f = integrands.nu5_to_nu4_ee(dim=DIM, MC_case=self)
 		integ = vg.Integrator(DIM*[[0.0, 1.0]])
 		##########################################################################

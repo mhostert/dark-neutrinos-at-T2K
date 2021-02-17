@@ -14,6 +14,9 @@ neutral_pion = 411
 neutral_kaon = 511
 neutral_eta = 611
 
+DIRAC = 'dirac'
+MAJORANA = 'majorana'
+
 
 neutrino0 = 99
 neutrino1 = 11

@@ -15,8 +15,8 @@ class model_params():
 		self.Utau5		= 1.0
 		self.UD4		= 1.0
 		self.UD5		= 1.0
-		self.m4		= 1.0
-		self.m5		= 1.0
+		self.m4		= 0.0
+		self.m5		= 0.0
 		self.Mzprime		= 1.0
 		self.Dirac		= 1.0
 
