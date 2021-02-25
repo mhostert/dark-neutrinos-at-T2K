@@ -346,6 +346,14 @@ def ctau_light(m4, mz, Valpha4):
 def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
     return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
 
+def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
+    aux = Valpha4_alphaepsilon2/(24 * np.pi) * (1/6) * (1/(-3))
+    aux *= (m4_s[1]**6 - m4_s[0]**6)
+    aux *= (mz_s[1]**(-3) - mz_s[0]**(-3))
+    if normalised:
+        aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
+    return aux
+
 def ctau_heavy(m4, mz, Valpha4_alphaepsilon2):
     aux =  Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
     return 197.3 * 10**(-16) / aux
