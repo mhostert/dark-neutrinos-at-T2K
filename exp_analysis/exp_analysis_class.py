@@ -49,7 +49,7 @@ class exp_analysis(object):
         self.n_evt = n_evt
         self.df_base = pd.read_pickle(f'{self.base_folder}scan/{self.hierarchy}_mediator/{self.m4_limits[0]}_m4_{self.m4_limits[1]}_{self.mz_limits[0]}_mzprime_{self.mz_limits[1]}_nevt_{self.n_evt}.pckl')
         self.initialise_df(self.df_base, which_scan='m4_mz')
-    
+        
     def load_df(self, m4, mz):
         self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}/MC_m4_{m4}_mzprime_{mz}.pckl')
         exp_analysis.initialise_df(self.dfs[(m4, mz)], None)
@@ -87,8 +87,8 @@ class exp_analysis(object):
             df[material, ''] = material_mask
             m4_values = df['m4', ''][material_mask].values
             mz_values = df['mzprime', ''][material_mask].values
-            weight_values = df['weight', ''][material_mask].values / mz_values**8
-            weight_decay_values = df['weight_decay', ''][material_mask].values / mz_values**4
+            weight_values = df['weight', ''][material_mask].values
+            weight_decay_values = df['weight_decay', ''][material_mask].values
             
             if which_scan == None:
                 df.loc[material_mask, ('total_decay_rate', '')] = weight_decay_values.sum()                
@@ -99,6 +99,8 @@ class exp_analysis(object):
                                 weight_decay_values)[0]
                 df.loc[material_mask, ('total_decay_rate', '')] = np.interp(m4_values, m4_span, gamma_span)
             elif which_scan == 'm4_mz':
+                weight_values = weight_values / mz_values**8
+                weight_decay_values = weight_decay_values / mz_values**4
                 m4_span = np.linspace(m4_values.min(), m4_values.max(), int(n_points_decaywidth_interpolation/4))
                 mz_span = np.linspace(mz_values.min(), mz_values.max(), int(n_points_decaywidth_interpolation/4))
                 aux_grid = np.stack(np.meshgrid(m4_span, mz_span, indexing='ij'), axis=-1)

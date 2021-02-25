@@ -11,9 +11,6 @@ physics_parameters['heavy'] = {
     'alpha_em': 1./137,
 }
 
-# physics_parameters['heavy']['span_2d'] = (physics_parameters['heavy']['m4_limits'][1] - physics_parameters['heavy']['m4_limits'][0]) *\
-#                                          (physics_parameters['heavy']['mz_limits'][1] - physics_parameters['heavy']['mz_limits'][0])
-
 physics_parameters['heavy']['span_2d'] = (physics_parameters['heavy']['mz_limits'][1] - physics_parameters['heavy']['mz_limits'][0] +\
                                           physics_parameters['heavy']['mz_limits'][1] - physics_parameters['heavy']['m4_limits'][0]) *\
                                          (physics_parameters['heavy']['m4_limits'][1] - physics_parameters['heavy']['m4_limits'][0])/2
