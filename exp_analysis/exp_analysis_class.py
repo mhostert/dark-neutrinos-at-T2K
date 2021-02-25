@@ -45,9 +45,12 @@ class exp_analysis(object):
         self.base_folder = base_folder
         self.dfs = {}
         
-    def load_df_base(self, n_evt=1000000):
+    def load_df_base(self, n_evt=1000000, filename=None):
         self.n_evt = n_evt
-        self.df_base = pd.read_pickle(f'{self.base_folder}scan/{self.hierarchy}_mediator/{self.m4_limits[0]}_m4_{self.m4_limits[1]}_{self.mz_limits[0]}_mzprime_{self.mz_limits[1]}_nevt_{self.n_evt}.pckl')
+        if filename is None:
+            self.df_base = pd.read_pickle(f'{self.base_folder}scan/{self.hierarchy}_mediator/{self.m4_limits[0]}_m4_{self.m4_limits[1]}_{self.mz_limits[0]}_mzprime_{self.mz_limits[1]}_nevt_{self.n_evt}.pckl')
+        else:
+            self.df_base = pd.read_pickle(filename)
         self.initialise_df(self.df_base, which_scan='m4_mz')
         
     def load_df(self, m4, mz):
