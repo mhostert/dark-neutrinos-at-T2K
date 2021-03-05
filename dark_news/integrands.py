@@ -24,7 +24,6 @@ def lam(a,b,c):
 def Sqrt(x):
 	return np.sqrt(x)
 
-
 class cascade(vg.BatchIntegrand):
 
 	def __init__(self, dim, Emin, Emax, MC_case):
@@ -359,12 +358,13 @@ class threebody(vg.BatchIntegrand):
 				Mn = self.MC_case.Mn
 				Mn_outgoing = self.MC_case.Mn_outgoing
 				Mzprime = params.Mzprime
-
+                
+				jacobian_scan = 1
 				if params.scan:
 					Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
 					Mzprime = (params.mzprime_max-np.maximum(Mn,params.mzprime_min))* x[:,-2] + np.maximum(Mn,params.mzprime_min)
-
-
+					jacobian_scan *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))
+                    
 				Emin = 1.05*(Mn**2/2.0/MA + Mn)
 				Enu = (self.Emax - Emin) * x[:, 1] + Emin
 
@@ -479,7 +479,7 @@ class threebody(vg.BatchIntegrand):
 				CCflag2 = -self.CC_mixing
 
 				# ######################################
-				mh = self.mh
+				mh = Mn
 				mf = self.mf
 				mm = self.mm
 				mp = self.mp
@@ -530,7 +530,6 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= (uplus - uminus)
 				dgamma *= 2
 				dgamma *= 2*np.pi
-
 				#############
 				# JACOBIAN for scan
 				# dsigma *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))
@@ -540,9 +539,16 @@ class threebody(vg.BatchIntegrand):
 				####################################
 				# FACTOR of 1/2 to compensate the total rate -- checked that BR = 100% is returning only dgamma/2.0
 				# return dsigma*self.flux(Enu)*dgamma*2.0
-				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*mzprime**8,
-						'cross section' : const.GeV2_to_cm2*dsigma*mzprime**4,
-						'decay rate N' : dgamma*mzprime**4}
+# 				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
+# 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
+# 						'decay rate N' : dgamma*jacobian_scan*mzprime**4}
+				return {'decay rate N' : dgamma*jacobian_scan*mzprime**4,
+                        'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
+						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
+						}
+# 				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan,
+# 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan,
+# 						'decay rate N' : dgamma*jacobian_scan}
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
@@ -720,7 +726,7 @@ def three_body_phase_space(samples=None, MC_case=None):
 		# if scan mode, then get all bsm param samples
 		if params.scan:
 			m4 = (params.M4_max-params.M4_min)*samples[-1]+params.M4_min	
-			mzprime = (params.mzprime_max-np.maximum(2*m4,params.mzprime_min))*samples[-2]+np.maximum(2*m4,params.mzprime_min)
+			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[-2]+np.maximum(m4,params.mzprime_min)
 			mh=m4
 		else:
 			m4 = np.empty(sample_size)
