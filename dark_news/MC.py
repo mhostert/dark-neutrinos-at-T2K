@@ -200,6 +200,9 @@ class MC_events:
 		elif params.hierarchy == const.HM:			
 			dic = integrands.three_body_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N']
+            
+			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**8
+			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**4
 
 		integral = result['full integrand']
 
