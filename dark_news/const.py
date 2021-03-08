@@ -12,8 +12,8 @@ DIFLH=2
 COHRH=3
 DIFRH=4
 
-MAJORANA=0
-DIRAC   =1
+DIRAC = 'dirac'
+MAJORANA = 'majorana'
 
 HM = 'heavy_mediator'
 LM = 'light_mediator'

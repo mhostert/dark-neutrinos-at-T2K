@@ -52,6 +52,7 @@ class MC_events:
 				datafile=None, 
 				MA=1*const.MAVG, 
 				Z=6, 
+				HNLtype= const.MAJORANA, 
 				nu_scatterer=pdg.numu,
 				nu_produced=pdg.neutrino4, 
 				nu_outgoing=pdg.numu, 
@@ -120,10 +121,6 @@ class MC_events:
 
 		###############################
 		# Set hierarchy here
-		# if self.Mn - self.Mn_outgoing < params.Mzprime:
-		# 	self.hierarchy = const.HM
-		# elif self.Mn - self.Mn_outgoing > params.Mzprime:
-		# 	self.hierarchy = const.LM		
 		self.hierarchy = params.hierarchy
 		# if self.hierarchy == const.HM: # else, very simple expressions can be used.
 			#############################
@@ -132,6 +129,9 @@ class MC_events:
 			# self.decay_prop.compute_rates() # -- uses quad integrate -- slow!!
 			# self.decay_prop.total_rate()
 			# self.decay_prop.compute_BR()
+		
+		# Dirac or Majorana
+		self.HNLtype = HNLtype
 
 
 	def get_MC_events(self):
@@ -172,7 +172,6 @@ class MC_events:
 		# Sample the integrand to adapt integrator
 		# nstrat = DIM*[1]
 		integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup)
-		print('nstrat =', np.array(integ.nstrat))
 		# if params.scan:
 		# 	nstrat = integ.nstrat
 		# 	nstrat[-1] = 1
@@ -181,7 +180,6 @@ class MC_events:
 
 		# Sample again, now saving result
 		result = integ(batch_f, nitn=NINT, neval=NEVAL)
-		print('nstrat =', np.array(integ.nstrat))
 		# if params.scan:
 		# 	nstrat = integ.nstrat
 		# 	nstrat[:-2] = int((NEVAL)**(1/(DIM-2)))
@@ -212,7 +210,6 @@ class MC_events:
 		dic['I'] =  np.sum(weights['full integrand'])
 		dic['I_decay'] = np.sum(weights['decay rate N'])
 
-		print("Total samples from vegas: ", np.shape(dic['w']))
 		# print(integ.random_batch())
 		# for x, wgt, hcube in integ.random_batch(yield_hcube=True):
 		# 	print(np.shape(x))
