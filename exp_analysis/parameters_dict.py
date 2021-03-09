@@ -7,7 +7,7 @@ physics_parameters['heavy'] = {
     'mz_scan': [0.01, 0.1, 1, 5],
     'alpha_dark': 0.4,
     'Umu4': 2.2e-7,
-    'espilon2': 4.6e-4,
+    'epsilon2': 4.6e-4,
     'alpha_em': 1./137,
 }
 
@@ -18,7 +18,7 @@ physics_parameters['heavy']['span_2d'] = (physics_parameters['heavy']['mz_limits
 physics_parameters['heavy']['Vmu4_alpha_epsilon2'] = physics_parameters['heavy']['alpha_dark'] *\
                                                      physics_parameters['heavy']['Umu4'] *\
                                                      physics_parameters['heavy']['alpha_em'] *\
-                                                     physics_parameters['heavy']['espilon2']
+                                                     physics_parameters['heavy']['epsilon2']
 
 total_pot = 2e21
 

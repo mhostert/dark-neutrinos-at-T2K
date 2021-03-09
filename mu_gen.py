@@ -134,7 +134,12 @@ def main(argv):
 
 	BSMparams.hierarchy=args.hierarchy
 	BSMparams.set_KDEscan_mode_on(args)
-
+    
+	print(f"Umu4 = {BSMparams.Umu4**2}")
+	print(f"epsilon2 = {args.epsilon2}")
+	print(f"alpha_dark = {args.alpha_dark}")
+	print(f"chi = {BSMparams.chi}, {np.sqrt(args.epsilon2)/const.cw}")
+    
 	####################################################
 	# CHOOSE EXPERIMENTAL FLUXES, NORMALIZATION, ETC...
 	myexp = exp.experiment(args.exp)

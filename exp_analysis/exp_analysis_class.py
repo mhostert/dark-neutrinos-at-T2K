@@ -199,12 +199,11 @@ class exp_analysis(object):
     @staticmethod
     def kde_interpolation_m4(m4, m4_rnd, weights, smoothing=0.03, kernel='gaus'):
         assert kernel in ['gaus', 'unif']
-        m4_span = m4_rnd.max() - m4_rnd.min()
         m4 = m4.T * np.ones([len(m4_rnd), len(m4)])
         m4_rnd = m4_rnd.reshape(len(m4_rnd), 1)
         weights = weights.reshape(len(weights), 1)
         m4_dist = (m4 - m4_rnd)
-        f_kde_contribution = weights * m4_span
+        f_kde_contribution = weights
         # import pdb; pdb.set_trace();
         if kernel == 'gaus':
             f_kde_contribution = f_kde_contribution * norm.pdf(m4_dist, 0, smoothing)
@@ -217,14 +216,13 @@ class exp_analysis(object):
     @staticmethod
     def kde_1d_weights(x, x_i, smoothing=0.03, kernel='gaus'):
         assert kernel in ['gaus', 'unif']
-        x_span = x_i.max() - x_i.min()
         x = x.T * np.ones([len(x_i), len(x)])
         x_i = x_i.reshape(len(x_i), 1)
         x_dist = (x - x_i)
         if kernel == 'gaus':
-            kde_weights = x_span * norm.pdf(x_dist, 0, smoothing)
+            kde_weights = norm.pdf(x_dist, 0, smoothing)
         elif kernel == 'unif':
-            kde_weights = x_span * uniform.pdf(x_dist, -smoothing/2, smoothing/2)
+            kde_weights = uniform.pdf(x_dist, -smoothing/2, smoothing/2)
         else:
             return None
         return kde_weights
@@ -233,13 +231,13 @@ class exp_analysis(object):
     def kde_Nd_weights(x, x_i, smoothing):
         assert x.shape[-1] == x_i.shape[-1] #number of dimensions
         nd = x_i.shape[-1]
-        x_span = np.prod([(x_i[:,i].max() - x_i[:,i].min()) for i in range(nd)]) #assumes points are distributed uniformly in a rectangular surface
+#         x_span = np.prod([(x_i[:,i].max() - x_i[:,i].min()) for i in range(nd)]) #assumes points are distributed uniformly in a rectangular surface
         x = np.expand_dims(x, axis=0)
         x_i = np.expand_dims(x_i, axis=list(range(1, len(x.shape))))
         x_dist = (x - x_i)
         smoothing = np.diag(smoothing)**2
         random_weights = multivariate_normal.pdf(x_dist, cov=smoothing)
-        kde_weights = x_span * random_weights
+        kde_weights = random_weights
         return kde_weights
 
     @staticmethod
@@ -260,7 +258,7 @@ class exp_analysis(object):
         return weight_values.sum(), (weight_values**2).sum()
 
     @staticmethod
-    def mu_sigma2_of_theta_no_geometry(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smoothing_1, actual_weights):
+    def mu_sigma2_of_theta_no_geometry(x_0, x_1, x_i_0, x_i_1, smoothing_0, smoothing_1, actual_weights):
         total_weights = actual_weights
         mask = total_weights != 0
         total_weights = total_weights[mask]
@@ -269,14 +267,14 @@ class exp_analysis(object):
         total_weights != 0
         random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
         random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
-        this_kde_weights = span_2d * random_weights_0 * random_weights_1
+        this_kde_weights = random_weights_0 * random_weights_1
         
         weight_values = this_kde_weights * total_weights
 
         return weight_values.sum(), (weight_values**2).sum()
 
     @staticmethod
-    def mu_sigma2_of_theta_full(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smoothing_1, actual_weights, ctau, int_x, int_y, int_z, length_x, length_y, length_z, mu):
+    def mu_sigma2_of_theta_full(x_0, x_1, x_i_0, x_i_1, smoothing_0, smoothing_1, actual_weights, ctau, int_x, int_y, int_z, length_x, length_y, length_z, mu):
         geometric_weights = exp_analysis.decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau)
         total_weights = actual_weights * geometric_weights
         total_weights = actual_weights
@@ -287,7 +285,7 @@ class exp_analysis(object):
         total_weights != 0
         random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
         random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
-        this_kde_weights = span_2d * random_weights_0 * random_weights_1
+        this_kde_weights = random_weights_0 * random_weights_1
         
         weight_values = this_kde_weights * total_weights * mu
 

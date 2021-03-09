@@ -525,16 +525,13 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= 2*np.pi
 
 				####################################
-# 				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
-# 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
-# 						'decay rate N' : dgamma*jacobian_scan*mzprime**4}
-				return {'decay rate N' : dgamma*jacobian_scan*mzprime**4,
-                        'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
+				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
-						}
-# 				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan,
-# 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan,
-# 						'decay rate N' : dgamma*jacobian_scan}
+						'decay rate N' : dgamma*jacobian_scan*mzprime**4}
+# 				return {'decay rate N' : dgamma*jacobian_scan*mzprime**4,
+#                         'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
+# 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
+# 						}
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
@@ -566,8 +563,8 @@ def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 		else:
 			print("Could not specify upscattered neutrino mass.")
 		
-		m4 = np.empty(sample_size)
-		mzprime = np.empty(sample_size)
+		m4 = Mn*np.ones(sample_size)
+		mzprime = Mzprime*np.ones(sample_size)
 
 	MA = MC_case.MA
 	m_ell = MC_case.m_ell
@@ -716,8 +713,8 @@ def three_body_phase_space(samples=None, MC_case=None):
 			mzprime = (params.mzprime_max-np.maximum(m4,params.mzprime_min))*samples[-2]+np.maximum(m4,params.mzprime_min)
 			mh=m4
 		else:
-			m4 = np.empty(sample_size)
-			mzprime = np.empty(sample_size)
+			m4 = MC_case.Mn*np.ones(sample_size)
+			mzprime = params.Mzprime*np.ones(sample_size)
 			mh = MC_case.Mn
 
 		MA = MC_case.MA
