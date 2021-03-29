@@ -34,7 +34,7 @@ from . import pdg
 
 # Integration parameters
 NINT = 100
-NEVAL = 1e4
+NEVAL = 1e5
 
 NINT_warmup = 10
 NEVAL_warmup = 1000
@@ -232,9 +232,9 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 	
 	# initialize with first case
 	for x in cases[0]:
-		if (x=='w' or x=='w_decays'):
+		if (x=='w' or x=='w_decay'):
 			dic[x] = cases[0][x]*Ifactors[0]
-		elif (x=='I' or x=='I_decays'):
+		elif (x=='I' or x=='I_decay'):
 			dic[x] = cases[0][x]*Ifactors[0]
 		else:
 			dic[x]= cases[0][x]
@@ -254,9 +254,10 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 			
 		dic['flags'] = np.append(dic['flags'], np.ones(np.shape(cases[i]['w'])[0])*flags[i] )
 
+	dic['w_decay'] /= np.size(cases)
+	dic['I_decay'] /= np.size(cases)
+
 	return dic
-
-
 
 # THIS FUNCTION NEEDS SOME OPTIMIZING... currently setting event flags by hand.
 def run_MC(BSMparams, exp, FLAVOURS, INCLUDE_HC=True, INCLUDE_HF=False, INCLUDE_COH=True, INCLUDE_DIF=False):
@@ -322,7 +323,6 @@ def run_MC(BSMparams, exp, FLAVOURS, INCLUDE_HC=True, INCLUDE_HF=False, INCLUDE_
 	cases_events = [cases[i].get_MC_events() for i in range(np.size(cases))]
 	
 	Ifactors = np.ones((np.size(cases)))
-
 
 	# Combine all cases into one object
 	all_events = Combine_MC_output(cases_events, Ifactors=Ifactors, flags=flags)

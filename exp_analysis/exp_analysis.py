@@ -1,9 +1,10 @@
 import numpy as np
 from scipy.stats import norm, uniform, multivariate_normal
 from scipy.interpolate import interpn
+from scipy.integrate import dblquad
 import pandas as pd
 import matplotlib.pyplot as plt
-from fourvec import *
+from . import fourvec 
 
 def unitary_decay_length(df):
     p3dark = np.sqrt(dot3_df(df['pdark'], df['pdark']))
@@ -127,7 +128,7 @@ def compute_actual_weights(df):
 
         material_mask = (df['recoil_mass', ''] == gev_mass[material])
         df[material, ''] = material_mask
-        df.loc[material_mask, ('total_decay_rate', '')] = df['weight_decay', ''][material_mask].sum()
+        df.loc[material_mask, ('total_decay_rate', '')] = df['weight_decay', ''].sum()
         df.loc[material_mask, ('adjusted_weight', '')] = df['weight', ''][material_mask] / df['total_decay_rate', ''][material_mask]
         df.loc[material_mask, ('actual_weight', '')] = df['adjusted_weight', ''][material_mask] * ntarget_material[material] * total_pot
 
@@ -339,14 +340,32 @@ def mu_sigma2_of_theta_debug(x_0, x_1, x_i_0, x_i_1, span_2d, smoothing_0, smoot
 def gamma_light(m4, mz, Valpha4):
     return Valpha4/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
 
+def gamma_zprime_light(m4, mz, alphaepsilon2):
+    r = (m4/mz)**2
+    return alphaepsilon2/3.0*mz*(1.0+2.0*r)*np.sqrt(1.0-4*r)
+
 def ctau_light(m4, mz, Valpha4):
     aux = Valpha4/2 * m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     return 197.3 * 10**(-16) / aux
 
-def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
-    return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
+def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2):
+    return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
 
-def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
+# there is a cancellation for small r that holds up to 4th order 
+# so I avoid instability by expanding when r is small
+def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
+    r=(m4/mz)**2
+    gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
+    piece = (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3)*np.heaviside(r-0.01,0)\
+    +r**4/2 * np.heaviside(0.01-r, 1)
+    gamma *=  piece
+    return gamma*np.heaviside(mz - m4,0)
+
+def gamma_general(m4,mz,Valpha4alphaepsilon2,GammaZprime):
+    return -(Valpha4alphaepsilon2*(2*GammaZprime*(m4*m4)*mz*(m4*m4 - 2*(mz*mz)) + (m4*m4*m4*m4*m4*m4 + 3*(m4*m4)*(mz*mz)*(GammaZprime*GammaZprime - mz*mz) + 2*(mz*mz*mz*mz)*(-3*(GammaZprime*GammaZprime) + mz*mz))*np.arctan(GammaZprime/mz) + (m4*m4*m4*m4*m4*m4 + 3*(GammaZprime*GammaZprime)*(m4*m4)*(mz*mz) + 2*(mz*mz*mz*mz*mz*mz))*np.arctan((GammaZprime*mz)/(m4*m4 - mz*mz)) + mz*mz*mz*(3*(2*(GammaZprime*GammaZprime) + m4*m4)*mz*np.arctan((GammaZprime*mz)/(-(m4*m4) + mz*mz)) - GammaZprime*(2*(GammaZprime*GammaZprime + 3*(m4*m4) - 3*(mz*mz))*np.log(mz) + (GammaZprime*GammaZprime + 3*(m4*m4))*(np.log(GammaZprime*GammaZprime + mz*mz) - np.log(GammaZprime*GammaZprime*(mz*mz) + (m4*m4 - mz*mz)*(m4*m4 - mz*mz))) + 3*(mz*mz)*np.log(mz*mz + (m4*m4*m4*m4 - 2*(m4*m4)*(mz*mz))/(GammaZprime*GammaZprime + mz*mz))))))/(12.*GammaZprime*(m4*m4*m4)*mz*np.pi)
+
+# This still assumes contact interaction
+def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
     aux = Valpha4_alphaepsilon2/(24 * np.pi) * (1/6) * (1/(-3))
     aux *= (m4_s[1]**6 - m4_s[0]**6)
     aux *= (mz_s[1]**(-3) - mz_s[0]**(-3))
@@ -354,8 +373,20 @@ def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
         aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
     return aux
 
+def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
+
+    aux, _ = dblquad(gamma_heavy,
+                    mz_s[1], mz_s[0],
+                    m4_s[1], m4_s[0],
+                    args=[Valpha4_alphaepsilon2],
+                    epsrel=1e-8)
+    if normalised:
+        aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
+
+    return aux
+
 def ctau_heavy(m4, mz, Valpha4_alphaepsilon2):
-    aux =  Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
+    aux =  gamma_heavy(m4, mz, Valpha4_alphaepsilon2)
     return 197.3 * 10**(-16) / aux
 
 def gamma_to_ctau(gamma):

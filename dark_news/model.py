@@ -94,9 +94,9 @@ class model_params():
 		self.cmu4 = const.g/2/const.cw* (self.Umu4) + self.UD4*(-self.UD4*self.Umu4 -self.UD5*self.Umu5)*self.gprime*const.sw*self.chi
 		self.ctau4 = const.g/2/const.cw* (self.Utau4) + self.UD4*(-self.UD4*self.Utau4 -self.UD5*self.Utau5)*self.gprime*const.sw*self.chi
 		
-		self.de4 = self.UD4*(-self.UD4*self.Ue4 - self.UD5*self.Ue4)*self.gprime
-		self.dmu4 = self.UD4*(-self.UD4*self.Umu4 - self.UD5*self.Umu4)*self.gprime
-		self.dtau4 = self.UD4*(-self.UD4*self.Utau4 - self.UD5*self.Utau4)*self.gprime
+		self.de4 = self.UD4*(-self.UD4*self.Ue4 - self.UD5*self.Ue5)*self.gprime
+		self.dmu4 = self.UD4*(-self.UD4*self.Umu4 - self.UD5*self.Umu5)*self.gprime
+		self.dtau4 = self.UD4*(-self.UD4*self.Utau4 - self.UD5*self.Utau5)*self.gprime
 
 		self.clight4 = np.sqrt(self.ce4**2+self.cmu4**2+self.ctau4**2)
 		self.dlight4 = np.sqrt(self.de4**2+self.dmu4**2+self.dtau4**2)
@@ -168,7 +168,8 @@ class model_params():
 		# Charged leptons
 		# self.deV = 3.0/2.0 * cbeta * const.s2w * tanchi + sbeta*(0.5 + 2*const.s2w)
 		# self.deA = (-sbeta - cbeta * const.s2w * tanchi)/2.0
-		self.deV = const.g/(2*const.cw) * 2*const.sw*const.cw**2*self.chi
+		# self.deV = const.g/(2*const.cw) * 2*const.sw*const.cw**2*self.chi
+		self.deV = const.eQED*self.epsilon
 		self.deA = const.g/(2*const.cw) * 0
 
 		# self.ceV = cbeta*(2*const.s2w - 0.5) - 3.0/2.0*sbeta*const.sw*tanchi

@@ -36,9 +36,12 @@ class experiment():
 			self.P_per_target = 8.0
 			self.TARGETS = (818e6) * const.NAvo / self.Nucleons_per_target
 			self.POTS = 18.75e20
-			self.MATERIALS_A = [12.0]
-			self.MATERIALS_Z = [6.0]
-		
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208']
+			self.MATERIALS_A=[1,12]
+			self.MATERIALS_Z=[1,6]
+			self.MATERIALS_TOT_MASS =[818e6/14*2,818e6/14*12] # grams
+			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+
 		elif self.EXP_FLAG == uBOONE:
 			self.FLUXFILE="fluxes/MiniBooNE_nu_mode_flux.dat"
 			self.FLUX_NORM=1.0/0.05*(541.0/463.0)**2

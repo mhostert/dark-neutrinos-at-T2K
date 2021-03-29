@@ -191,28 +191,28 @@ class threebody(vg.BatchIntegrand):
 
 					# Which outgoing neutrino?
 					if MC_case.nu_outgoing==pdg.nue:
-						self.Cih = params.ce6/2.0
-						self.Dih = params.de6/2.0
+						self.Cih = params.ce6
+						self.Dih = params.de6
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.numu:
-						self.Cih = params.cmu6/2.0
-						self.Dih = params.dmu6/2.0
+						self.Cih = params.cmu6
+						self.Dih = params.dmu6
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.nutau:
-						self.Cih = params.ctau6/2.0
-						self.Dih = params.dtau6/2.0
+						self.Cih = params.ctau6
+						self.Dih = params.dtau6
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==const.neutrino_light:
-						self.Cih = params.clight6/2.0
-						self.Dih = params.dlight/2.0
+						self.Cih = params.clight6
+						self.Dih = params.dlight
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.neutrino4:
-						self.Cih = params.c46/2.0
-						self.Dih = params.d46/2.0
+						self.Cih = params.c46
+						self.Dih = params.d46
 						self.mf = params.m4
 					elif MC_case.nu_outgoing==pdg.neutrino5:
-						self.Cih = params.c56/2.0
-						self.Dih = params.d56/2.0
+						self.Cih = params.c56
+						self.Dih = params.d56
 						self.mf = params.m5
 				
 				elif MC_case.nu_produced==pdg.neutrino5:
@@ -227,24 +227,24 @@ class threebody(vg.BatchIntegrand):
 
 					# Which outgoing neutrino?
 					if MC_case.nu_outgoing==pdg.nue:
-						self.Cih = params.ce5/2.0
-						self.Dih = params.de5/2.0
+						self.Cih = params.ce5
+						self.Dih = params.de5
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.numu:
-						self.Cih = params.cmu5/2.0
-						self.Dih = params.dmu5/2.0
+						self.Cih = params.cmu5
+						self.Dih = params.dmu5
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.nutau:
-						self.Cih = params.ctau5/2.0
-						self.Dih = params.dtau5/2.0
+						self.Cih = params.ctau5
+						self.Dih = params.dtau5
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==const.neutrino_light:
-						self.Cih = params.clight5/2.0
-						self.Dih = params.dlight5/2.0
+						self.Cih = params.clight5
+						self.Dih = params.dlight5
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.neutrino4:
-						self.Cih = params.c45/2.0
-						self.Dih = params.d45/2.0
+						self.Cih = params.c45
+						self.Dih = params.d45
 						self.mf = params.m4
 
 				elif MC_case.nu_produced==pdg.neutrino4:
@@ -260,20 +260,20 @@ class threebody(vg.BatchIntegrand):
 
 					# Which outgoing neutrino?
 					if MC_case.nu_outgoing==pdg.nue:
-						self.Cih = params.ce4/2.0
-						self.Dih = params.de4/2.0
+						self.Cih = params.ce4
+						self.Dih = params.de4
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.numu:
-						self.Cih = params.cmu4/2.0
-						self.Dih = params.dmu4/2.0
+						self.Cih = params.cmu4
+						self.Dih = params.dmu4
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.nutau:
-						self.Cih = params.ctau4/2.0
-						self.Dih = params.dtau4/2.0
+						self.Cih = params.ctau4
+						self.Dih = params.dtau4
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==const.neutrino_light:
-						self.Cih = params.clight4/2.0
-						self.Dih = params.dlight4/2.0
+						self.Cih = params.clight4
+						self.Dih = params.dlight4
 						self.mf = 0.0
 					elif MC_case.nu_outgoing==pdg.neutrino4:
 						print('ERROR! (nu4 -> nu4 l l) is kinematically not allowed!')
@@ -523,11 +523,11 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= (uplus - uminus)
 				dgamma *= 2
 				dgamma *= 2*np.pi
-
 				####################################
-				return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
+				return {						'decay rate N' : dgamma*jacobian_scan*mzprime**4,
+					'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
-						'decay rate N' : dgamma*jacobian_scan*mzprime**4}
+						}
 # 				return {'decay rate N' : dgamma*jacobian_scan*mzprime**4,
 #                         'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
 # 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
