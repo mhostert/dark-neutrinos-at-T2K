@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.stats import norm, uniform, multivariate_normal
 from scipy.interpolate import interpn
+from scipy.integrate import dblquad
 import pandas as pd
 import matplotlib.pyplot as plt
 from fourvec import *
@@ -13,8 +14,43 @@ def ctau_light(m4, mz, Valpha4):
     aux = Valpha4/2 * m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     return 197.3 * 10**(-16) / aux
 
+def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2):
+    return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
+
+# there is a cancellation for small r that holds up to 4th order 
+# so I avoid instability by expanding when r is small
+# it needs to be adjusted to handle well m4 = mz
 def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
-    return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
+    r = ((m4/mz)**2)
+    gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
+    piece = (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3)*np.heaviside(r-0.01,0)\
+    +r**4/2 * np.heaviside(0.01-r, 1)
+    gamma *=  piece
+    return gamma
+
+def gamma_general(m4,mz,Valpha4alphaepsilon2,GammaZprime):
+    return -(Valpha4alphaepsilon2*(2*GammaZprime*(m4*m4)*mz*(m4*m4 - 2*(mz*mz)) + (m4*m4*m4*m4*m4*m4 + 3*(m4*m4)*(mz*mz)*(GammaZprime*GammaZprime - mz*mz) + 2*(mz*mz*mz*mz)*(-3*(GammaZprime*GammaZprime) + mz*mz))*np.arctan(GammaZprime/mz) + (m4*m4*m4*m4*m4*m4 + 3*(GammaZprime*GammaZprime)*(m4*m4)*(mz*mz) + 2*(mz*mz*mz*mz*mz*mz))*np.arctan((GammaZprime*mz)/(m4*m4 - mz*mz)) + mz*mz*mz*(3*(2*(GammaZprime*GammaZprime) + m4*m4)*mz*np.arctan((GammaZprime*mz)/(-(m4*m4) + mz*mz)) - GammaZprime*(2*(GammaZprime*GammaZprime + 3*(m4*m4) - 3*(mz*mz))*np.log(mz) + (GammaZprime*GammaZprime + 3*(m4*m4))*(np.log(GammaZprime*GammaZprime + mz*mz) - np.log(GammaZprime*GammaZprime*(mz*mz) + (m4*m4 - mz*mz)*(m4*m4 - mz*mz))) + 3*(mz*mz)*np.log(mz*mz + (m4*m4*m4*m4 - 2*(m4*m4)*(mz*mz))/(GammaZprime*GammaZprime + mz*mz))))))/(12.*GammaZprime*(m4*m4*m4)*mz*np.pi)
+
+# This still assumes contact interaction
+def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
+    aux = Valpha4_alphaepsilon2/(24 * np.pi) * (1/6) * (1/(-3))
+    aux *= (m4_s[1]**6 - m4_s[0]**6)
+    aux *= (mz_s[1]**(-3) - mz_s[0]**(-3))
+    if normalised:
+        aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
+    return aux
+
+def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
+
+    aux, _ = dblquad(gamma_heavy,
+                    mz_s[1], mz_s[0],
+                    m4_s[1], m4_s[0],
+                    args=[Valpha4_alphaepsilon2],
+                    epsrel=1e-8)
+    if normalised:
+        aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
+
+    return aux
 
 def ctau_heavy(m4, mz, Valpha4_alphaepsilon2):
     aux =  Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
@@ -26,6 +62,12 @@ def gamma_to_ctau(gamma):
 
 def gaussian1d(x, mu, sigma):
     return np.exp(-0.5*((x-mu)/sigma)**2)/np.sqrt(2*np.pi)/sigma
+
+def epa_kernel2d(x, sigma):
+    return np.where((x[..., 0]/sigma[0])**2 + (x[..., 1]/sigma[1])**2 > 1,
+                    0,
+                    (1 - (x[..., 0]/sigma[0])**2 - (x[..., 1]/sigma[1])**2)/(4*sigma[0]*sigma[1]*(1-1/np.sqrt(3))))
+
 
 def points_on_triangle(N_points, m4_limits, mz_limits, hierarchy='heavy'):
     rvs = np.random.random((N_points, 2))
@@ -55,16 +97,15 @@ class exp_analysis(object):
         
     def load_df(self, m4, mz):
         self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}/MC_m4_{m4}_mzprime_{mz}.pckl')
-        exp_analysis.initialise_df(self.dfs[(m4, mz)], None)
+        self.initialise_df(self.dfs[(m4, mz)], None)
         return self.dfs[(m4, mz)]
         
-    @staticmethod
-    def initialise_df(df, which_scan):
-        exp_analysis.compute_analysis_variables(df)
-        exp_analysis.compute_actual_weights(df, which_scan)
-        exp_analysis.compute_interaction_point(df)
-        exp_analysis.unitary_decay_length(df)
-        exp_analysis.compute_selection(df)
+    def initialise_df(self, df, which_scan):
+        self.compute_analysis_variables(df)
+        self.compute_actual_weights(df, which_scan)
+        self.compute_interaction_point(df)
+        self.unitary_decay_length(df)
+        self.compute_selection(df)
     
     @staticmethod
     def compute_analysis_variables(df):
@@ -80,40 +121,46 @@ class exp_analysis(object):
         df['ee_momentum', ''] = np.sqrt(dot3_df(df['pee'], df['pee']))
         df['experimental_t', ''] = (df['plm','t'] - df['plm','z'] + df['plp','t'] - df['plp','z'])**2 +\
                                     df['plm','x']**2 + df['plm','y']**2 + df['plp','x']**2 + df['plp','y']**2
-    @staticmethod
-    def compute_actual_weights(df, which_scan=None, smooth_pars_decaywidth=[0.03, 0.01], n_points_decaywidth_interpolation=30):
-        ntarget_material = {}
-        for material, mass in mass_material.items():
-            ntarget_material[material] = mass*ton2grams/molar_mass[material]*mol2natoms
 
-            material_mask = (df['recoil_mass', ''] == gev_mass[material])
-            df[material, ''] = material_mask
-            m4_values = df['m4', ''][material_mask].values
-            mz_values = df['mzprime', ''][material_mask].values
-            weight_values = df['weight', ''][material_mask].values
-            weight_decay_values = df['weight_decay', ''][material_mask].values
-            
+    def compute_actual_weights(self, df, which_scan=None, with_decay_formula=True, smooth_pars_decaywidth=[0.005, 0.05], kernel='epa', n_points_decaywidth_interpolation=30):
+        m4_values = df['m4', ''].values
+        mz_values = df['mzprime', ''].values
+        weight_values = df['weight', ''].values
+        
+        #first fix decay rate
+        if with_decay_formula:
+            if self.hierarchy == 'heavy':
+                df['total_decay_rate', ''] = gamma_heavy(m4_values,
+                                                         mz_values,
+                                                         self.Vmu4_alpha_epsilon2)
+            else:
+                print('Light hierarchy with formula not supported yet')
+                return
+        else:
+            weight_decay_values = df['weight_decay', ''].values
             if which_scan == None:
-                df.loc[material_mask, ('total_decay_rate', '')] = weight_decay_values.sum()                
-            if which_scan == 'm4':
-                m4_span = np.linspace(m4_values.min(), m4_values.max(), n_points_decaywidth_interpolation)
-                gamma_span = kde_interpolation_m4(m4_span, 
-                                m4_values, 
-                                weight_decay_values)[0]
-                df.loc[material_mask, ('total_decay_rate', '')] = np.interp(m4_values, m4_span, gamma_span)
+                df['total_decay_rate', ''] = weight_decay_values.sum()                
             elif which_scan == 'm4_mz':
-                weight_values = weight_values / mz_values**8
-                weight_decay_values = weight_decay_values / mz_values**4
                 m4_span = np.linspace(m4_values.min(), m4_values.max(), int(n_points_decaywidth_interpolation/4))
                 mz_span = np.linspace(mz_values.min(), mz_values.max(), int(n_points_decaywidth_interpolation/4))
                 aux_grid = np.stack(np.meshgrid(m4_span, mz_span, indexing='ij'), axis=-1)
                 aux_values = np.stack([m4_values, mz_values], axis=-1)
                 gamma_kde_weights = exp_analysis.kde_Nd_weights(aux_grid, 
                                 aux_values,
-                                smoothing=smooth_pars_decaywidth)
+                                smoothing=smooth_pars_decaywidth,
+                                kernel=kernel)
                 gamma_grid = np.sum(gamma_kde_weights*weight_decay_values[:, np.newaxis, np.newaxis], axis=0)
-                df.loc[material_mask, ('total_decay_rate', '')] = interpn([m4_span, mz_span], gamma_grid, aux_values)
-            df.loc[material_mask, ('adjusted_weight', '')] = weight_values / df['total_decay_rate', ''][material_mask]
+                df['total_decay_rate', ''] = interpn([m4_span, mz_span], gamma_grid, aux_values)
+        
+        df['adjusted_weight', ''] = weight_values / df['total_decay_rate', '']
+        
+        ntarget_material = {}
+        for material, mass in mass_material.items():
+            ntarget_material[material] = mass*ton2grams/molar_mass[material]*mol2natoms
+            material_mask = (df['recoil_mass', ''] == gev_mass[material])
+            if material_mask.sum() == 0:
+                continue
+            df[material, ''] = material_mask
             df.loc[material_mask, ('actual_weight', '')] = df['adjusted_weight', ''][material_mask] * ntarget_material[material] * total_pot
         
     @staticmethod
@@ -165,7 +212,7 @@ class exp_analysis(object):
         if type(ctaus) is not list:
             ctaus = [ctaus]
         for ctau in ctaus:
-            decay_particle(df, ctau)
+            exp_analysis.decay_particle(df, ctau)
             df[f'decay_in_tpc_{ctau}', ''] = (((p0d_length < df[f'decay_point_{ctau}','z']) & (df[f'decay_point_{ctau}','z'] < (p0d_length + tpc_length)) |
             (p0d_length + tpc_length + fgd_length < df[f'decay_point_{ctau}','z']) & (df[f'decay_point_{ctau}','z'] < (p0d_length + tpc_length + fgd_length + tpc_length)) |
             (p0d_length + 2*(tpc_length + fgd_length) < df[f'decay_point_{ctau}','z']) & (df[f'decay_point_{ctau}','z'] < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
@@ -195,51 +242,20 @@ class exp_analysis(object):
                             df['cut3', ''] &\
                             df['cut4', '']
 
-
     @staticmethod
-    def kde_interpolation_m4(m4, m4_rnd, weights, smoothing=0.03, kernel='gaus'):
-        assert kernel in ['gaus', 'unif']
-        m4 = m4.T * np.ones([len(m4_rnd), len(m4)])
-        m4_rnd = m4_rnd.reshape(len(m4_rnd), 1)
-        weights = weights.reshape(len(weights), 1)
-        m4_dist = (m4 - m4_rnd)
-        f_kde_contribution = weights
-        # import pdb; pdb.set_trace();
-        if kernel == 'gaus':
-            f_kde_contribution = f_kde_contribution * norm.pdf(m4_dist, 0, smoothing)
-        elif kernel == 'unif':
-            f_kde_contribution = f_kde_contribution * uniform.pdf(m4_dist, -smoothing/2, smoothing/2)
-        f_kde = f_kde_contribution.sum(axis=0)
-        var_f_kde = np.sqrt((f_kde_contribution**2).sum(axis=0))
-        return np.nan_to_num(f_kde), np.nan_to_num(var_f_kde)
-
-    @staticmethod
-    def kde_1d_weights(x, x_i, smoothing=0.03, kernel='gaus'):
-        assert kernel in ['gaus', 'unif']
-        x = x.T * np.ones([len(x_i), len(x)])
-        x_i = x_i.reshape(len(x_i), 1)
-        x_dist = (x - x_i)
-        if kernel == 'gaus':
-            kde_weights = norm.pdf(x_dist, 0, smoothing)
-        elif kernel == 'unif':
-            kde_weights = uniform.pdf(x_dist, -smoothing/2, smoothing/2)
-        else:
-            return None
-        return kde_weights
-
-    @staticmethod
-    def kde_Nd_weights(x, x_i, smoothing):
+    def kde_Nd_weights(x, x_i, smoothing, kernel='epa'):
+        """x is where to evaluate (could be a grid), x_i are the montecarlo points for training"""
         assert x.shape[-1] == x_i.shape[-1] #number of dimensions
-        nd = x_i.shape[-1]
-#         x_span = np.prod([(x_i[:,i].max() - x_i[:,i].min()) for i in range(nd)]) #assumes points are distributed uniformly in a rectangular surface
-        x = np.expand_dims(x, axis=0)
         x_i = np.expand_dims(x_i, axis=list(range(1, len(x.shape))))
+        x = np.expand_dims(x, axis=0) #add the axis for the number of points over which to sum.
         x_dist = (x - x_i)
-        smoothing = np.diag(smoothing)**2
-        random_weights = multivariate_normal.pdf(x_dist, cov=smoothing)
-        kde_weights = random_weights
+        if kernel == 'gaus':
+            smoothing = np.diag(smoothing)**2
+            kde_weights = multivariate_normal.pdf(x_dist, cov=smoothing)
+        elif kernel == 'epa':
+            kde_weights = epa_kernel2d(x_dist, smoothing)
         return kde_weights
-
+    
     @staticmethod
     def mu_sigma2_of_theta(df, m4, mz, ctau, smooth_m4, smooth_mz, selection_step='cut_based_geometric'):
         m4_values = df['m4', ''].values
@@ -290,8 +306,3 @@ class exp_analysis(object):
         weight_values = this_kde_weights * total_weights * mu
 
         return weight_values.sum(), (weight_values**2).sum()
-    
-    def compare_distributions(self, m4, mz, variable):
-        assert (m4, mz) in self.dfs.keys()
-
-        

@@ -524,14 +524,9 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= 2
 				dgamma *= 2*np.pi
 				####################################
-				return {						'decay rate N' : dgamma*jacobian_scan*mzprime**4,
-					'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
-						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
-						}
-# 				return {'decay rate N' : dgamma*jacobian_scan*mzprime**4,
-#                         'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*jacobian_scan*mzprime**8,
-# 						'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan*mzprime**4,
-# 						}
+				return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4*self.flux(Enu)*dgamma*mzprime**4/Mn**5,
+                        'decay rate N' : jacobian_scan*dgamma*mzprime**4/Mn**5,
+						'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4,}
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 

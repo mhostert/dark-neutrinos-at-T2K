@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 import matplotlib
 matplotlib.use('agg')
 import matplotlib.pyplot as plt
@@ -41,8 +40,8 @@ def main(argv):
 	parser.add_argument("--M6_max", type=float, help="sixth neutrino mass max", default=None)
 
 	parser.add_argument("--UMU4", type=float, help="Umu4 square", default=8.0e-9)
-	parser.add_argument("--UMU5", type=float, help="Umu5 square", default=26.5e-8)
-	parser.add_argument("--UMU6", type=float, help="Umu6 square", default=123.0e-8*0.0629)
+	parser.add_argument("--UMU5", type=float, help="Umu5 square", default=0*26.5e-8)
+	parser.add_argument("--UMU6", type=float, help="Umu6 square", default=0*123.0e-8*0.0629)
 
 	parser.add_argument("--UMU4_min", type=float, help="Umu4 square min", default=None)
 	parser.add_argument("--UMU4_max", type=float, help="Umu4 square max", default=None)
@@ -68,8 +67,8 @@ def main(argv):
 	parser.add_argument("--UTAU6", type=float, help="UTAU6", default=0)
 
 	parser.add_argument("--UD4", type=float, help="UD4", default=1.0)
-	parser.add_argument("--UD5", type=float, help="UD5", default= 1.0)
-	parser.add_argument("--UD6", type=float, help="UD6", default= 1.0)
+	parser.add_argument("--UD5", type=float, help="UD5", default=0*1.0)
+	parser.add_argument("--UD6", type=float, help="UD6", default=0*1.0)
 
 	parser.add_argument("--ldecay", type=float, help="ctau of the fourth neutrino in cm", default=0.1)
 	
