@@ -1,3 +1,4 @@
+
 #!/usr/bin/python3
 import matplotlib
 matplotlib.use('agg')
@@ -68,8 +69,8 @@ def main(argv):
 	parser.add_argument("--UTAU6", type=float, help="UTAU6", default=0)
 
 	parser.add_argument("--UD4", type=float, help="UD4", default=1.0)
-	parser.add_argument("--UD5", type=float, help="UD5", default= 1.0)
-	parser.add_argument("--UD6", type=float, help="UD6", default= 1.0)
+	parser.add_argument("--UD5", type=float, help="UD5", default=1.0)
+	parser.add_argument("--UD6", type=float, help="UD6", default=1.0)
 
 	parser.add_argument("--ldecay", type=float, help="ctau of the fourth neutrino in cm", default=0.1)
 	
