@@ -199,8 +199,8 @@ class MC_events:
 			dic = integrands.three_body_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N']
             
-			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**8
-			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**4
+			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**8 * dic['m4_scan']**5
+			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**4 * dic['m4_scan']**5
 
 		integral = result['full integrand']
 
