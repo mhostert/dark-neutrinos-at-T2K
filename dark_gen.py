@@ -58,7 +58,7 @@ def main(argv):
 	parser.add_argument("--nodif", help="remove diffractive events", action="store_true")
 	parser.add_argument("--nocoh", help="remove coherent events", action="store_true")
 	parser.add_argument("--noplot", help="no plot", action="store_true")
-	parser.add_argument("--HNLtype", type=int, help="HNLtype: 1 is DIRAC, 0 is MAJORANA", choices=[0, 1], default=0)
+	parser.add_argument("--D_or_M", help="D_or_M: dirac or majorana", choices=["dirac", "majorana"], default="majorana")
 	
 	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e4)
 	parser.add_argument("--nint", type=int, help="number of adaptive iterations", default=20)
@@ -70,8 +70,8 @@ def main(argv):
 	parser.add_argument("--hierarchy",
 						 type=str,
 						 help="light or heavy Z' case",
-						 default=const.HM,
-						 choices=['light_mediator', 'heavy_mediator'])
+						 default='heavy',
+						 choices=['light', 'heavy'])
 
 	args = parser.parse_args()
 
@@ -108,7 +108,7 @@ def main(argv):
 	BSMparams.m5 = args.M5
 	BSMparams.m6 = args.M6
 	BSMparams.Mzprime = args.mzprime
-	BSMparams.Dirac = args.HNLtype
+	BSMparams.D_or_M = args.D_or_M
 
 	BSMparams.set_high_level_variables()
 	BSMparams.hierarchy=args.hierarchy
@@ -131,92 +131,21 @@ def main(argv):
 	####################################################
 	# Run MC and get events
 	if MODEL==const.THREEPLUSONE:
-
+		print(f"Using: m4 = {args.M4} mzprime={args.mzprime}")
 		bag = MC.run_MC(BSMparams, myexp, [pdg.numu], INCLUDE_DIF=False)
 
 		### NAMING 
 		## HEPEVT Event file name
-		PATH_data = f'data/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}/'
+		PATH_data = f'data/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}_{args.hierarchy}_{args.D_or_M}/'
 		PATH = f'plots/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}/'
 		
 		# title for plots
 		power = int(np.log10(args.UMU4**2))-1
 		title = r"$m_{4} = \,$"+str(round(args.M4,4))+r" GeV, $M_{Z^\prime} = \,$"+str(round(args.mzprime,4))+r" GeV, $|U_{D4}|^2=%1.1g$, $|U_{\mu 4}|^2=%1.1f \times 10^{-%i}$"%(args.UD4**2,args.UMU4**2/10**(power),-power)
-	
-	#####################################################################
-	# elif MODEL==const.THREEPLUSTWO:
-	# 	coh_events = MC.MC_events(BSMparams,
-	# 							 myexp,
-	# 							None,
-	# 							MA=A_NUMBER*const.MAVG,
-	# 							Z=Z_NUMBER,
-	# 							nu_scatterer=pdg.numu,
-	# 							nu_produced=pdg.neutrino5,
-	# 							nu_outgoing=pdg.neutrino4,
-	# 							final_lepton=pdg.electron,
-	# 							h_upscattered=-1)
-	# 	dif_events = MC.MC_events(BSMparams,
-	# 							myexp, 
-	# 							None,
-	# 							MA=1.0*const.mproton,
-	# 							Z=1,
-	# 							nu_scatterer=pdg.numu,
-	# 							nu_produced=pdg.neutrino5,
-	# 							nu_outgoing=pdg.neutrino4,
-	# 							final_lepton=pdg.electron,
-	# 							h_upscattered=-1)
-		
-	# 	coh_eventsRH = MC.MC_events(BSMparams,
-	# 							 myexp,
-	# 							None,
-	# 							MA=A_NUMBER*const.MAVG,
-	# 							Z=Z_NUMBER,
-	# 							nu_scatterer=pdg.numu,
-	# 							nu_produced=pdg.neutrino6,
-	# 							nu_outgoing=pdg.neutrino4,
-	# 							final_lepton=pdg.electron,
-	# 							h_upscattered=-1)
-	# 	dif_eventsRH = MC.MC_events(BSMparams,
-	# 							myexp, 
-	# 							None,
-	# 							MA=1.0*const.mproton,
-	# 							Z=1,
-	# 							nu_scatterer=pdg.numu,
-	# 							nu_produced=pdg.neutrino6,
-	# 							nu_outgoing=pdg.neutrino4,
-	# 							final_lepton=pdg.electron,
-	# 							h_upscattered=-1)
-		
-		# cases = [
-		# 		coh_events.get_MC_events(),
-		# 		dif_events.get_MC_events(),
-		# 		coh_eventsRH.get_MC_events(),
-		# 		dif_eventsRH.get_MC_events()
-		# 		]
-		
-		# Ifactors = [1.0*COH_FLAG,
-		# 			P_per_target*DIF_FLAG,
-		# 			1.0*COH_FLAG,
-		# 			P_per_target*DIF_FLAG]
-
-		# flags = [const.COHLH,const.DIFLH,
-		# 		const.COHRH,const.DIFRH]
-
-		# bag = MC.Combine_MC_output(cases, Ifactors=Ifactors, flags=flags)
-
-		# pN   = bag['P3']
-		# pZ   = bag['P3_decay']+bag['P4_decay']
-		# plm  = bag['P3_decay']
-		# plp  = bag['P4_decay']
-		# pHad = bag['P4']
-		# w = bag['w']
-		# I = bag['I']
-		# regime = bag['flags']
 
 
-
-	print(bag['I']/bag['I_decay']*const.NAvo*1e6*13e20*818*0.05/12)
-	print(bag['I_decay'])
+	# print(bag['I']/bag['I_decay']*const.NAvo*1e6*13e20*818*0.05/12)
+	# print(bag['I_decay'])
 	############################################################################
 	# Print events to file -- currently in data/exp/m4____mzprime____.dat 
 	#############################################################################

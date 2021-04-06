@@ -28,7 +28,7 @@ class model_params():
 
 		self.scan      = False
 
-	def set_KDEscan_mode_on(self,args,hierarchy=const.LM):
+	def set_KDEscan_mode_on(self,args):
 		self.scan = True
 		
 		self.M4_min	= args.M4_min		

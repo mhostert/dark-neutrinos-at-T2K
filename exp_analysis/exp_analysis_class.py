@@ -21,16 +21,39 @@ def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2):
 # there is a cancellation for small r that holds up to 4th order 
 # so I avoid instability by expanding when r is small
 # it needs to be adjusted to handle well m4 = mz
-def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
+def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     r = ((m4/mz)**2)
     gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
-    piece = (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3)*np.heaviside(r-0.01,0)\
-    +r**4/2 * np.heaviside(0.01-r, 1)
+    piece = np.where(r>0.01, (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3), r**4/2)
     gamma *=  piece
+
+    if D_or_M=='dirac':
+        dgamma *= 1.0/2.0
+
     return gamma
 
-def gamma_general(m4,mz,Valpha4alphaepsilon2,GammaZprime):
-    return -(Valpha4alphaepsilon2*(2*GammaZprime*(m4*m4)*mz*(m4*m4 - 2*(mz*mz)) + (m4*m4*m4*m4*m4*m4 + 3*(m4*m4)*(mz*mz)*(GammaZprime*GammaZprime - mz*mz) + 2*(mz*mz*mz*mz)*(-3*(GammaZprime*GammaZprime) + mz*mz))*np.arctan(GammaZprime/mz) + (m4*m4*m4*m4*m4*m4 + 3*(GammaZprime*GammaZprime)*(m4*m4)*(mz*mz) + 2*(mz*mz*mz*mz*mz*mz))*np.arctan((GammaZprime*mz)/(m4*m4 - mz*mz)) + mz*mz*mz*(3*(2*(GammaZprime*GammaZprime) + m4*m4)*mz*np.arctan((GammaZprime*mz)/(-(m4*m4) + mz*mz)) - GammaZprime*(2*(GammaZprime*GammaZprime + 3*(m4*m4) - 3*(mz*mz))*np.log(mz) + (GammaZprime*GammaZprime + 3*(m4*m4))*(np.log(GammaZprime*GammaZprime + mz*mz) - np.log(GammaZprime*GammaZprime*(mz*mz) + (m4*m4 - mz*mz)*(m4*m4 - mz*mz))) + 3*(mz*mz)*np.log(mz*mz + (m4*m4*m4*m4 - 2*(m4*m4)*(mz*mz))/(GammaZprime*GammaZprime + mz*mz))))))/(12.*GammaZprime*(m4*m4*m4)*mz*np.pi)
+# this is the product of GammaZprime * GammaN
+def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    GammaZprime = (2*np.pi*2*np.sqrt(-4*(m_ell*m_ell) + Mzprime*Mzprime)*(5*(m_ell*m_ell) + 2*(Mzprime*Mzprime))*np.pi)/(24.*(Mzprime*Mzprime)*(np.pi*np.pi))
+
+    gammaN = 2*Valpha4_alphaepsilon2*4*np.pi*(Mn**2 - 2*Mzprime**2 + Mn**4/Mzprime**2)/2.0/Mn/32.0/np.pi**2*(1.0-Mzprime**2/Mn**2) 
+    
+    if D_or_M=='dirac':
+        dgamma *= 1.0/2.0
+
+    dgamma *= 2*np.pi*2 # d phi dcostheta
+
+    return gamma
+
+
+def gamma_general(m4,mz,Valpha4alphaepsilon2, D_or_M):
+    gamma = np.where(m4 > mz,
+            gamma_light(m4,mz,Valpha4alphaepsilon2),
+            gamma_heavy(m4,mz,Valpha4alphaepsilon2)
+            )
+    # return -(Valpha4alphaepsilon2*(2*GammaZprime*(m4*m4)*mz*(m4*m4 - 2*(mz*mz)) + (m4*m4*m4*m4*m4*m4 + 3*(m4*m4)*(mz*mz)*(GammaZprime*GammaZprime - mz*mz) + 2*(mz*mz*mz*mz)*(-3*(GammaZprime*GammaZprime) + mz*mz))*np.arctan(GammaZprime/mz) + (m4*m4*m4*m4*m4*m4 + 3*(GammaZprime*GammaZprime)*(m4*m4)*(mz*mz) + 2*(mz*mz*mz*mz*mz*mz))*np.arctan((GammaZprime*mz)/(m4*m4 - mz*mz)) + mz*mz*mz*(3*(2*(GammaZprime*GammaZprime) + m4*m4)*mz*np.arctan((GammaZprime*mz)/(-(m4*m4) + mz*mz)) - GammaZprime*(2*(GammaZprime*GammaZprime + 3*(m4*m4) - 3*(mz*mz))*np.log(mz) + (GammaZprime*GammaZprime + 3*(m4*m4))*(np.log(GammaZprime*GammaZprime + mz*mz) - np.log(GammaZprime*GammaZprime*(mz*mz) + (m4*m4 - mz*mz)*(m4*m4 - mz*mz))) + 3*(mz*mz)*np.log(mz*mz + (m4*m4*m4*m4 - 2*(m4*m4)*(mz*mz))/(GammaZprime*GammaZprime + mz*mz))))))/(12.*GammaZprime*(m4*m4*m4)*mz*np.pi)
+    return gamma
+
 
 # This still assumes contact interaction
 def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
@@ -82,22 +105,23 @@ def points_on_triangle(N_points, m4_limits, mz_limits, hierarchy='heavy'):
 
 class exp_analysis(object):
     
-    def __init__(self, hierarchy, base_folder='../data/nd280_nu/3plus1/'):
+    def __init__(self, hierarchy, D_or_M, base_folder='../data/nd280_nu/3plus1/'):
         self.__dict__.update(physics_parameters[hierarchy])
         self.hierarchy = hierarchy
+        self.D_or_M = D_or_M
         self.base_folder = base_folder
         self.dfs = {}
         
     def load_df_base(self, n_evt=1000000, filename=None):
         self.n_evt = n_evt
         if filename is None:
-            self.df_base = pd.read_pickle(f'{self.base_folder}scan/{self.hierarchy}_mediator/{self.m4_limits[0]}_m4_{self.m4_limits[1]}_{self.mz_limits[0]}_mzprime_{self.mz_limits[1]}_nevt_{self.n_evt}.pckl')
+            self.df_base = pd.read_pickle(f'{self.base_folder}scan/{self.hierarchy}_{self.D_or_M}/{self.m4_limits[0]}_m4_{self.m4_limits[1]}_{self.mz_limits[0]}_mzprime_{self.mz_limits[1]}_nevt_{self.n_evt}.pckl')
         else:
             self.df_base = pd.read_pickle(filename)
         self.initialise_df(self.df_base, which_scan='m4_mz')
     
     def load_df(self, m4, mz):
-        self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}/MC_m4_{m4}_mzprime_{mz}.pckl')
+        self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}{self.hierarchy}_{self.D_or_M}/MC_m4_{m4}_mzprime_{mz}.pckl')
         self.initialise_df(self.dfs[(m4, mz)], None)
         return self.dfs[(m4, mz)]
     
@@ -143,9 +167,15 @@ class exp_analysis(object):
         #first fix decay rate
         if with_decay_formula:
             if self.hierarchy == 'heavy':
-                df['total_decay_rate', ''] = gamma_heavy(m4_values,
+                df['total_decay_rate', ''] = gamma_general(m4_values,
                                                          mz_values,
-                                                         self.Vmu4_alpha_epsilon2)
+                                                         self.Vmu4_alpha_epsilon2,
+                                                         D_or_M=self.D_or_M)
+            elif self.hierarchy == 'light':    
+                df['total_decay_rate', ''] = gamma_general(m4_values,
+                                                         mz_values,
+                                                         self.Vmu4_alpha_epsilon2,
+                                                         D_or_M=self.D_or_M)
             else:
                 print('Light hierarchy with formula not supported yet')
                 return

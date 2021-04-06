@@ -14,7 +14,6 @@ from dark_news import *
 
 
 def main(argv):
-
 	####################
 	# Default options
 	# 3+1 model unless otherwise specified by passing M5 argument
@@ -24,15 +23,15 @@ def main(argv):
 	parser = argparse.ArgumentParser(description="Generate dark nu events")
 	parser.add_argument("--mzprime", type=float, help="Z' mass", default=0.03)
 
-	parser.add_argument("--mzprime_min", type=float, help="Z' mass min", default=0.01)
-	parser.add_argument("--mzprime_max", type=float, help="Z' mass max", default=0.05)
+	parser.add_argument("--mzprime_min", type=float, help="Z' mass min", default=0.1)
+	parser.add_argument("--mzprime_max", type=float, help="Z' mass max", default=10.0)
 	
 	parser.add_argument("--M4", type=float, help="fourth neutrino mass", default=0.100)
 	parser.add_argument("--M5", type=float, help="fifth neutrino mass", default=1e6)
 	parser.add_argument("--M6", type=float, help="sixth neutrino mass", default=1e6)
 
-	parser.add_argument("--M4_min", type=float, help="fourth neutrino mass min", default=0.1)
-	parser.add_argument("--M4_max", type=float, help="fourth neutrino mass max", default=0.5)
+	parser.add_argument("--M4_min", type=float, help="fourth neutrino mass min", default=0.005)
+	parser.add_argument("--M4_max", type=float, help="fourth neutrino mass max", default=0.1)
 
 	parser.add_argument("--M5_min", type=float, help="fifth neutrino mass min", default=None)
 	parser.add_argument("--M5_max", type=float, help="fifth neutrino mass max", default=None)
@@ -53,8 +52,8 @@ def main(argv):
 	parser.add_argument("--hierarchy",
 						 type=str,
 						 help="light or heavy Z' case",
-						 default=const.HM,
-						 choices=['light_mediator', 'heavy_mediator'])
+						 default='heavy',
+						 choices=['light', 'heavy'])
 
 	# parser.add_argument("--GPRIME", type=float, help="gprime", default=np.sqrt(4*np.pi*1/4.0))
 	# parser.add_argument("--CHI", type=float, help="CHI", default=np.sqrt(2e-10/const.alphaQED)/const.cw)
@@ -84,9 +83,9 @@ def main(argv):
 	parser.add_argument("--nodif", help="remove diffractive events", action="store_true")
 	parser.add_argument("--nocoh", help="remove coherent events", action="store_true")
 	parser.add_argument("--noplot", help="no plot", action="store_true")
-	parser.add_argument("--HNLtype", type=int, help="HNLtype: 1 is DIRAC, 0 is MAJORANA", choices=[0, 1], default=0)
+	parser.add_argument("--D_or_M", help="D_or_M: dirac or majorana", choices=["dirac", "majorana"], default="majorana")
 	
-	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e5)
+	parser.add_argument("--neval", type=int, help="number of evaluations of integrand", default=1e3)
 	parser.add_argument("--nint", type=int, help="number of adaptive iterations", default=20)
 	parser.add_argument("--neval_warmup", type=int, help="number of evaluations of integrand in warmup", default=1e3)
 	parser.add_argument("--nint_warmup", type=int, help="number of adaptive iterations in warmup", default=10)
@@ -127,17 +126,17 @@ def main(argv):
 	BSMparams.m5 = args.M5
 	BSMparams.m6 = args.M6
 	BSMparams.Mzprime = args.mzprime
-	BSMparams.Dirac = args.HNLtype
+	BSMparams.D_or_M = args.D_or_M
 
 	BSMparams.set_high_level_variables()
 
 	BSMparams.hierarchy=args.hierarchy
 	BSMparams.set_KDEscan_mode_on(args)
-    
+
 	print(f"Umu4 = {BSMparams.Umu4**2}")
 	print(f"epsilon2 = {args.epsilon2}")
 	print(f"alpha_dark = {args.alpha_dark}")
-	print(f"chi = {BSMparams.chi}, {np.sqrt(args.epsilon2)/const.cw}")
+	print(f"chi = {BSMparams.chi}")
     
 	####################################################
 	# CHOOSE EXPERIMENTAL FLUXES, NORMALIZATION, ETC...
@@ -155,8 +154,8 @@ def main(argv):
 
 		### NAMING 
 		## HEPEVT Event file name
-		PATH_data = f'data/{args.exp}/3plus1/scan/{args.hierarchy}/'
-		PATH = f'plots/{args.exp}/3plus1/scan/{args.hierarchy}/'
+		PATH_data = f'data/{args.exp}/3plus1/scan/{args.hierarchy}_{args.D_or_M}/'
+		PATH = f'plots/{args.exp}/3plus1/scan/{args.hierarchy}_{args.D_or_M}/'
 		
 	
 
@@ -173,6 +172,7 @@ def main(argv):
 									# out_file_name=datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d-%Hh-%Mmin-%Ss.pckl'))
 	# HEPEVT_events = args.hepevt_events
 	# printer.print_unweighted_events_to_HEPEVT(PATH_data, bag, HEPEVT_events, BSMparams, l_decay_proper=args.ldecay)
+
 
 if __name__ == "__main__":
 	try:

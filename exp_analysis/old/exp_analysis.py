@@ -356,8 +356,7 @@ def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2):
 def gamma_heavy(m4, mz, Valpha4_alphaepsilon2):
     r=(m4/mz)**2
     gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
-    piece = (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3)*np.heaviside(r-0.01,0)\
-    +r**4/2 * np.heaviside(0.01-r, 1)
+    piece = (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3)*np.heaviside(r-0.01,0)+r**4/2 * np.heaviside(0.01-r, 1)
     gamma *=  piece
     return gamma*np.heaviside(mz - m4,0)
 
@@ -374,7 +373,6 @@ def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised
     return aux
 
 def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
-
     aux, _ = dblquad(gamma_heavy,
                     mz_s[1], mz_s[0],
                     m4_s[1], m4_s[0],
