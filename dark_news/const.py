@@ -15,8 +15,8 @@ DIFRH=4
 DIRAC = 'dirac'
 MAJORANA = 'majorana'
 
-HM = 'heavy_mediator'
-LM = 'light_mediator'
+# HM = 'heavy_mediator'
+# LM = 'light_mediator'
 
 
 # fix experiment to use

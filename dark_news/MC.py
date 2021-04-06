@@ -52,7 +52,7 @@ class MC_events:
 				datafile=None, 
 				MA=1*const.MAVG, 
 				Z=6, 
-				HNLtype= const.MAJORANA, 
+				D_or_M= 'majorana', 
 				nu_scatterer=pdg.numu,
 				nu_produced=pdg.neutrino4, 
 				nu_outgoing=pdg.numu, 
@@ -122,16 +122,9 @@ class MC_events:
 		###############################
 		# Set hierarchy here
 		self.hierarchy = params.hierarchy
-		# if self.hierarchy == const.HM: # else, very simple expressions can be used.
-			#############################
-			# DECAY PROPERTIES
-			# self.decay_prop = decay_rates.HeavyNu(params,self.nu_produced)
-			# self.decay_prop.compute_rates() # -- uses quad integrate -- slow!!
-			# self.decay_prop.total_rate()
-			# self.decay_prop.compute_BR()
 		
 		# Dirac or Majorana
-		self.HNLtype = HNLtype
+		self.D_or_M = D_or_M
 
 
 	def get_MC_events(self):
@@ -147,7 +140,7 @@ class MC_events:
 		prod=self.final_lepton
 
 
-		if self.hierarchy == const.LM:
+		if self.hierarchy == 'light':
 			#########################################################################
 			# BATCH SAMPLE INTEGRAN OF INTEREST
 			DIM =3
@@ -157,7 +150,7 @@ class MC_events:
 			batch_f = integrands.cascade(dim=DIM, Emin=self.EMIN, Emax=self.EMAX, MC_case=self)
 			integ = vg.Integrator(DIM*[[0.0, 1.0]])
 
-		elif self.hierarchy == const.HM:
+		elif self.hierarchy == 'heavy':
 			#########################################################################
 			# BATCH SAMPLE INTEGRAN OF INTEREST
 			DIM = 6
@@ -191,11 +184,14 @@ class MC_events:
 		# Get the int variables and weights
 		SAMPLES,weights = C_MC.get_samples(DIM, integ, batch_f)
 		
-		if params.hierarchy == const.LM:
+		if params.hierarchy == 'light':
 			dic = integrands.cascade_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N'] # the Zprime width is trivially accounted for
+            
+			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**2 * dic['m4_scan']**3
+			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**2 * dic['m4_scan']**3
 		
-		elif params.hierarchy == const.HM:			
+		elif params.hierarchy == 'heavy':
 			dic = integrands.three_body_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N']
             

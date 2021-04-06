@@ -11,14 +11,30 @@ physics_parameters['heavy'] = {
     'alpha_em': 1./137,
 }
 
-# physics_parameters['heavy']['span_2d'] = (physics_parameters['heavy']['mz_limits'][1] - physics_parameters['heavy']['mz_limits'][0] +\
-#                                           physics_parameters['heavy']['mz_limits'][1] - physics_parameters['heavy']['m4_limits'][0]) *\
-#                                          (physics_parameters['heavy']['m4_limits'][1] - physics_parameters['heavy']['m4_limits'][0])/2
+physics_parameters['light'] = {
+    'm4_limits': (0.005, 2),
+    'mz_limits': (0.005, 10),
+    'm4_scan' : [0.01, 0.1, 0.4, 0.8],
+    'mz_scan': [0.01, 0.03, 0.1, 0.2],
+    'alpha_dark': 0.4,
+    'Umu4': 2e-9,
+    'epsilon2': 2e-10*137,
+    'alpha_em': 1./137,
+}
 
-physics_parameters['heavy']['Vmu4_alpha_epsilon2'] = physics_parameters['heavy']['alpha_dark'] *\
-                                                     physics_parameters['heavy']['Umu4'] *\
-                                                     physics_parameters['heavy']['alpha_em'] *\
-                                                     physics_parameters['heavy']['epsilon2']
+for key in physics_parameters:
+
+    physics_parameters[key]['span_2d'] = (physics_parameters[key]['mz_limits'][1] - physics_parameters[key]['mz_limits'][0] +\
+                                              physics_parameters[key]['mz_limits'][1] - physics_parameters[key]['m4_limits'][0]) *\
+                                             (physics_parameters[key]['m4_limits'][1] - physics_parameters[key]['m4_limits'][0])/2
+
+    physics_parameters[key]['Vmu4_alpha_epsilon2'] = physics_parameters[key]['alpha_dark'] *\
+                                                         physics_parameters[key]['Umu4'] *\
+                                                         physics_parameters[key]['alpha_em'] *\
+                                                         physics_parameters[key]['epsilon2']
+
+
+
 
 total_pot = 2e21
 
