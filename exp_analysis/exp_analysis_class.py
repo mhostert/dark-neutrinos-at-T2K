@@ -1,3 +1,4 @@
+import itertools
 import numpy as np
 from scipy.stats import norm, uniform, multivariate_normal
 from scipy.interpolate import interpn
@@ -94,19 +95,31 @@ class exp_analysis(object):
         else:
             self.df_base = pd.read_pickle(filename)
         self.initialise_df(self.df_base, which_scan='m4_mz')
-        
+    
     def load_df(self, m4, mz):
         self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}/MC_m4_{m4}_mzprime_{mz}.pckl')
         self.initialise_df(self.dfs[(m4, mz)], None)
         return self.dfs[(m4, mz)]
-        
+    
+    def load_grid_dfs(self):
+        for m4, mz in itertools.product(self.m4_scan, self.mz_scan):
+            if ((self.hierarchy == 'heavy') and (m4 >= mz)) or ((self.hierarchy == 'light') and (m4 <= mz)):
+                continue
+            else:
+                self.load_df(m4, mz)
+    
     def initialise_df(self, df, which_scan):
         self.compute_analysis_variables(df)
         self.compute_actual_weights(df, which_scan)
         self.compute_interaction_point(df)
         self.unitary_decay_length(df)
         self.compute_selection(df)
-    
+        
+        self.m4_values = self.df_base['m4', ''].values
+        self.mz_values = self.df_base['mzprime', ''].values
+        self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
+        self.actual_weight_values = self.df_base['actual_weight', ''].values
+        
     @staticmethod
     def compute_analysis_variables(df):
         for comp in ['t','x','y','z']:
@@ -255,6 +268,23 @@ class exp_analysis(object):
         elif kernel == 'epa':
             kde_weights = epa_kernel2d(x_dist, smoothing)
         return kde_weights
+    
+    def kde_on_a_point(self, this_m4mz, smoothing=[0.005, 0.05], kernel='epa'):
+        if type(this_m4mz) != np.ndarray:
+            this_m4mz = np.array(this_m4mz)
+        return self.actual_weight_values * self.kde_Nd_weights(this_m4mz, 
+                                                               self.m4mz_values, 
+                                                               smoothing, 
+                                                               kernel)
+
+    def kde_on_a_grid(self, m4_span, mz_span, smoothing=[0.005, 0.05], kernel='epa'):
+        grid_to_eval = np.stack(np.meshgrid(m4_span, mz_span, indexing='ij'), axis=-1)
+        this_kde_weights = self.kde_Nd_weights(grid_to_eval, 
+                                               self.m4mz_values, 
+                                               smoothing, 
+                                               kernel)
+
+        return self.actual_weight_values[:, np.newaxis, np.newaxis] * this_kde_weights
     
     @staticmethod
     def mu_sigma2_of_theta(df, m4, mz, ctau, smooth_m4, smooth_mz, selection_step='cut_based_geometric'):
