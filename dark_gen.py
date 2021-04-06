@@ -22,7 +22,7 @@ def main(argv):
 	####################
 	# User specified
 	parser = argparse.ArgumentParser(description="Generate dark nu events")
-	parser.add_argument("--mzprime", type=float, help="Z' mass", default=1.25)
+	parser.add_argument("--mzprime", type=float, help="Z' mass", default=0.03)
 	parser.add_argument("--M4", type=float, help="mass of the fourth neutrino", default=0.100)
 	parser.add_argument("--M5", type=float, help="mass of the fifth neutrino", default=1e5)
 	parser.add_argument("--M6", type=float, help="mass of the sixth neutrino", default=1e5)
@@ -92,6 +92,7 @@ def main(argv):
 		BSMparams.chi = np.sqrt(args.epsilon2)/const.cw
 	else:
 		BSMparams.chi = np.sqrt(args.alpha_epsilon2/const.alphaQED)/const.cw
+
 	BSMparams.Ue4 = 0.0
 	BSMparams.Umu4 = np.sqrt(args.UMU4)
 	BSMparams.Utau4 = np.sqrt(args.UTAU4)
@@ -119,29 +120,24 @@ def main(argv):
 
 	####################################################
 	# Set the model to use
-	if ((args.M5 > args.M4) and (args.M5 < args.mzprime)):
-		MODEL = const.THREEPLUSTWO
-		print('Model used 3+2')
-	elif (((args.M4 < args.mzprime) and (args.M5 > args.mzprime)) or ((args.M4 > args.mzprime) and (args.M5 >= 1e5))):
-		MODEL = const.THREEPLUSONE
-		print('Model used 3+1')
-	else:
-		print('ERROR! Mass spectrum not allowed.')
-
+	wrong_order=((args.M4 < args.mzprime) & (args.hierarchy == 'light'))|((args.M4 > args.mzprime) & (args.hierarchy == 'heavy'))
+	if (wrong_order):
+		print(f'Error! Wrong choice of m4 and mzprime for {args.hierarchy} Zprime case.') 
+		return 1
 	####################################################
 	# Run MC and get events
-	if MODEL==const.THREEPLUSONE:
-		print(f"Using: m4 = {args.M4} mzprime={args.mzprime}")
-		bag = MC.run_MC(BSMparams, myexp, [pdg.numu], INCLUDE_DIF=False)
 
-		### NAMING 
-		## HEPEVT Event file name
-		PATH_data = f'data/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}_{args.hierarchy}_{args.D_or_M}/'
-		PATH = f'plots/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}/'
-		
-		# title for plots
-		power = int(np.log10(args.UMU4**2))-1
-		title = r"$m_{4} = \,$"+str(round(args.M4,4))+r" GeV, $M_{Z^\prime} = \,$"+str(round(args.mzprime,4))+r" GeV, $|U_{D4}|^2=%1.1g$, $|U_{\mu 4}|^2=%1.1f \times 10^{-%i}$"%(args.UD4**2,args.UMU4**2/10**(power),-power)
+	print(f"Using: m4 = {args.M4} mzprime={args.mzprime}")
+	bag = MC.run_MC(BSMparams, myexp, [pdg.numu], INCLUDE_DIF=False)
+
+	### NAMING 
+	## HEPEVT Event file name
+	PATH_data = f'data/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}_{args.hierarchy}_{args.D_or_M}/'
+	PATH = f'plots/{args.exp}/3plus1/m4_{args.M4:.4g}_mzprime_{args.mzprime:.4g}/'
+	
+	# title for plots
+	power = int(np.log10(args.UMU4**2))-1
+	title = r"$m_{4} = \,$"+str(round(args.M4,4))+r" GeV, $M_{Z^\prime} = \,$"+str(round(args.mzprime,4))+r" GeV, $|U_{D4}|^2=%1.1g$, $|U_{\mu 4}|^2=%1.1f \times 10^{-%i}$"%(args.UD4**2,args.UMU4**2/10**(power),-power)
 
 
 	# print(bag['I']/bag['I_decay']*const.NAvo*1e6*13e20*818*0.05/12)
@@ -152,8 +148,6 @@ def main(argv):
 	printer.print_events_to_pandas(PATH_data, bag, BSMparams,
 									l_decay_proper=args.ldecay,
 									out_file_name=f"MC_m4_{BSMparams.m4:.8g}_mzprime_{BSMparams.Mzprime:.8g}.pckl")
-	# HEPEVT_events = args.hepevt_events
-	# printer.print_unweighted_events_to_HEPEVT(PATH_data, bag, HEPEVT_events, BSMparams, l_decay_proper=args.ldecay)
 
 if __name__ == "__main__":
 	try:

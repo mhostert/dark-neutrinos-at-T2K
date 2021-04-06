@@ -17,7 +17,7 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000):
                        f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
                        f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M}']
         
-        stream = subprocess_cmd(dark_gen_run)
+        subprocess_cmd(dark_gen_run)
 
 
 def produce_scan_sample(case, D_or_M, neval=1000000):
@@ -31,4 +31,4 @@ def produce_scan_sample(case, D_or_M, neval=1000000):
                    f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
                    f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M}']
 
-    stream = subprocess_cmd(mu_gen_run)
+    subprocess_cmd(mu_gen_run)
