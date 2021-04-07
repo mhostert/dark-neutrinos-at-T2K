@@ -159,7 +159,9 @@ class MC_events:
 				
 			batch_f = integrands.threebody(dim=DIM, Emin=self.EMIN, Emax=self.EMAX, MC_case=self)
 			integ = vg.Integrator(DIM*[[0.0, 1.0]])
-		
+		else:
+			print("Could not find hierarchy")
+
 		##########################################################################
 		# COMPUTE TOTAL INTEGRAL
 		# Sample the integrand to adapt integrator
@@ -170,7 +172,6 @@ class MC_events:
 		# 	nstrat[-1] = 1
 		# 	nstrat[-2] = 1
 		# 	warmup = integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
-
 		# Sample again, now saving result
 		result = integ(batch_f, nitn=NINT, neval=NEVAL)
 		# if params.scan:
@@ -197,6 +198,9 @@ class MC_events:
             
 			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**8 * dic['m4_scan']**5
 			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**4 * dic['m4_scan']**5
+		else:
+			print("Could not find hierarchy")
+
 
 		integral = result['full integrand']
 
