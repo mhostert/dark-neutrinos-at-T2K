@@ -1,7 +1,6 @@
-import itertools
-import os
-from parameters_dict import physics_parameters
 import subprocess             
+import itertools
+from parameters_dict import physics_parameters
 
 def subprocess_cmd(command):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
