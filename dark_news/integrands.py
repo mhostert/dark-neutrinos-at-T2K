@@ -400,10 +400,10 @@ class threebody(vg.BatchIntegrand):
 					mzprime=Mzprime
 					MZPRIME=Mzprime
 
-					# FFf1=const.F1_EM(Q2)#const.F1_WEAK(Q2)
-					# FFf2=const.F2_EM(Q2)#const.F2_WEAK(Q2)
-					# FFga=0.0#const.F3_WEAK(Q2)
-					# FFgp=0.0
+					FFf1=const.F1_EM(Q2)#const.F1_WEAK(Q2)
+					FFf2=const.F2_EM(Q2)#const.F2_WEAK(Q2)
+					FFga=0.0#const.F3_WEAK(Q2)
+					FFgp=0.0
 					EMf1=const.F1_EM(Q2)#const.F1_WEAK(Q2)
 					EMf2=const.F2_EM(Q2)#const.F2_WEAK(Q2)
 					EMga=0.0#const.F3_WEAK(Q2)
@@ -442,7 +442,7 @@ class threebody(vg.BatchIntegrand):
 					MZPRIME=Mzprime
 					cw = const.cw
 
-					# FCOH=const.Fcoh(np.sqrt(Q2),MA)
+					FCOH=const.FEMcoh(np.sqrt(Q2),MA)
 					FEM=const.FEMcoh(np.sqrt(Q2),MA)
 					FWEAK=const.FWEAKcoh(np.sqrt(Q2),MA)
 					t = -Q2
