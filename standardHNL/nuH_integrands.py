@@ -150,7 +150,6 @@ def nu5_to_nu4_ee_phase_space(samples=None, MC_case=None):
 	mf = MC_case.mf 
 	mm = MC_case.mm 
 	mp = MC_case.mp 
-	m_ell = mm
 
 	# uplus = (mh-mm)*(mh-mm)
 	# uminus = (mf+mp)*(mf+mp)			

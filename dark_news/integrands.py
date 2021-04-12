@@ -135,7 +135,7 @@ class cascade(vg.BatchIntegrand):
 		############# If Dirac, include angular dependence ###################
 		if params.D_or_M == 'dirac':
 			dgamma *= ( 1.0 - (Mn**2 - 2*Mzprime**2)/(Mn**2 + 2*Mzprime**2)*cost)/2.0
-		dgamma *= np.ones(len(cost))
+		dgamma*= np.ones(len(cost))
 		################################
 
 		dgamma *= 2*np.pi 
