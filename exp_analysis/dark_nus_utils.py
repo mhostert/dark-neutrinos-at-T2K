@@ -19,12 +19,12 @@ def subprocess_cmd(command, verbose=2):
 
 def produce_samples_without_scanning(case, D_or_M, neval=100000):
     for m4, mz_prime in itertools.product(physics_parameters[case]['m4_scan'], physics_parameters[case]['mz_scan']):
+        print(f"Generating events for m4={m4} GeV and mzprime={mz_prime}")
         dark_gen_run = [f'cd ..; python3 dark_gen.py --M4 {m4} --mzprime {mz_prime} '\
                        f'--UMU4 {physics_parameters[case]["Umu4"]} '\
                        f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
                        f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
                        f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M}']
-        
         subprocess_cmd(dark_gen_run)
 
 
