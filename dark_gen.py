@@ -122,7 +122,7 @@ def main(argv):
 	# Set the model to use
 	wrong_order=((args.M4 <= args.mzprime) & (args.hierarchy == 'light'))|((args.M4 >= args.mzprime) & (args.hierarchy == 'heavy'))
 	if (wrong_order):
-		print(f'Error! Bad choice of m4 and mzprime for {args.hierarchy} Zprime and {args.D_or_M} case.') 
+		print(f'Error! Bad choice of m4 and mzprime for {args.hierarchy} Zprime and {args.D_or_M} case.') 	
 		return 1
 	####################################################
 	# Run MC and get events
