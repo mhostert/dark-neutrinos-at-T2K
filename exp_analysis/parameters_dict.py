@@ -23,11 +23,6 @@ physics_parameters['light'] = {
 }
 
 for key in physics_parameters:
-
-    physics_parameters[key]['span_2d'] = (physics_parameters[key]['mz_limits'][1] - physics_parameters[key]['mz_limits'][0] +\
-                                              physics_parameters[key]['mz_limits'][1] - physics_parameters[key]['m4_limits'][0]) *\
-                                             (physics_parameters[key]['m4_limits'][1] - physics_parameters[key]['m4_limits'][0])/2
-
     physics_parameters[key]['Vmu4_alpha_epsilon2'] = physics_parameters[key]['alpha_dark'] *\
                                                          physics_parameters[key]['Umu4'] *\
                                                          physics_parameters[key]['alpha_em'] *\

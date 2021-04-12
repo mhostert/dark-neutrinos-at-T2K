@@ -121,7 +121,7 @@ class exp_analysis(object):
         self.initialise_df(self.df_base, which_scan='m4_mz')
     
     def load_df(self, m4, mz):
-        self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}{self.hierarchy}_{self.D_or_M}/MC_m4_{m4}_mzprime_{mz}.pckl')
+        self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}_{self.hierarchy}_{self.D_or_M}/MC_m4_{m4}_mzprime_{mz}.pckl')
         self.initialise_df(self.dfs[(m4, mz)], None)
         return self.dfs[(m4, mz)]
     
