@@ -27,31 +27,29 @@ def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     piece = np.where(r>0.01, (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3), r**4/2)
     gamma *=  piece
 
-    if D_or_M=='dirac':
-        dgamma *= 1.0/2.0
+    if D_or_M == 'dirac':
+        gamma /= 2
 
     return gamma
 
 # this is the product of GammaZprime * GammaN
-def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
-    GammaZprime = (2*np.pi*2*np.sqrt(-4*(m_ell*m_ell) + Mzprime*Mzprime)*(5*(m_ell*m_ell) + 2*(Mzprime*Mzprime))*np.pi)/(24.*(Mzprime*Mzprime)*(np.pi*np.pi))
-
-    gammaN = 2*Valpha4_alphaepsilon2*4*np.pi*(Mn**2 - 2*Mzprime**2 + Mn**4/Mzprime**2)/2.0/Mn/32.0/np.pi**2*(1.0-Mzprime**2/Mn**2) 
+def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M, m_ell=0.511):
+    gamma = (2*np.pi*2*np.sqrt(-4*(m_ell*m_ell) + mz*mz)*(5*(m_ell*m_ell) + 2*(mz*mz))*np.pi)/(24.*(mz*mz)*(np.pi*np.pi))
+    gamma *= 1/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     
-    if D_or_M=='dirac':
-        dgamma *= 1.0/2.0
-
-    dgamma *= 2*np.pi*2 # d phi dcostheta
-
+    if D_or_M == 'dirac':
+        gamma /= 2
+    
+    gamma *= Valpha4_alphaepsilon2
+    
     return gamma
 
 
 def gamma_general(m4,mz,Valpha4alphaepsilon2, D_or_M):
     gamma = np.where(m4 > mz,
-            gamma_light(m4,mz,Valpha4alphaepsilon2),
-            gamma_heavy(m4,mz,Valpha4alphaepsilon2)
+            gamma_light(m4,mz,Valpha4alphaepsilon2, D_or_M),
+            gamma_heavy(m4,mz,Valpha4alphaepsilon2, D_or_M)
             )
-    # return -(Valpha4alphaepsilon2*(2*GammaZprime*(m4*m4)*mz*(m4*m4 - 2*(mz*mz)) + (m4*m4*m4*m4*m4*m4 + 3*(m4*m4)*(mz*mz)*(GammaZprime*GammaZprime - mz*mz) + 2*(mz*mz*mz*mz)*(-3*(GammaZprime*GammaZprime) + mz*mz))*np.arctan(GammaZprime/mz) + (m4*m4*m4*m4*m4*m4 + 3*(GammaZprime*GammaZprime)*(m4*m4)*(mz*mz) + 2*(mz*mz*mz*mz*mz*mz))*np.arctan((GammaZprime*mz)/(m4*m4 - mz*mz)) + mz*mz*mz*(3*(2*(GammaZprime*GammaZprime) + m4*m4)*mz*np.arctan((GammaZprime*mz)/(-(m4*m4) + mz*mz)) - GammaZprime*(2*(GammaZprime*GammaZprime + 3*(m4*m4) - 3*(mz*mz))*np.log(mz) + (GammaZprime*GammaZprime + 3*(m4*m4))*(np.log(GammaZprime*GammaZprime + mz*mz) - np.log(GammaZprime*GammaZprime*(mz*mz) + (m4*m4 - mz*mz)*(m4*m4 - mz*mz))) + 3*(mz*mz)*np.log(mz*mz + (m4*m4*m4*m4 - 2*(m4*m4)*(mz*mz))/(GammaZprime*GammaZprime + mz*mz))))))/(12.*GammaZprime*(m4*m4*m4)*mz*np.pi)
     return gamma
 
 
