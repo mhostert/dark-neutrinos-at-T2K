@@ -2,10 +2,19 @@ import subprocess
 import itertools
 from parameters_dict import physics_parameters
 
-def subprocess_cmd(command):
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
-    proc_stdout = process.communicate()
-    print(proc_stdout[0].decode("utf-8"))
+# run shell commands from notebook
+def subprocess_cmd(command, verbose=2):
+  process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+  stdout,stderr = process.communicate()
+  if verbose==2:  
+    print(command)
+    print(stdout.decode("utf-8"))
+    print(stderr.decode("utf-8"))
+  elif verbose==1:
+    if len(stderr.decode("utf-8"))>2:
+      print(command)
+      print('n',stderr.decode("utf-8"),'m')
+
 
 
 def produce_samples_without_scanning(case, D_or_M, neval=100000):
