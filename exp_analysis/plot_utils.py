@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib import rc, rcParams
 from matplotlib.pyplot import *
+from matplotlib.backends.backend_pdf import PdfPages
+import os
 
 def kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection='True', axis=False):
 	this_weight = exp_analysis_obj.kde_on_a_point(m4mz, smoothing_pars) 
@@ -127,5 +129,149 @@ def batch_comparison_plot(axes, exp_analyses, m4mz,var1,var2,smooth=(0.01,0.01),
 	                         smoothing_pars=smooth, axis=axes[1], selection=selection)
 
 
+#######################################################
+# craaazy function to plot everything...
+def all_batch_comparison_plots(pdffilepath, exp_analyses, m4mzheavy, m4mzlight, smooth=(0.01,0.01), selection=True):
+	
+	if not os.path.isdir(os.path.basename(pdffilepath)):
+		os.makedirs(os.path.basename(pdffilepath))
 
+	# create pdf page...
+	pdf = PdfPages(pdffilepath)
+
+	######################
+	bins = 10
+	var1='ee_energy'
+	var2=''
+	varmin=0; varmax=1.0
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	bins = 10
+	var1='ee_theta'
+	var2=''
+	varmin=0; varmax=np.pi/2
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	bins = 5
+	var1='ee_mass'
+	var2=''
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	varmin=0; varmax=m4mzheavy[0]
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	varmin=0; varmax=m4mzlight[0]
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	bins = 20
+	var1='ee_energy_asymetry'
+	var2=''
+	varmin=-1; varmax=1
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	bins = 20
+	var1='em_beam_theta'
+	var2=''
+	varmin=0; varmax=np.pi
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	bins = 20
+	var1='em_beam_theta'
+	var2=''
+	varmin=0; varmax=1.0
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	var1='ep_beam_theta'
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	######################
+	bins = 20
+	var1='experimental_t'
+	var2=''
+	varmin=0; varmax=0.06
+	fig,  axes = plt.subplots(nrows=1, ncols=4,figsize = (18,4))
+
+	# Heavy
+	exp_analyses_h=exp_analyses[:2]
+	batch_comparison_plot(axes[:2],exp_analyses_h, m4mzheavy,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	# light
+	exp_analyses_l=exp_analyses[2:]
+	batch_comparison_plot(axes[2:],exp_analyses_l, m4mzlight,var1,var2,smooth=smooth,var_range=(varmin,varmax), bins=bins)
+
+	plt.tight_layout(); pdf.savefig(fig)
+
+	pdf.close()
 
