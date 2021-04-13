@@ -7,16 +7,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from fourvec import *
 from parameters_dict import *
+from const import *
 
-def gamma_light(m4, mz, Valpha4):
-    return Valpha4/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
+def ctau_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    return get_decay_rate_in_cm(gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M))
 
-def ctau_light(m4, mz, Valpha4):
-    aux = Valpha4/2 * m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
-    return 197.3 * 10**(-16) / aux
+def ctau_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    return get_decay_rate_in_cm(gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M))
 
-def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2):
-    return Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
+def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    gamma = Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
+    if D_or_M == 'dirac':
+        gamma /= 2
+    return gamma
 
 # there is a cancellation for small r that holds up to 4th order 
 # so I avoid instability by expanding when r is small
@@ -26,24 +29,19 @@ def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
     piece = np.where(r>0.01, (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3), r**4/2)
     gamma *=  piece
-
     if D_or_M == 'dirac':
         gamma /= 2
-
     return gamma
 
 # this is the product of GammaZprime * GammaN
-def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M, m_ell=0.511):
+def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M, m_ell=m_e):
     gamma = (2*np.pi*2*np.sqrt(-4*(m_ell*m_ell) + mz*mz)*(5*(m_ell*m_ell) + 2*(mz*mz))*np.pi)/(24.*(mz*mz)*(np.pi*np.pi))
     gamma *= 1/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     
     if D_or_M == 'dirac':
         gamma /= 2
-    
     gamma *= Valpha4_alphaepsilon2
-    
     return gamma
-
 
 def gamma_general(m4,mz,Valpha4alphaepsilon2, D_or_M):
     gamma = np.where(m4 > mz,
@@ -74,16 +72,10 @@ def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
 
     return aux
 
-def ctau_heavy(m4, mz, Valpha4_alphaepsilon2):
-    aux =  Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4
-    return 197.3 * 10**(-16) / aux
-
-def gamma_to_ctau(gamma):
-    '''Convert gamma [GeV] to ctau [cm]'''
-    return 197.3 * 10**(-16) / gamma
 
 def gaussian1d(x, mu, sigma):
     return np.exp(-0.5*((x-mu)/sigma)**2)/np.sqrt(2*np.pi)/sigma
+
 
 def epa_kernel2d(x, sigma):
     return np.where((x[..., 0]/sigma[0])**2 + (x[..., 1]/sigma[1])**2 > 1,
