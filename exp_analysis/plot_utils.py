@@ -7,7 +7,7 @@ import matplotlib.patches as patches
 from matplotlib import rc, rcParams
 from matplotlib.pyplot import *
 
-def kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection='True', figure=False):
+def kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection='True', axis=False):
 	this_weight = exp_analysis_obj.kde_on_a_point(m4mz, smoothing_pars) 
 	selection_weights = exp_analysis_obj.df_base.eval(selection)
 	this_weight *= selection_weights
@@ -25,7 +25,7 @@ def kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing
 	            )[0]
 
 	# plotting
-	if not figure:
+	if not axis:
 		fsize=11
 		fig = plt.figure()
 		# rc('text', usetex=True)
@@ -35,7 +35,7 @@ def kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing
 		axes_form  = [0.14,0.15,0.82,0.76]
 		ax = fig.add_axes(axes_form)
 	else:
-		fig,ax = figure
+		ax = axis
 	ax.plot(bin_edges,
 	         np.append(kde_prediction, [0]),
 	         ds='steps-post',
@@ -56,16 +56,16 @@ def kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing
 			)
 		)
 
-	plt.legend(frameon=False)
-	# ax.set_title(f'selection = {selection}')
-	# ax.set_xlabel(f'{var1} - {var2}')    
-	# ax.set_ylabel(f'Number of entries')
+	ax.legend(frameon=False, loc='best')
+	ax.set_title(f'selection = {selection}')
+	ax.set_xlabel(f'{var1} - {var2}')    
+	ax.set_ylabel(f'Number of entries')
 
-	return ax, fig
+	return ax
 
 
 
-def kde_to_noscan_comparison(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection='True', figure=False):
+def kde_to_noscan_comparison(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection='True', axis=False):
 	assert m4mz in list(exp_analysis_obj.dfs.keys())
 
 	no_scan = exp_analysis_obj.dfs[m4mz]
@@ -83,7 +83,7 @@ def kde_to_noscan_comparison(var1, var2, range, bins, m4mz, exp_analysis_obj, sm
 	weights=this_weight**2,
 	)[0]
 	# plotting
-	if not figure:
+	if not axis:
 		fsize=11
 		fig = plt.figure()
 		# rc('text', usetex=True)
@@ -93,9 +93,9 @@ def kde_to_noscan_comparison(var1, var2, range, bins, m4mz, exp_analysis_obj, sm
 		axes_form  = [0.14,0.15,0.82,0.76]
 		ax = fig.add_axes(axes_form)
 	else:
-		fig, ax = figure
+		ax = axis
 	# first KDE histogram with error bars
-	kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars, selection, figure=(fig,ax))
+	kde_variable_plot(var1, var2, range, bins, m4mz, exp_analysis_obj, smoothing_pars, selection, axis=ax)
 	# now generated prediction
 	ax.errorbar((bin_edges[1:]+bin_edges[:-1])/2, no_scan_pred, 
 	yerr=np.sqrt(no_scan_pred_err),
@@ -103,9 +103,29 @@ def kde_to_noscan_comparison(var1, var2, range, bins, m4mz, exp_analysis_obj, sm
 	label=f'no scanning: {no_scan_pred.sum():.2g} '\
 	f'$\pm$ {100*np.sqrt(no_scan_pred_err.sum())/no_scan_pred.sum():.2g}%')
 
-	ax.set_ylim(bottom=0)
+	ax.set_ylim(bottom=0,top=ax.get_ylim()[1])
 	ax.set_xlim(left=0)
-	plt.legend(frameon=False)
+	ax.legend(frameon=False, loc='best')
 	ax.set_title(f'selection = {selection} @ $m_4={m4mz[0]}$ GeV, $m_{{Z^\prime}}={m4mz[1]}$ GeV\n '\
 	f'{exp_analysis_obj.hierarchy} {exp_analysis_obj.D_or_M} case\n '\
 	f'smoothing pars = {smoothing_pars[0]} GeV, {smoothing_pars[1]} GeV')
+
+
+
+def batch_comparison_plot(axes, exp_analyses, m4mz,var1,var2,smooth=(0.01,0.01),var_range=(0,1),bins=10, selection=True):
+	
+	kde_to_noscan_comparison(var1=var1, var2=var2, 
+	                         range=var_range, bins=bins, 
+	                         m4mz=m4mz, 
+	                         exp_analysis_obj=exp_analyses[0],
+	                         smoothing_pars=smooth, axis=axes[0], selection=selection)
+
+	kde_to_noscan_comparison(var1=var1, var2=var2, 
+	                         range=var_range, bins=bins, 
+	                         m4mz=m4mz, 
+	                         exp_analysis_obj=exp_analyses[1],
+	                         smoothing_pars=smooth, axis=axes[1], selection=selection)
+
+
+
+

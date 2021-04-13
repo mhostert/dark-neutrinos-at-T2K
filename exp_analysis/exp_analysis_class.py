@@ -144,13 +144,28 @@ class exp_analysis(object):
         for comp in ['t','x','y','z']:
             df['pee', comp] = df['plm', comp] + df['plp', comp]
             df['pdark', comp] = df['plm', comp] + df['plp', comp] + df['pnu', comp]
+
         df['recoil_mass', ''] = inv_mass(df['pHad']).round(6)
+        # e+e- cone vars
         df['ee_mass', ''] = inv_mass(df['pee'])
         df['ee_energy', ''] = df['pee', 't']
+        df['ee_momentum', ''] = np.sqrt(dot3_df(df['pee'], df['pee']))    
+        df['ee_energy_asymetry', ''] = (df['plm', 't']-df['plp', 't'])/(df['plp', 't']+df['plm', 't'])
         df['ee_costheta', ''] = costheta(df['plm'], df['plp'])
-        df['nu_dark_beam_costheta', ''] = df['pdark', 'z']/np.sqrt(dot3_df(df['pdark'], df['pdark']))
+        df['ee_theta', ''] = np.arccos(costheta(df['plm'], df['plp']))
         df['ee_beam_costheta', ''] = df['pee', 'z']/np.sqrt(dot3_df(df['pee'], df['pee']))
-        df['ee_momentum', ''] = np.sqrt(dot3_df(df['pee'], df['pee']))
+        df['ee_beam_theta', ''] = np.arccos(df['pee', 'z']/np.sqrt(dot3_df(df['pee'], df['pee'])))
+        # dark nu vars
+        df['nu_dark_beam_costheta', ''] = df['pdark', 'z']/np.sqrt(dot3_df(df['pdark'], df['pdark']))
+        # e- vars        
+        df['em_energy', ''] = df['plm', 't']
+        df['em_beam_theta', ''] = np.arccos(df['plm', 'z']/np.sqrt(dot3_df(df['plm'], df['plm'])))
+        df['em_beam_costheta', ''] = np.arccos(df['plm', 'z']/np.sqrt(dot3_df(df['plm'], df['plm'])))
+        # e+ vars        
+        df['ep_energy', ''] = df['plp', 't']
+        df['ep_beam_theta', ''] = np.arccos(df['plp', 'z']/np.sqrt(dot3_df(df['plp'], df['plp'])))
+        df['ep_beam_costheta', ''] = np.arccos(df['plp', 'z']/np.sqrt(dot3_df(df['plp'], df['plp'])))
+        # high level vars
         df['experimental_t', ''] = (df['plm','t'] - df['plm','z'] + df['plp','t'] - df['plp','z'])**2 +\
                                     df['plm','x']**2 + df['plm','y']**2 + df['plp','x']**2 + df['plp','y']**2
 
