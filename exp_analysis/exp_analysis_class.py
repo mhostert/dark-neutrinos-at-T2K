@@ -23,11 +23,16 @@ def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2, D_or_M):
 
 # there is a cancellation for small r that holds up to 4th order 
 # so I avoid instability by expanding when r is small
-# it needs to be adjusted to handle well m4 = mz
+# it needs to be adjusted to handle well m4 = mz -- I dont thing this is true? 
 def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     r = ((m4/mz)**2)
     gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
-    piece = np.where(r>0.01, (6*(r -  r**2/2.0 - np.log((1.0/(1.0-r))**(1 - r)) )- r**3), r**4/2)
+    # avoiding evaluation of bad expression
+    mask = (r>0.01)
+    piece = np.empty_like(r)
+    piece[mask] = (6*(r[mask] -  r[mask]**2/2.0 - np.log((1.0/(1.0-r[mask]))**(1 - r[mask])) )- r[mask]**3)
+    piece[~mask] = r[~mask]**4/2
+
     gamma *=  piece
     if D_or_M == 'dirac':
         gamma /= 2
@@ -44,10 +49,10 @@ def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M, m_ell=m_e):
     return gamma
 
 def gamma_general(m4,mz,Valpha4alphaepsilon2, D_or_M):
-    gamma = np.where(m4 > mz,
-            gamma_light(m4,mz,Valpha4alphaepsilon2, D_or_M),
-            gamma_heavy(m4,mz,Valpha4alphaepsilon2, D_or_M)
-            )
+    heavy = (m4 < mz)
+    gamma = np.empty_like(m4)
+    gamma[heavy] = gamma_heavy(m4[heavy],mz[heavy],Valpha4alphaepsilon2, D_or_M)
+    gamma[~heavy] = gamma_light(m4[~heavy],mz[~heavy],Valpha4alphaepsilon2, D_or_M)
     return gamma
 
 
