@@ -29,7 +29,7 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000):
 
 
 def produce_scan_sample(case, D_or_M, neval=1000000):
-    mu_gen_run = ['cd ..; python3 mu_gen.py ',\
+    mu_gen_run = ['cd ..; python3 mu_gen.py '\
                    f'--mzprime_min {physics_parameters[case]["mz_limits"][0]} '\
                    f'--mzprime_max {physics_parameters[case]["mz_limits"][1]} '\
                    f'--M4_min {physics_parameters[case]["m4_limits"][0]} '\
