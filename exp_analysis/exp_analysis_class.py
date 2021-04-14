@@ -255,7 +255,7 @@ class exp_analysis(object):
         
         d_decay = np.random.exponential(scale=ctau*betagamma) # centimeters
 
-        df[f'decay_point_{ctau}', 't'] = df['int_point', 't'] + d_decay/(2.998e+10 * beta)
+        df[f'decay_point_{ctau}', 't'] = df['int_point', 't'] + d_decay/(const.c_LIGHT * beta) # cm / (cm/s)
         df[f'decay_point_{ctau}', 'x'] = df['int_point', 'x'] + d_decay*df['pdark', 'x']/p3dark
         df[f'decay_point_{ctau}', 'y'] = df['int_point', 'y'] + d_decay*df['pdark', 'y']/p3dark
         df[f'decay_point_{ctau}', 'z'] = df['int_point', 'z'] + d_decay*df['pdark', 'z']/p3dark
@@ -286,6 +286,7 @@ class exp_analysis(object):
 
     @staticmethod
     def compute_selection(df):
+        df['no_cuts', ''] = (df['ee_beam_costheta', ''] <= 1.0) # any keys that return it all?
         df['cut1', ''] = (df['ee_beam_costheta', ''] > 0.99)
         df['cut2', ''] = (df['experimental_t', ''] < 0.03)
         df['cut3', ''] = (df['ee_costheta', ''] > 0)
