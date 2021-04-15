@@ -15,31 +15,23 @@ def ctau_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
 def ctau_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     return get_decay_rate_in_cm(gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M))
 
-def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2, D_or_M):
-    gamma = Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
-    if D_or_M == 'dirac':
-        gamma /= 2
-    return gamma
-
-# there is a cancellation for small r that holds up to 4th order 
-# so I avoid instability by expanding when r is small
-# it needs to be adjusted to handle well m4 = mz -- I dont thing this is true? 
 def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    '''there is a cancellation for small r that holds up to 4th order, so I avoid instability by expanding when r is small'''
     r = ((m4/mz)**2)
     gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
     # avoiding evaluation of bad expression
     mask = (r>0.01)
     piece = np.empty_like(r)
-    piece[mask] = (6*(r[mask] -  r[mask]**2/2.0 - np.log((1.0/(1.0-r[mask]))**(1 - r[mask])) )- r[mask]**3)
+    piece[mask] = (6*(r[mask] - r[mask]**2/2.0 - np.log((1.0/(1.0-r[mask]))**(1 - r[mask])) )- r[mask]**3)
     piece[~mask] = r[~mask]**4/2
 
-    gamma *=  piece
+    gamma *= piece
     if D_or_M == 'dirac':
         gamma /= 2
     return gamma
 
-# this is the product of GammaZprime * GammaN
 def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M, m_ell=m_e):
+    '''this is the product of GammaZprime * GammaN'''
     gamma = (2*np.pi*2*np.sqrt(-4*(m_ell*m_ell) + mz*mz)*(5*(m_ell*m_ell) + 2*(mz*mz))*np.pi)/(24.*(mz*mz)*(np.pi*np.pi))
     gamma *= 1/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     
@@ -55,8 +47,12 @@ def gamma_general(m4,mz,Valpha4alphaepsilon2, D_or_M):
     gamma[~heavy] = gamma_light(m4[~heavy],mz[~heavy],Valpha4alphaepsilon2, D_or_M)
     return gamma
 
+def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    gamma = Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
+    if D_or_M == 'dirac':
+        gamma /= 2
+    return gamma
 
-# This still assumes contact interaction
 def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
     aux = Valpha4_alphaepsilon2/(24 * np.pi) * (1/6) * (1/(-3))
     aux *= (m4_s[1]**6 - m4_s[0]**6)
@@ -66,7 +62,6 @@ def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised
     return aux
 
 def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
-
     aux, _ = dblquad(gamma_heavy,
                     mz_s[1], mz_s[0],
                     m4_s[1], m4_s[0],
@@ -74,29 +69,15 @@ def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
                     epsrel=1e-8)
     if normalised:
         aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
-
     return aux
-
 
 def gaussian1d(x, mu, sigma):
     return np.exp(-0.5*((x-mu)/sigma)**2)/np.sqrt(2*np.pi)/sigma
-
 
 def epa_kernel2d(x, sigma):
     return np.where((x[..., 0]/sigma[0])**2 + (x[..., 1]/sigma[1])**2 > 1,
                     0,
                     (1 - (x[..., 0]/sigma[0])**2 - (x[..., 1]/sigma[1])**2)/(4*sigma[0]*sigma[1]*(1-1/np.sqrt(3))))
-
-
-def points_on_triangle(N_points, m4_limits, mz_limits, hierarchy='heavy'):
-    rvs = np.random.random((N_points, 2))
-    if hierarchy == 'heavy':
-        rvs = np.where(rvs[:, 0, None]<rvs[:, 1, None], rvs, rvs[:, ::-1])
-    elif hierarchy == 'light':
-        rvs = np.where(rvs[:, 0, None]>rvs[:, 1, None], rvs, rvs[:, ::-1])
-    
-    return np.array((m4_limits[0], mz_limits[0])) + rvs*(m4_limits[1]-m4_limits[0], mz_limits[1]-mz_limits[0])
-
 
 class exp_analysis(object):
     
@@ -117,7 +98,7 @@ class exp_analysis(object):
     
     def load_df(self, m4, mz):
         self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}_{self.hierarchy}_{self.D_or_M}/MC_m4_{m4}_mzprime_{mz}.pckl')
-        self.initialise_df(self.dfs[(m4, mz)], None)
+        self.initialise_df(self.dfs[(m4, mz)])
         return self.dfs[(m4, mz)]
     
     def load_grid_dfs(self):
@@ -127,17 +108,26 @@ class exp_analysis(object):
             else:
                 self.load_df(m4, mz)
     
-    def initialise_df(self, df, which_scan):
+    def ctau_acceptance(self, ctaus):
+        for df in self.dfs.values():
+            self.decay_in_tpc(df, ctaus)
+        self.decay_in_tpc(self.df_base, ctaus)
+
+    def initialise_df(self, df, which_scan=None):
         self.compute_analysis_variables(df)
         self.compute_actual_weights(df, which_scan)
         self.compute_interaction_point(df)
         self.unitary_decay_length(df)
         self.compute_selection(df)
-        
-        self.m4_values = self.df_base['m4', ''].values
-        self.mz_values = self.df_base['mzprime', ''].values
-        self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
-        self.actual_weight_values = self.df_base['actual_weight', ''].values
+
+        # flatten index of pandas multiindex
+        df.columns = ['_'.join(col) if (col[1]!='') else col[0] for col in df.columns.values]
+
+        if which_scan == 'm4_mz':
+            self.m4_values = self.df_base['m4'].values
+            self.mz_values = self.df_base['mzprime'].values
+            self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
+            self.actual_weight_values = self.df_base['actual_weight'].values
         
     @staticmethod
     def compute_analysis_variables(df):
@@ -168,6 +158,12 @@ class exp_analysis(object):
         # high level vars
         df['experimental_t', ''] = (df['plm','t'] - df['plm','z'] + df['plp','t'] - df['plp','z'])**2 +\
                                     df['plm','x']**2 + df['plm','y']**2 + df['plp','x']**2 + df['plp','y']**2
+        
+        df['p3dark', ''] = np.sqrt(dot3_df(df['pdark'], df['pdark']))
+        df['mdark', ''] = inv_mass(df['pdark'])
+        df['betagamma', ''] = df['p3dark', '']/df['mdark', '']
+        df['gamma', ''] = df['pdark', 't']/df['mdark', '']
+        df['beta', ''] = df['betagamma', '']/df['gamma', '']
 
     def compute_actual_weights(self, df, which_scan=None, with_decay_formula=True, smooth_pars_decaywidth=[0.005, 0.05], kernel='epa', n_points_decaywidth_interpolation=30):
         m4_values = df['m4', ''].values
@@ -176,23 +172,14 @@ class exp_analysis(object):
         
         #first fix decay rate
         if with_decay_formula:
-            if self.hierarchy == 'heavy':
-                df['total_decay_rate', ''] = gamma_general(m4_values,
-                                                         mz_values,
-                                                         self.Vmu4_alpha_epsilon2,
-                                                         D_or_M=self.D_or_M)
-            elif self.hierarchy == 'light':    
-                df['total_decay_rate', ''] = gamma_general(m4_values,
-                                                         mz_values,
-                                                         self.Vmu4_alpha_epsilon2,
-                                                         D_or_M=self.D_or_M)
-            else:
-                print('Light hierarchy with formula not supported yet')
-                return
+            df['total_decay_rate', ''] = gamma_general(m4_values,
+                                                        mz_values,
+                                                        self.Vmu4_alpha_epsilon2,
+                                                        D_or_M=self.D_or_M)
         else:
             weight_decay_values = df['weight_decay', ''].values
             if which_scan == None:
-                df['total_decay_rate', ''] = weight_decay_values.sum()                
+                df['total_decay_rate', ''] = weight_decay_values.sum()
             elif which_scan == 'm4_mz':
                 m4_span = np.linspace(m4_values.min(), m4_values.max(), int(n_points_decaywidth_interpolation/4))
                 mz_span = np.linspace(mz_values.min(), mz_values.max(), int(n_points_decaywidth_interpolation/4))
@@ -235,30 +222,16 @@ class exp_analysis(object):
 
     @staticmethod
     def unitary_decay_length(df):
-        p3dark = np.sqrt(dot3_df(df['pdark'], df['pdark']))
-        mdark = inv_mass(df['pdark'])
-        betagamma = p3dark/mdark
-        gamma = df['pdark', 't']/mdark
-        
-        d_decay = np.random.exponential(scale=betagamma) # it's for ctau=1
-        df[f'unitary_decay_length', 'x'] = d_decay*df['pdark', 'x']/p3dark
-        df[f'unitary_decay_length', 'y'] = d_decay*df['pdark', 'y']/p3dark
-        df[f'unitary_decay_length', 'z'] = d_decay*df['pdark', 'z']/p3dark
+        d_decay = np.random.exponential(scale=df['betagamma', '']) # it's for ctau=1
+        df['unitary_decay_length', 'x'] = d_decay*df['pdark', 'x']/df['p3dark', '']
+        df['unitary_decay_length', 'y'] = d_decay*df['pdark', 'y']/df['p3dark', '']
+        df['unitary_decay_length', 'z'] = d_decay*df['pdark', 'z']/df['p3dark', '']
 
     @staticmethod
     def decay_particle(df, ctau):
-        p3dark = np.sqrt(dot3_df(df['pdark'], df['pdark']))
-        mdark = inv_mass(df['pdark'])
-        betagamma = p3dark/mdark
-        gamma = df['pdark', 't']/mdark
-        beta = betagamma/gamma
-        
-        d_decay = np.random.exponential(scale=ctau*betagamma) # centimeters
-
-        df[f'decay_point_{ctau}', 't'] = df['int_point', 't'] + d_decay/(const.c_LIGHT * beta) # cm / (cm/s)
-        df[f'decay_point_{ctau}', 'x'] = df['int_point', 'x'] + d_decay*df['pdark', 'x']/p3dark
-        df[f'decay_point_{ctau}', 'y'] = df['int_point', 'y'] + d_decay*df['pdark', 'y']/p3dark
-        df[f'decay_point_{ctau}', 'z'] = df['int_point', 'z'] + d_decay*df['pdark', 'z']/p3dark
+        df[f'decay_point_{ctau}_x'] = df['int_point_x'] + ctau*df['unitary_decay_length_x']
+        df[f'decay_point_{ctau}_y'] = df['int_point_y'] + ctau*df['unitary_decay_length_y']
+        df[f'decay_point_{ctau}_z'] = df['int_point_z'] + ctau*df['unitary_decay_length_z']
         
     @staticmethod
     def decay_in_tpc(df, ctaus):
@@ -266,11 +239,11 @@ class exp_analysis(object):
             ctaus = [ctaus]
         for ctau in ctaus:
             exp_analysis.decay_particle(df, ctau)
-            df[f'decay_in_tpc_{ctau}', ''] = (((p0d_length < df[f'decay_point_{ctau}','z']) & (df[f'decay_point_{ctau}','z'] < (p0d_length + tpc_length)) |
-            (p0d_length + tpc_length + fgd_length < df[f'decay_point_{ctau}','z']) & (df[f'decay_point_{ctau}','z'] < (p0d_length + tpc_length + fgd_length + tpc_length)) |
-            (p0d_length + 2*(tpc_length + fgd_length) < df[f'decay_point_{ctau}','z']) & (df[f'decay_point_{ctau}','z'] < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-            (detector_splitting[0][0] < df[f'decay_point_{ctau}','x']) & (df[f'decay_point_{ctau}','x'] < detector_splitting[0][1]) &\
-            (detector_splitting[1][0] < df[f'decay_point_{ctau}','y']) & (df[f'decay_point_{ctau}','y'] < detector_splitting[1][1])
+            df[f'decay_in_tpc_{ctau}'] = (((p0d_length < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + tpc_length)) |
+            (p0d_length + tpc_length + fgd_length < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + tpc_length + fgd_length + tpc_length)) |
+            (p0d_length + 2*(tpc_length + fgd_length) < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
+            (detector_splitting[0][0] < df[f'decay_point_{ctau}_x']) & (df[f'decay_point_{ctau}_x'] < detector_splitting[0][1]) &\
+            (detector_splitting[1][0] < df[f'decay_point_{ctau}_y']) & (df[f'decay_point_{ctau}_y'] < detector_splitting[1][1])
 
     @staticmethod
     def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
@@ -286,7 +259,7 @@ class exp_analysis(object):
 
     @staticmethod
     def compute_selection(df):
-        df['no_cuts', ''] = (df['ee_beam_costheta', ''] <= 1.0) # any keys that return it all?
+        df['no_cuts', ''] = np.ones(len(df), dtype=bool)
         df['cut1', ''] = (df['ee_beam_costheta', ''] > 0.99)
         df['cut2', ''] = (df['experimental_t', ''] < 0.03)
         df['cut3', ''] = (df['ee_costheta', ''] > 0)
