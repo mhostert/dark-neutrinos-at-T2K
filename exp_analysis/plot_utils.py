@@ -4,7 +4,7 @@ from itertools import product
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-from matplotlib import rc, rcParams
+from matplotlib import colors
 from matplotlib.pyplot import *
 from matplotlib.backends.backend_pdf import PdfPages
 import os
@@ -16,7 +16,7 @@ def set_plot_title(ax, selection_query, m4mz, exp_analysis_obj, smoothing_pars):
 
 def kde_variable_plot(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection_query='no_cuts', cumulative=False, existing_axis=None):
     assert m4mz in list(exp_analysis_obj.dfs.keys())
-    
+
     selection_weights = exp_analysis_obj.df_base.eval(selection_query)
     kde_weights = exp_analysis_obj.kde_on_a_point(m4mz, smoothing_pars)
     total_weight = selection_weights * kde_weights
@@ -254,11 +254,60 @@ def kde_no_scan_efficiency_cut_list(num_selection_queries, den_selection_queries
     return kde_eff/no_scan_eff, kde_eff_err/no_scan_eff
 
 def kde_no_scan_efficiency_plot_grid(num_selection_query, den_selection_query, exp_analysis_obj, smoothing_pars=[0.005, 0.05]):
+    kde_eff = []
+    kde_eff_err = []
+    no_scan_eff = []
+    for i, m4 in enumerate(exp_analysis_obj.m4_scan):
+        kde_eff.append([])
+        kde_eff_err.append([])
+        no_scan_eff.append([])
+        for j, mz in enumerate(exp_analysis_obj.mz_scan):
+            if ((exp_analysis_obj.hierarchy == 'heavy') and (m4 >= mz)) or ((exp_analysis_obj.hierarchy == 'light') and (m4 <= mz)):
+                kde_eff[-1].append(0)
+                kde_eff_err[-1].append(0)
+                no_scan_eff[-1].append(0)
+                continue
+            kde_aux = kde_efficiency(num_selection_query,
+                    den_selection_query,
+                    m4mz=(m4, mz),
+                    exp_analysis_obj=exp_analysis_obj,
+                    smoothing_pars=smoothing_pars
+                    )
+            kde_eff[-1].append(kde_aux[0])
+            kde_eff_err[-1].append(kde_aux[1])
+            no_scan_aux = no_scan_efficiency(num_selection_query,
+                    den_selection_query,
+                    m4mz=(m4, mz),
+                    exp_analysis_obj=exp_analysis_obj
+                    )
+            no_scan_eff[-1].append(no_scan_aux[0])
 
-    no_scan_eff, no_scan_eff_err = no_scan_efficiency(num_selection_query, den_selection_query, m4mz, exp_analysis_obj)
-    kde_eff, kde_eff_err = kde_efficiency(num_selection_query, den_selection_query, m4mz, exp_analysis_obj, smoothing_pars)
+    kde_eff = np.array(kde_eff)
+    kde_eff_err = np.array(kde_eff_err)
+    no_scan_eff = np.array(no_scan_eff)
+    ratio_eff = kde_eff/no_scan_eff
+    sigma_ratio_eff = kde_eff_err/no_scan_eff
 
-    return kde_eff/no_scan_eff, kde_eff_err/no_scan_eff
+    xcenters = exp_analysis_obj.m4_scan
+    ycenters = exp_analysis_obj.mz_scan
+
+    divnorm = colors.TwoSlopeNorm(vcenter=1, vmin=0, vmax=2)
+    plt.pcolormesh(ratio_eff.T, cmap='BrBG', norm=divnorm)
+    plt.xticks(ticks=np.arange(0.5, len(xcenters)),
+            labels=xcenters)
+    plt.yticks(ticks=np.arange(0.5, len(ycenters)),
+            labels=ycenters)
+    for i in range(len(xcenters)):
+        for j in range(len(ycenters)):
+            this_value = ratio_eff[i,j]
+            if np.isnan(this_value):
+                continue
+            text = plt.text(i + 0.5, j + 0.5, f"{ratio_eff[i,j]:.3g}\n$\pm${sigma_ratio_eff[i,j]:.2g}",
+                            ha="center", va="center", color="k")
+    plt.xlabel(r'$m_4$ [GeV]')
+    plt.ylabel(r'$m_Z$ [GeV]')
+    plt.colorbar()
+    set_plot_title(plt.gca(), num_selection_query, (None, None), exp_analysis_obj, smoothing_pars)
 
 
 
