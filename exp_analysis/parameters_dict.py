@@ -22,14 +22,11 @@ physics_parameters['light'] = {
     'alpha_em': 1./137,
 }
 
-for key in physics_parameters:
-    physics_parameters[key]['Vmu4_alpha_epsilon2'] = physics_parameters[key]['alpha_dark'] *\
-                                                         physics_parameters[key]['Umu4'] *\
-                                                         physics_parameters[key]['alpha_em'] *\
-                                                         physics_parameters[key]['epsilon2']
-
-
-
+for physics_params in physics_parameters.values():
+    physics_params['Vmu4_alpha_epsilon2'] = physics_params['alpha_dark'] *\
+                                                         physics_params['Umu4'] *\
+                                                         physics_params['alpha_em'] *\
+                                                         physics_params['epsilon2']
 
 total_pot = 2e21
 

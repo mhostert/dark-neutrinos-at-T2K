@@ -9,27 +9,57 @@ from matplotlib.pyplot import *
 from matplotlib.backends.backend_pdf import PdfPages
 import os
 
-def set_plot_title(ax, selection_query, m4mz, exp_analysis_obj, smoothing_pars):
-    ax.set_title(f'selection = {selection_query} @ $m_4={m4mz[0]}$ GeV, $m_{{Z^\prime}}={m4mz[1]}$ GeV\n '\
-    f'{exp_analysis_obj.hierarchy} {exp_analysis_obj.D_or_M}\n '\
-    f'smoothing pars = {smoothing_pars[0]} GeV, {smoothing_pars[1]} GeV')
+def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=None, kernel=None, smoothing_pars=None):
+    if ax is not None:
+        plt.sca(ax)
+    title_string = ''
+    if selection_query is not None:
+        title_string += f'selection = {selection_query}\n'
+    if m4mz is not None:
+        title_string += f'@ $m_4={m4mz[0]}$ GeV, $m_{{Z^\prime}}={m4mz[1]}$ GeV\n'
+    if exp_analysis_obj is not None:
+        title_string += f'{exp_analysis_obj.hierarchy} {exp_analysis_obj.D_or_M}\n'
+    if kernel is not None:
+        title_string += f'kernel = {kernel}\n'
+    if smoothing_pars is not None:
+        title_string += f'smoothing pars = {smoothing_pars[0]} GeV, {smoothing_pars[1]} GeV\n'
+
+    plt.title(title_string.strip())
+
+def annotated_2d_plot(data, xcenters, ycenters, vcenter=1, vmin=0.8, vmax=1.2, xlabel=None, ylabel=None, errors_to_annotate=None):
+    divnorm = colors.TwoSlopeNorm(vcenter=vcenter, vmin=vmin, vmax=vmax)
+    plt.pcolormesh(data.T, cmap='BrBG', norm=divnorm)
+    plt.xticks(ticks=np.arange(0.5, len(xcenters)),
+               labels=xcenters)
+    plt.yticks(ticks=np.arange(0.5, len(ycenters)),
+               labels=ycenters)
+    for i in range(len(xcenters)):
+        for j in range(len(ycenters)):
+            this_value = data[i,j]
+            if np.isnan(this_value):
+                continue
+            text = f"{data[i,j]:.3g}"
+            if errors_to_annotate is not None:
+                text += f'\n$\pm${errors_to_annotate[i,j]:.2g}'
+            plt.text(i + 0.5, j + 0.5, text, ha="center", va="center", color="k")
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
 
 def kde_variable_plot(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection_query='no_cuts', cumulative=False, existing_axis=None):
     assert m4mz in list(exp_analysis_obj.dfs.keys())
 
-    selection_weights = exp_analysis_obj.df_base.eval(selection_query)
-    kde_weights = exp_analysis_obj.kde_on_a_point(m4mz, smoothing_pars)
-    total_weight = selection_weights * kde_weights
+    selected_df = exp_analysis_obj.df_base.query(selection_query)
+    kde_weights = exp_analysis_obj.kde_on_a_point(selected_df, m4mz, smoothing_pars)
 
     kde_prediction, bin_edges = np.histogram(exp_analysis_obj.df_base[var],
              range=range,
              bins=bins,
-             weights=total_weight,
+             weights=kde_weights,
             )
     kde_errors2 = np.histogram(exp_analysis_obj.df_base[var],
                  range=range,
                  bins=bins,
-                 weights=total_weight**2,
+                 weights=kde_weights**2,
                 )[0]
     if cumulative:
         kde_prediction = np.cumsum(kde_prediction)
@@ -73,19 +103,18 @@ def kde_variable_plot(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[
 def kde_to_noscan_comparison(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection_query='no_cuts', cumulative=False, existing_axis=None):
     assert m4mz in list(exp_analysis_obj.dfs.keys())
     no_scan = exp_analysis_obj.dfs[m4mz]
-    selection_weights = no_scan.eval(selection_query)
-    actual_weights = no_scan['actual_weight']
-    total_weights = selection_weights * actual_weights
+    selected_df = no_scan.query(selection_query)
+    actual_weights = selected_df['actual_weight']
 
     no_scan_pred, bin_edges = np.histogram(no_scan[var],
                                 range=range,
                                 bins=bins,
-                                weights=total_weights,
+                                weights=actual_weights,
                                 )
     no_scan_pred_err = np.histogram(no_scan[var],
                                 range=range,
                                 bins=bins,
-                                weights=total_weights**2,
+                                weights=actual_weights**2,
                                 )[0]
     if cumulative:
         no_scan_pred = np.cumsum(no_scan_pred)
@@ -150,26 +179,6 @@ def comparison_plot_cuts(var, range, bins, m4mz, exp_analysis_obj, selection_que
                                 existing_axis=ax,
                                 )
     return fig, axes
-
-# def kde_to_noscan_comparison_batch(vars_ranges_binss, m4mzs, exp_analysis_objs, selection_queries, smoothing_parss=(0.01,0.01), cumulatives=False):
-#     features = [vars_ranges_binss, m4mzs, exp_analysis_objs, selection_queries, smoothing_parss, cumulatives]
-#     features = [feature if type(feature) is list else [feature] for feature in features]
-#     n_plots = reduce((lambda x, y: len(x)*len(y)), features)
-    
-#     fig, axes = plt.subplots(nrows=1, ncols=len(selection_queries), figsize = (len(selection_queries)*5, 4))
-
-#     for var_range_bins, range, bins, m4mz, exp_analysis_obj, selection_query, smoothing_pars, cumulative in product(features):
-#         kde_to_noscan_comparison(var=var_range_bins[0],
-#                                 range=var_range_bins[1],
-#                                 bins=var_range_bins[2],
-#                                 m4mz=m4mz,
-#                                 exp_analysis_obj=exp_analysis_obj,
-#                                 smoothing_pars=smoothing_pars,
-#                                 selection_query=selection_query,
-#                                 cumulative=cumulative,
-#                                 existing_axis=ax,
-#                                 )
-#     return fig, axes
 
 def weighted_efficiency(num_weights, anti_num_weights):
     den_weights = num_weights + anti_num_weights
@@ -254,6 +263,7 @@ def kde_no_scan_efficiency_cut_list(num_selection_queries, den_selection_queries
     return kde_eff/no_scan_eff, kde_eff_err/no_scan_eff
 
 def kde_no_scan_efficiency_plot_grid(num_selection_query, den_selection_query, exp_analysis_obj, smoothing_pars=[0.005, 0.05]):
+    '''this function can be wrote in a better way'''
     kde_eff = []
     kde_eff_err = []
     no_scan_eff = []
