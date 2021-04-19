@@ -2,6 +2,9 @@ import subprocess
 import itertools
 from parameters_dict import physics_parameters
 
+from exp_analysis_class import exp_analysis
+
+
 # run shell commands from notebook
 def subprocess_cmd(command, verbose=2):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
@@ -40,3 +43,14 @@ def produce_scan_sample(case, D_or_M, neval=1000000):
                    f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M}']
 
     subprocess_cmd(mu_gen_run)
+                  
+def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana']):
+    my_exp_analyses = {}  
+    for hierarchy, D_or_M in itertools.product(hierarchies, D_or_Ms):
+        print(hierarchy, D_or_M)
+        this_exp_analyis = exp_analysis(hierarchy, D_or_M)
+        this_exp_analyis.load_df_base(1000000)
+        this_exp_analyis.load_grid_dfs()
+        my_exp_analyses[f'{hierarchy}_{D_or_M}'] = this_exp_analyis
+                  
+    return my_exp_analyses
