@@ -16,6 +16,10 @@ def ctau_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     return get_decay_rate_in_cm(gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M))
 
 def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+    # to accept floats
+    m4 = np.asarray(m4)
+    mz = np.asarray(mz)
+
     '''there is a cancellation for small r that holds up to 4th order, so I avoid instability by expanding when r is small'''
     r = ((m4/mz)**2)
     gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4

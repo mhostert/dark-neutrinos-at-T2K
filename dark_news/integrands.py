@@ -148,8 +148,8 @@ class cascade(vg.BatchIntegrand):
 
 
 		#############
-		return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*dgammaZprime*jacobian_scan*Mn**3*Mzprime**2,
-				'decay rate N' : dgamma*dgammaZprime*jacobian_scan*Mn**3*Mzprime**2,
+		return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*dgammaZprime*jacobian_scan*Mzprime**2,
+				'decay rate N' : dgamma*dgammaZprime*jacobian_scan*Mzprime**2,
 				'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan}
 
 

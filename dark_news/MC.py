@@ -189,8 +189,8 @@ class MC_events:
 			dic = integrands.cascade_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N'] # the Zprime width is trivially accounted for
             
-			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**2 * dic['m4_scan']**3
-			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**2 * dic['m4_scan']**3
+			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**2
+			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**2
 		
 		elif params.hierarchy == 'heavy':
 			dic = integrands.three_body_phase_space(samples=SAMPLES, MC_case=self)
