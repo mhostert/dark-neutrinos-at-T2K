@@ -11,7 +11,7 @@ from const import *
 
 droplist = ['plm_t', 'plm_x', 'plm_y', 'plm_z', 'plp_t', 'plp_x', 'plp_y', 'plp_z',
        'pnu_t', 'pnu_x', 'pnu_y', 'pnu_z', 'pHad_t', 'pHad_x', 'pHad_y',
-       'pHad_z', 'weight', 'weight_decay', 'regime', 'pee_t',
+       'pHad_z', 'weight_decay', 'regime', 'pee_t',
        'pdark_t', 'pee_x', 'pdark_x', 'pee_y', 'pdark_y', 'pee_z', 'pdark_z',
        'recoil_mass', 'p3dark', 'mdark', 'betagamma']
     
@@ -101,16 +101,19 @@ class exp_analysis(object):
         
     def load_df_base(self, n_evt=1000000, filename=None):
         self.n_evt = n_evt
+        print("loading df base")
         if filename is None:
             self.df_base = pd.read_pickle(f'{self.base_folder}scan/{self.hierarchy}_{self.D_or_M}/{self.m4_limits[0]}_m4_{self.m4_limits[1]}_{self.mz_limits[0]}_mzprime_{self.mz_limits[1]}_nevt_{self.n_evt}.pckl')
         else:
             self.df_base = pd.read_pickle(filename)
+        print("initialising df base")
         self.initialise_df(self.df_base, which_scan='m4_mz')
     
     def load_df(self, m4, mz):
+        print(f"loading df {m4}, {mz}")
         self.dfs[(m4, mz)] = pd.read_pickle(f'{self.base_folder}m4_{m4}_mzprime_{mz}_{self.hierarchy}_{self.D_or_M}/MC_m4_{m4}_mzprime_{mz}.pckl')
+        print(f"initialising df {m4}, {mz}")
         self.initialise_df(self.dfs[(m4, mz)])
-        return self.dfs[(m4, mz)]
     
     def load_grid_dfs(self):
         for m4, mz in itertools.product(self.m4_scan, self.mz_scan):
@@ -125,11 +128,15 @@ class exp_analysis(object):
         self.compute_interaction_point(df)
         self.unitary_decay_length(df)
         self.compute_selection(df)
-
+        
         # flatten index of pandas multiindex
         df.columns = ['_'.join(col) if (col[1]!='') else col[0] for col in df.columns.values]
-        df.drop(droplist, axis=1)
+        df.drop(droplist, axis=1, inplace=True)
         
+        for column in df.columns:
+            if (df[column].dtype == 'float') and ('weight' not in column):
+                df[column] = pd.to_numeric(df[column], downcast='float')
+                
         if which_scan == 'm4_mz':
             self.m4_values = self.df_base['m4'].values
             self.mz_values = self.df_base['mzprime'].values
@@ -176,10 +183,16 @@ class exp_analysis(object):
         weight_values = df['weight', ''].values
         
         if with_decay_formula:
-            df['total_decay_rate', ''] = gamma_general(m4_values,
-                                                        mz_values,
-                                                        self.Vmu4_alpha_epsilon2,
-                                                        D_or_M=self.D_or_M)
+            if which_scan == None:
+                df['total_decay_rate', ''] = gamma_general(m4_values[0],
+                                                            mz_values[0],
+                                                            self.Vmu4_alpha_epsilon2,
+                                                            D_or_M=self.D_or_M)
+            elif which_scan == 'm4_mz':
+                df['total_decay_rate', ''] = gamma_general(m4_values,
+                                                            mz_values,
+                                                            self.Vmu4_alpha_epsilon2,
+                                                            D_or_M=self.D_or_M)
         else:
             weight_decay_values = df['weight_decay', ''].values
             if which_scan == None:

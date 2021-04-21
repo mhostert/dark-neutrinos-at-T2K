@@ -1,7 +1,9 @@
 import subprocess             
 import itertools
-from parameters_dict import physics_parameters
+import pickle
+from time import time, process_time
 
+from parameters_dict import physics_parameters
 from exp_analysis_class import exp_analysis
 
 
@@ -44,13 +46,36 @@ def produce_scan_sample(case, D_or_M, neval=1000000):
 
     subprocess_cmd(mu_gen_run)
                   
-def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana']):
-    my_exp_analyses = {}  
+def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], dump=False, timeit=False, direct_load_objects=False):
+    assert not (dump and direct_load_objects)
+    if type(hierarchies) is not list:
+        hierarchies = [hierarchies]
+    if type(D_or_Ms) is not list:
+        D_or_Ms = [D_or_Ms]
+                  
+    my_exp_analyses = {}
     for hierarchy, D_or_M in itertools.product(hierarchies, D_or_Ms):
         print(hierarchy, D_or_M)
+        if timeit:
+            start = time()
+            start_process = process_time()
         this_exp_analyis = exp_analysis(hierarchy, D_or_M)
-        this_exp_analyis.load_df_base(1000000)
-        this_exp_analyis.load_grid_dfs()
-        my_exp_analyses[f'{hierarchy}_{D_or_M}'] = this_exp_analyis
-                  
+        if dump or direct_load_objects:
+            filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/'\
+                       f'{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
+        if not direct_load_objects:
+            this_exp_analyis.load_df_base(1000000)
+            this_exp_analyis.load_grid_dfs()
+            my_exp_analyses[f'{hierarchy}_{D_or_M}'] = this_exp_analyis
+            if dump:
+                f = open(filename_pickle, 'wb+')
+                pickle.dump(this_exp_analyis, f)
+                f.close()
+        else:
+            f = open(filename_pickle, 'rb')
+            my_exp_analyses[f'{hierarchy}_{D_or_M}'] = pickle.load(f)
+        if timeit:
+            end = time()
+            end_process = process_time()
+            print(f'Wall time: {end - start} s, CPU time: {end_process - start_process}')  
     return my_exp_analyses

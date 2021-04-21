@@ -9,7 +9,7 @@ from matplotlib.pyplot import *
 from matplotlib.backends.backend_pdf import PdfPages
 import os
 
-def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=None, kernel=None, smoothing_pars=None):
+def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=None, kernel=None, smoothing_pars=None, suptitle=False):
     if ax is not None:
         plt.sca(ax)
     title_string = ''
@@ -23,12 +23,21 @@ def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=No
         title_string += f'kernel = {kernel}\n'
     if smoothing_pars is not None:
         title_string += f'smoothing pars = {smoothing_pars[0]} GeV, {smoothing_pars[1]} GeV\n'
+    title_string = title_string.strip()
+    
+    if not suptitle:
+        plt.title(title_string)
+    else:
+        plt.suptitle(title_string)
 
-    plt.title(title_string.strip())
-
-def annotated_2d_plot(data, xcenters, ycenters, vcenter=1, vmin=0.8, vmax=1.2, xlabel=None, ylabel=None, errors_to_annotate=None):
-    divnorm = colors.TwoSlopeNorm(vcenter=vcenter, vmin=vmin, vmax=vmax)
-    plt.pcolormesh(data.T, cmap='BrBG', norm=divnorm)
+def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors_to_annotate=None, colornorm='div', main_to_annotate=None, err_to_annotate=None, **kwargs):
+    if main_to_annotate is not None:
+        assert len(main_to_annotate) == len(err_to_annotate)
+    if colornorm == 'div':        
+        aux_norm = colors.TwoSlopeNorm(**kwargs)
+        plt.pcolormesh(data.T, cmap='BrBG', norm=aux_norm)
+    elif colornorm == 'normal':
+        plt.pcolormesh(data.T)
     plt.xticks(ticks=np.arange(0.5, len(xcenters)),
                labels=xcenters)
     plt.yticks(ticks=np.arange(0.5, len(ycenters)),
@@ -38,9 +47,15 @@ def annotated_2d_plot(data, xcenters, ycenters, vcenter=1, vmin=0.8, vmax=1.2, x
             this_value = data[i,j]
             if np.isnan(this_value):
                 continue
-            text = f"{data[i,j]:.3g}"
-            if errors_to_annotate is not None:
-                text += f'\n$\pm${errors_to_annotate[i,j]:.2g}'
+            if main_to_annotate is None:
+                text = f"{data[i,j]:.3g}"
+                if errors_to_annotate is not None:
+                    text += f'\n$\pm${errors_to_annotate[i,j]:.2g}'
+            else:
+                text = ''
+                for main, err in zip(main_to_annotate, err_to_annotate):
+                    text += f'{main[i,j]:.3g}\n$\pm${err[i,j]:.2g}\n'
+                text = text.strip()
             plt.text(i + 0.5, j + 0.5, text, ha="center", va="center", color="k")
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
