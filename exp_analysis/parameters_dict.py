@@ -13,7 +13,7 @@ physics_parameters['heavy'] = {
 
 physics_parameters['light'] = {
     'm4_limits': (0.005, 2),
-    'mz_limits': (0.005, 10),
+    'mz_limits': (0.005, 2),
     'm4_scan' : [0.01, 0.1, 0.4, 0.8],
     'mz_scan': [0.01, 0.03, 0.1, 0.2],
     'alpha_dark': 0.4,
