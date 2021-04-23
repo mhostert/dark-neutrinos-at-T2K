@@ -74,6 +74,7 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
         else:
             f = open(filename_pickle, 'rb')
             my_exp_analyses[f'{hierarchy}_{D_or_M}'] = pickle.load(f)
+            f.close()
         if timeit:
             end = time()
             end_process = process_time()

@@ -90,6 +90,15 @@ def epa_kernel2d(x, sigma):
                     0,
                     (1 - (x[..., 0]/sigma[0])**2 - (x[..., 1]/sigma[1])**2)/(4*sigma[0]*sigma[1]*(1-1/np.sqrt(3))))
 
+def points_on_triangle(N_points, m4_limits, mz_limits, hierarchy='heavy'):
+    rvs = np.random.random((N_points, 2))
+    if hierarchy == 'heavy':
+        rvs = np.where(rvs[:, 0, None]<rvs[:, 1, None], rvs, rvs[:, ::-1])
+    elif hierarchy == 'light':
+        rvs = np.where(rvs[:, 0, None]>rvs[:, 1, None], rvs, rvs[:, ::-1])
+    
+    return np.array((m4_limits[0], mz_limits[0])) + rvs*(m4_limits[1]-m4_limits[0], mz_limits[1]-mz_limits[0])
+
 class exp_analysis(object):
     
     def __init__(self, hierarchy, D_or_M, base_folder='../data/nd280_nu/3plus1/'):
@@ -256,7 +265,18 @@ class exp_analysis(object):
             (p0d_length + 2*(tpc_length + fgd_length) < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
             (detector_splitting[0][0] < df[f'decay_point_{ctau}_x']) & (df[f'decay_point_{ctau}_x'] < detector_splitting[0][1]) &\
             (detector_splitting[1][0] < df[f'decay_point_{ctau}_y']) & (df[f'decay_point_{ctau}_y'] < detector_splitting[1][1])
-
+    
+    @staticmethod
+    def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
+        decay_x = int_x + ctau*length_x
+        decay_y = int_y + ctau*length_y
+        decay_z = int_z + ctau*length_z
+        return (((p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
+            (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
+            (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
+            (detector_splitting[0][0] < decay_x) & (decay_x < detector_splitting[0][1]) &\
+            (detector_splitting[1][0] < decay_y) & (decay_y < detector_splitting[1][1])
+    
     def ctau_acceptance(self, ctaus):
         for df in self.dfs.values():
             self.decay_in_tpc(df, ctaus)
@@ -293,10 +313,10 @@ class exp_analysis(object):
         if type(this_m4mz) != np.ndarray:
             this_m4mz = np.array(this_m4mz)
         this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
-        return df['actual_weight'].values * exp_analysis.kde_Nd_weights(this_m4mz,
-                                                                        this_m4mz_values,
-                                                                        smoothing,
-                                                                        kernel)
+        return df['actual_weight'].values * exp_analysis.kde_Nd_weights(x=this_m4mz,
+                                                                        x_i=this_m4mz_values,
+                                                                        smoothing=smoothing,
+                                                                        kernel=kernel)
 
     def kde_on_a_grid(self, m4_scan, mz_scan, smoothing=[0.005, 0.05], kernel='epa'):
         grid_to_eval = np.stack(np.meshgrid(m4_scan, mz_scan, indexing='ij'), axis=-1)
@@ -330,9 +350,26 @@ class exp_analysis(object):
             aux_df = self.df_base
         if selection_query is not None:
             aux_df = aux_df.query(selection_query)
-        kde_weights = self.kde_on_a_point(aux_df, m4mz, smoothing, kernel)
+        kde_weights = self.kde_on_a_point(df=aux_df, 
+                                          this_m4mz=m4mz, 
+                                          smoothing=smoothing, 
+                                          kernel=kernel)
         return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
-
+    
+    @staticmethod
+    def kde_n_events_fast(df, m4mz, ctau=None, int_point=None, decay_length=None, mu=1, smoothing=[0.005, 0.05], kernel='epa'):
+        if ctau is not None:
+            ctau_mask = exp_analysis.decay_in_tpc_fast(int_point[0], int_point[1], int_point[2], 
+                                                       decay_length[0], decay_length[1], decay_length[2], 
+                                                       ctau)
+            df = df[ctau_mask]
+        
+        kde_weights = exp_analysis.kde_on_a_point(df=df, 
+                                                  this_m4mz=m4mz, 
+                                                  smoothing=smoothing, 
+                                                  kernel=kernel)
+        return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
+    
     def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], kernel='epa'):
         out = []
         for m4 in self.m4_scan:
@@ -351,17 +388,17 @@ class exp_analysis(object):
         return np.array(out)
 
     # Next are pretty old functions which should be re-written
-    @staticmethod
-    def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
-        decay_x = int_x + ctau*length_x
-        decay_y = int_y + ctau*length_y
-        decay_z = int_z + ctau*length_z
-        out = (((p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
-            (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
-            (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-            (detector_splitting[0][0] < decay_x) & (decay_x < detector_splitting[0][1]) &\
-            (detector_splitting[1][0] < decay_y) & (decay_y < detector_splitting[1][1])
-        return out
+#     @staticmethod
+#     def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
+#         decay_x = int_x + ctau*length_x
+#         decay_y = int_y + ctau*length_y
+#         decay_z = int_z + ctau*length_z
+#         out = (((p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
+#             (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
+#             (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
+#             (detector_splitting[0][0] < decay_x) & (decay_x < detector_splitting[0][1]) &\
+#             (detector_splitting[1][0] < decay_y) & (decay_y < detector_splitting[1][1])
+#         return out
 
     @staticmethod
     def mu_sigma2_of_theta(df, m4, mz, ctau, smooth_m4, smooth_mz, selection_step='cut_based_geometric'):

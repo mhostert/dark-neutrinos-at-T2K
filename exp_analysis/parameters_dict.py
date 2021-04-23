@@ -9,6 +9,7 @@ physics_parameters['heavy'] = {
     'Umu4': 2.2e-7,
     'epsilon2': 4.6e-4,
     'alpha_em': 1./137,
+    'upper_bound_Vmu4_alpha_epsilon2_minimal': 6.5e-7,
 }
 
 physics_parameters['light'] = {
