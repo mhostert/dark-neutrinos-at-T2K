@@ -46,7 +46,7 @@ def produce_scan_sample(case, D_or_M, neval=1000000):
 
     subprocess_cmd(mu_gen_run)
                   
-def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], dump=False, timeit=False, direct_load_objects=False):
+def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], in_log=False, dump=False, timeit=False, direct_load_objects=False):
     assert not (dump and direct_load_objects)
     if type(hierarchies) is not list:
         hierarchies = [hierarchies]
@@ -59,10 +59,12 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
         if timeit:
             start = time()
             start_process = process_time()
-        this_exp_analyis = exp_analysis(hierarchy, D_or_M)
+        this_exp_analyis = exp_analysis(hierarchy, D_or_M, in_log)
         if dump or direct_load_objects:
-            filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/'\
-                       f'{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
+            filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects'
+            if in_log:
+                filename_pickle += '_in_log'
+            filename_pickle += f'/{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
         if not direct_load_objects:
             this_exp_analyis.load_df_base(1000000)
             this_exp_analyis.load_grid_dfs()
