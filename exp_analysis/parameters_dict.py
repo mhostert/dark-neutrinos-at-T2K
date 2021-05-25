@@ -1,3 +1,9 @@
+import numpy as np
+from const import alphaQED
+
+upper_bound_epsilon = 0.05 # model independent constraint on epsilon - probably we can push to 3.5%
+upper_bound_Umu4_2 = 0.03 # 
+
 physics_parameters = {}
 
 physics_parameters['heavy'] = {
@@ -8,8 +14,7 @@ physics_parameters['heavy'] = {
     'alpha_dark': 0.4,
     'Umu4': 2.2e-7,
     'epsilon2': 4.6e-4,
-    'alpha_em': 1./137,
-    'upper_bound_Vmu4_alpha_epsilon2_minimal': 6.5e-7,
+    'lower_bound_Vmu4_alpha_epsilon2': 10**(-17),
 }
 
 physics_parameters['light'] = {
@@ -19,15 +24,29 @@ physics_parameters['light'] = {
     'mz_scan': [0.0075, 0.03, 0.1, 0.4],
     'alpha_dark': 0.4,
     'Umu4': 2e-9,
-    'epsilon2': 2e-10*137,
-    'alpha_em': 1./137,
+    'epsilon2': 2e-10/alphaQED,
+    # 'lower_bound_Vmu4_alpha_epsilon2': 10**(-21),
+    'lower_bound_Vmu4': 10**(-10),
+    'lower_bound_epsilon': 10**(-5),
 }
 
 for physics_params in physics_parameters.values():
+    physics_params['upper_bound_epsilon'] = upper_bound_epsilon
+    physics_params['upper_bound_Vmu4'] = upper_bound_Umu4_2
     physics_params['Vmu4_alpha_epsilon2'] = physics_params['alpha_dark'] *\
                                                          physics_params['Umu4'] *\
-                                                         physics_params['alpha_em'] *\
-                                                         physics_params['epsilon2']
+                                                         alphaQED *\
+                                                         physics_params['epsilon2'] 
+    physics_params['upper_bound_Vmu4_alpha_epsilon2'] = physics_params['upper_bound_Vmu4'] *\
+                                                        alphaQED *\
+                                                        upper_bound_epsilon**2
+    physics_params['upper_bound_Valpha4_alpha_epsilon2'] = alphaQED *\
+                                                        upper_bound_epsilon**2
+
+
+    # physics_params['upper_bound_log10_Vmu4_alpha_epsilon2'] = np.log10(physics_params['upper_bound_Vmu4_alpha_epsilon2'])
+    # physics_params['lower_bound_log10_Vmu4_alpha_epsilon2'] = np.log10(physics_params['lower_bound_Vmu4_alpha_epsilon2'])
+    # physics_params['upper_bound_log10_Valpha4_alpha_epsilon2'] = np.log10(physics_params['upper_bound_Valpha4_alpha_epsilon2'])
 
 total_pot = 2e21
 
