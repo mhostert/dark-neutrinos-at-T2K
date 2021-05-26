@@ -33,7 +33,6 @@ rad_to_deg = 180.0/np.pi
 invGeV2_to_cm2 = 3.89379372e-28 # hbar c = 197.3269804e-16 GeV.cm
 invGeV_to_cm = np.sqrt(invGeV2_to_cm2)
 invGeV_to_s = invGeV_to_cm/c_LIGHT
-print(invGeV_to_s)
 hb = 6.582119569e-25 # hbar in Gev s
 
 def get_decay_rate_in_s(G):

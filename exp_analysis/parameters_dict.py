@@ -3,18 +3,19 @@ physics_parameters = {}
 physics_parameters['heavy'] = {
     'm4_limits': (0.005, 1),
     'mz_limits': (0.005, 10),
-    'm4_scan' : [0.01, 0.1, 0.5],
+    'm4_scan' : [0.01, 0.1, 0.15, 0.5],
     'mz_scan': [0.01, 0.1, 1, 5],
     'alpha_dark': 0.4,
     'Umu4': 2.2e-7,
     'epsilon2': 4.6e-4,
     'alpha_em': 1./137,
+    'upper_bound_Vmu4_alpha_epsilon2_minimal': 6.5e-7,
 }
 
 physics_parameters['light'] = {
     'm4_limits': (0.005, 2),
-    'mz_limits': (0.005, 10),
-    'm4_scan' : [0.01, 0.1, 0.4, 0.8],
+    'mz_limits': (0.005, 2),
+    'm4_scan' : [0.01, 0.1, 0.15, 0.4, 0.8],
     'mz_scan': [0.01, 0.03, 0.1, 0.2],
     'alpha_dark': 0.4,
     'Umu4': 2e-9,
@@ -35,6 +36,12 @@ fgd_length = 36.5 #cm
 p0d_length = 240 #cm
 
 p0d_dimensions = [210.3, 223.9, 240]
+detector_splitting = {0: [0, 30.5],
+                      1: [30.5, 209.6],
+                      2: [209.6, 240.0]}
+detector_splitting = {0: [0, 30.5],
+                      1: [30.5, 209.6],
+                      2: [209.6, 240.0]}
 detector_splitting = {0: [0, 30.5],
                       1: [30.5, 209.6],
                       2: [209.6, 240.0]}
