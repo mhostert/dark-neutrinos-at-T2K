@@ -9,13 +9,8 @@ physics_parameters = {}
 physics_parameters['heavy'] = {
     'm4_limits': (0.005, 1),
     'mz_limits': (0.005, 10),
-<<<<<<< HEAD
-    'm4_scan' : [0.01, 0.1, 0.15, 0.5],
-    'mz_scan': [0.01, 0.1, 1, 5],
-=======
     'm4_scan' : [0.01, 0.1, 0.5],
     'mz_scan': [0.02, 0.2, 1, 5],
->>>>>>> 1331dd546179e43830e8b443c0f84a571c0d5a24
     'alpha_dark': 0.4,
     'Umu4': 2.2e-7,
     'epsilon2': 4.6e-4,
@@ -25,13 +20,8 @@ physics_parameters['heavy'] = {
 physics_parameters['light'] = {
     'm4_limits': (0.005, 2),
     'mz_limits': (0.005, 2),
-<<<<<<< HEAD
-    'm4_scan' : [0.01, 0.1, 0.15, 0.4, 0.8],
-    'mz_scan': [0.01, 0.03, 0.1, 0.2],
-=======
     'm4_scan' : [0.01, 0.1, 0.4, 0.8],
     'mz_scan': [0.0075, 0.03, 0.1, 0.4],
->>>>>>> 1331dd546179e43830e8b443c0f84a571c0d5a24
     'alpha_dark': 0.4,
     'Umu4': 2e-9,
     'epsilon2': 2e-10/alphaQED,

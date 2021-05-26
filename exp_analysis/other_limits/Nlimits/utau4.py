@@ -12,44 +12,24 @@ from scipy import interpolate
 
 ##
 # Which constraints do you want to exclude from the final combination
-EXCLUDE_THESE_CONSTRAINTS = [22]
+EXCLUDE_THESE_CONSTRAINTS = []
 
 
-PATH = 'digitized'
-files_ue4 = [ 
-        PATH+"/ue4/NA62_2020.dat",
-        PATH+"/ue4/PIENU.dat",
-        PATH+"/ue4/KEK.dat",
-        PATH+"/ue4/PIENU_Bolton.dat",
-        PATH+"/ue4/kev_bounds/Bound1.txt",
-        PATH+"/ue4/kev_bounds/Bound2.txt",
-        PATH+"/ue4/kev_bounds/Bound3.txt",
-        PATH+"/ue4/kev_bounds/Bound4.txt",
-        PATH+"/ue4/kev_bounds/Bound5.txt",
-        PATH+"/ue4/kev_bounds/Bound6.txt",
-        PATH+"/ue4/kev_bounds/Bound7.txt",
-        PATH+"/ue4/kev_bounds/Bound8.txt",
-        PATH+"/ue4/kev_bounds/Bound9.txt",
-        PATH+"/ue4/kev_bounds/Bound10.txt",
-        PATH+"/ue4/kev_bounds/Bound11.txt",
-        PATH+"/ue4/kev_bounds/Bound12.txt",
-        PATH+"/ue4/F.dat",
-        PATH+"/ue4/Fermi2_F.dat",
-        PATH+"/ue4/EWPD_Bolton.dat",
-        PATH+"/ue4/CHARM_1986.dat",
-        PATH+"/ue4/DELPHI_1997.dat",
-        PATH+"/ue4/T2K_2019_profiled.dat",
-        PATH+"/ue4/TRIUMF_1992.dat",
-        PATH+"/ue4/SuperK_2019.dat",
-        PATH+"/ue4/KENU_bryman_shrock.dat",
-        PATH+"/ue4/PIENU_bryman_shrock.dat",
-        PATH+"/ue4/PIENU-H_bryman_shrock.dat",
-        PATH+"/ue4/De2_bryman_shrock.dat",
-        PATH+"/ue4/DELPHI_short_95CL.dat",
-        PATH+"/ue4/DELPHI_long_95CL.dat",
-        # PATH+"/ue4/DELPHI.dat",
+PATH = os.path.dirname(os.path.abspath(__file__))+'/digitized'
+files_utau4 = [ 
+        PATH+"/utau4/Borexino_RPlestid.dat",
+        PATH+"/utau4/NOMAD_UL_90CL_2002.dat",
+        PATH+"/utau4/CHARM_UL_90CL_2002.dat",
+        PATH+"/utau4/T2K_UL_90CL_2019.dat",
+        PATH+"/utau4/DELPHI_short_95CL.dat",
+        PATH+"/utau4/DELPHI_long_95CL.dat",
+        PATH+"/utau4/EWPD_Bolton.dat",
+        PATH+"/utau4/Bdecays_Bolton.dat",
+        PATH+"/utau4/l_universality_Bolton.dat",
+        PATH+"/utau4/DELPHI_1997.dat",
         ]
-
+        
+## Return a function that takes m4 [GeV] and gives bound on Umu4^2
 
 def func_bound(listoffiles):
     GREYCOLOR = "grey"
@@ -76,20 +56,12 @@ def func_bound(listoffiles):
 
 
 
-        if i in [0,1,2,16,17,21,22,24,25,26,27]:
-            # axis.plot(m4*1e-3, Umu4sq, c=colors[i], ls =linestyles[i], lw=2.0, label=labels[i])
+        if i in [0,1,2,3]:
+#       axis.plot(m4*1e-3, Umu4sq, c=colors[i], ls =linestyles[i], lw=2.0, label=labels[i])
             f = interpolate.interp1d(m4*1e-3, Umu4sq, kind='linear', bounds_error=False, fill_value=1.0, assume_sorted=False)    
             y.append(f(x))
-        elif i in [4,5,6,7,8,9,10,11,12,13,14]:
-            # axis.plot(m4*1e-3, Umu4sq, c=colors[i], ls =linestyles[i], lw=2.0, label=labels[i])
-            f = interpolate.interp1d(m4*1e-9, Umu4sq*1e-2, kind='linear', bounds_error=False, fill_value=1.0, assume_sorted=False)    
-            y.append(f(x))
-        elif i in [15]:
-            # axis.plot(m4*1e-3, Umu4sq, c=colors[i], ls =linestyles[i], lw=2.0, label=labels[i])
-            f = interpolate.interp1d(m4*1e-6, Umu4sq*1e-2, kind='linear', bounds_error=False, fill_value=1.0, assume_sorted=False)    
-            y.append(f(x))
         else:
-            # axis.plot(m4, Umu4sq, c=colors[i], ls =linestyles[i], lw=2.0, label=labels[i])
+#             axis.plot(m4, Umu4sq, c=colors[i], ls =linestyles[i], lw=2.0, label=labels[i])
             f = interpolate.interp1d(m4, Umu4sq, kind='linear', bounds_error=False, fill_value=1.0, assume_sorted=False)    
             y.append(f(x))
 
@@ -104,8 +76,6 @@ def func_bound(listoffiles):
     return interpolate.interp1d(x, z, kind='linear', bounds_error=False, fill_value=1.0, assume_sorted=False)    
 
     
-
-
 ###############################
 # THIS PLOTS ALL CONSTRAINTS -- JUST AN APPLICATION OF THE FUNCTION ABOVE.
 colors = [  "black",
@@ -140,12 +110,14 @@ labels = [  r"BEBC",
 
 linestyles = ["-","-","-","-","-","-","-","-","-",":",":",":",":",":"]
 
-USQR=func_bound(files_ue4)
+USQR=func_bound(files_utau4)
 if __name__ == '__main__':
         
+
+
     ### Test for a few values
     ###############################
     # THIS IS THE FUNCTION THAT TAKE m4 AS INPUT
     # AND OUTPUTS THE CONSTRAINT ON UMU4^2.
     m4 = np.logspace(-3,3,1000)
-    np.savetxt('ue4_constraint_v1.dat', np.array([m4, USQR(m4)]).T , header='m4 (GeV) Ue4SQR ')
+    np.savetxt('utau4_constraint_v1.dat', np.array([m4, USQR(m4)]).T , header='m4 (GeV) Utau4SQR ')
