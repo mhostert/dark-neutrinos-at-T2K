@@ -20,8 +20,6 @@ def subprocess_cmd(command, verbose=2):
             # print(command)
             print('n',stderr.decode("utf-8"),'m')
 
-
-
 def produce_samples_without_scanning(case, D_or_M, neval=100000):
     for m4, mz_prime in itertools.product(physics_parameters[case]['m4_scan'], physics_parameters[case]['mz_scan']):
         print(f"Generating events for m4={m4} GeV and mzprime={mz_prime}")
@@ -46,7 +44,7 @@ def produce_scan_sample(case, D_or_M, neval=1000000):
 
     subprocess_cmd(mu_gen_run)
                   
-def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], dump=False, timeit=False, direct_load_objects=False):
+def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], dump=False, timeit=False, direct_load_objects=False, build_ball_tree=False, distance='log'):
     assert not (dump and direct_load_objects)
     if type(hierarchies) is not list:
         hierarchies = [hierarchies]
@@ -61,10 +59,11 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
             start_process = process_time()
         this_exp_analyis = exp_analysis(hierarchy, D_or_M)
         if dump or direct_load_objects:
-            filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/'\
-                       f'{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
+            filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
         if not direct_load_objects:
-            this_exp_analyis.load_df_base(1000000)
+            this_exp_analyis.load_df_base(1000000,
+                                          build_ball_tree=build_ball_tree,
+                                          distance='log')
             this_exp_analyis.load_grid_dfs()
             my_exp_analyses[f'{hierarchy}_{D_or_M}'] = this_exp_analyis
             if dump:

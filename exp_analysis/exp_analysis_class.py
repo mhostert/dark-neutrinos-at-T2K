@@ -1,10 +1,11 @@
 import itertools
 import numpy as np
-from scipy.stats import norm, uniform, multivariate_normal
 from scipy.interpolate import interpn
-from scipy.integrate import dblquad
 import pandas as pd
-import matplotlib.pyplot as plt
+
+from sklearn.neighbors import BallTree
+from kde_utils import kde_Nd_weights, log_distance
+
 from fourvec import *
 from parameters_dict import *
 from const import *
@@ -14,90 +15,6 @@ droplist = ['plm_t', 'plm_x', 'plm_y', 'plm_z', 'plp_t', 'plp_x', 'plp_y', 'plp_
        'pHad_z', 'weight_decay', 'regime', 'pee_t',
        'pdark_t', 'pee_x', 'pdark_x', 'pee_y', 'pdark_y', 'pee_z', 'pdark_z',
        'recoil_mass', 'p3dark', 'mdark', 'betagamma']
-    
-    
-def ctau_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
-    return get_decay_rate_in_cm(gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M))
-
-def ctau_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
-    return get_decay_rate_in_cm(gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M))
-
-def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
-    # to accept floats
-    m4 = np.asarray(m4)
-    mz = np.asarray(mz)
-
-    '''there is a cancellation for small r that holds up to 4th order, so I avoid instability by expanding when r is small'''
-    r = ((m4/mz)**2)
-    gamma = Valpha4_alphaepsilon2/12.0/np.pi/r**2 * m4
-    # avoiding evaluation of bad expression
-    mask = (r>0.01)
-    piece = np.empty_like(r)
-    piece[mask] = (6*(r[mask] - r[mask]**2/2.0 - np.log((1.0/(1.0-r[mask]))**(1 - r[mask])) )- r[mask]**3)
-    piece[~mask] = r[~mask]**4/2
-
-    gamma *= piece
-    if D_or_M == 'dirac':
-        gamma /= 2
-    return gamma
-
-def gamma_light(m4, mz, Valpha4_alphaepsilon2, D_or_M, m_ell=m_e):
-    '''this is the product of GammaZprime * GammaN'''
-    gamma = (2*np.pi*2*np.sqrt(-4*(m_ell*m_ell) + mz*mz)*(5*(m_ell*m_ell) + 2*(mz*mz))*np.pi)/(24.*(mz*mz)*(np.pi*np.pi))
-    gamma *= 1/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
-    
-    if D_or_M == 'dirac':
-        gamma /= 2
-    gamma *= Valpha4_alphaepsilon2
-    return gamma
-
-def gamma_general(m4, mz, Valpha4alphaepsilon2, D_or_M):
-    heavy = (m4 < mz)
-    gamma = np.empty_like(m4)
-    gamma[heavy] = gamma_heavy(m4[heavy],mz[heavy],Valpha4alphaepsilon2, D_or_M)
-    gamma[~heavy] = gamma_light(m4[~heavy],mz[~heavy],Valpha4alphaepsilon2, D_or_M)
-    return gamma
-
-def gamma_heavy_contact(m4, mz, Valpha4_alphaepsilon2, D_or_M):
-    gamma = Valpha4_alphaepsilon2/(24 * np.pi) * m4**5/mz**4*np.heaviside(mz - m4,0)
-    if D_or_M == 'dirac':
-        gamma /= 2
-    return gamma
-
-def gamma_heavy_contact_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
-    aux = Valpha4_alphaepsilon2/(24 * np.pi) * (1/6) * (1/(-3))
-    aux *= (m4_s[1]**6 - m4_s[0]**6)
-    aux *= (mz_s[1]**(-3) - mz_s[0]**(-3))
-    if normalised:
-        aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
-    return aux
-
-def gamma_heavy_integrated(m4_s, mz_s, Valpha4_alphaepsilon2, normalised=True):
-    aux, _ = dblquad(gamma_heavy,
-                    mz_s[1], mz_s[0],
-                    m4_s[1], m4_s[0],
-                    args=[Valpha4_alphaepsilon2],
-                    epsrel=1e-8)
-    if normalised:
-        aux /= ((m4_s[1] - m4_s[0])*(mz_s[1] - mz_s[0]))
-    return aux
-
-def gaussian1d(x, mu, sigma):
-    return np.exp(-0.5*((x-mu)/sigma)**2)/np.sqrt(2*np.pi)/sigma
-
-def epa_kernel2d(x, sigma):
-    return np.where((x[..., 0]/sigma[0])**2 + (x[..., 1]/sigma[1])**2 > 1,
-                    0,
-                    (1 - (x[..., 0]/sigma[0])**2 - (x[..., 1]/sigma[1])**2)/(4*sigma[0]*sigma[1]*(1-1/np.sqrt(3))))
-
-def points_on_triangle(N_points, m4_limits, mz_limits, hierarchy='heavy'):
-    rvs = np.random.random((N_points, 2))
-    if hierarchy == 'heavy':
-        rvs = np.where(rvs[:, 0, None]<rvs[:, 1, None], rvs, rvs[:, ::-1])
-    elif hierarchy == 'light':
-        rvs = np.where(rvs[:, 0, None]>rvs[:, 1, None], rvs, rvs[:, ::-1])
-    
-    return np.array((m4_limits[0], mz_limits[0])) + rvs*(m4_limits[1]-m4_limits[0], mz_limits[1]-mz_limits[0])
 
 class exp_analysis(object):
     
@@ -108,7 +25,7 @@ class exp_analysis(object):
         self.base_folder = base_folder
         self.dfs = {}
         
-    def load_df_base(self, n_evt=1000000, filename=None):
+    def load_df_base(self, n_evt=1000000, filename=None, build_ball_tree=False, distance='log'):
         self.n_evt = n_evt
         print("loading df base")
         if filename is None:
@@ -117,6 +34,12 @@ class exp_analysis(object):
             self.df_base = pd.read_pickle(filename)
         print("initialising df base")
         self.initialise_df(self.df_base, which_scan='m4_mz')
+
+        if build_ball_tree:
+            if distance == 'lin':
+                self.ball_tree = BallTree(self.m4mz_values)
+            elif distance == 'log':
+                self.ball_tree = BallTree(self.m4mz_values, metric='pyfunc', func=log_distance)
     
     def load_df(self, m4, mz):
         print(f"loading df {m4}, {mz}")
@@ -151,7 +74,7 @@ class exp_analysis(object):
             self.mz_values = self.df_base['mzprime'].values
             self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
             self.actual_weight_values = self.df_base['actual_weight'].values
-        
+
     @staticmethod
     def compute_analysis_variables(df):
         for comp in ['t','x','y','z']:
@@ -211,7 +134,7 @@ class exp_analysis(object):
                 mz_span = np.linspace(mz_values.min(), mz_values.max(), int(n_points_decaywidth_interpolation/4))
                 aux_grid = np.stack(np.meshgrid(m4_span, mz_span, indexing='ij'), axis=-1)
                 aux_values = np.stack([m4_values, mz_values], axis=-1)
-                gamma_kde_weights = exp_analysis.kde_Nd_weights(aux_grid, 
+                gamma_kde_weights = kde_Nd_weights(aux_grid, 
                                 aux_values,
                                 smoothing=smooth_pars_decaywidth,
                                 kernel=kernel)
@@ -260,6 +183,7 @@ class exp_analysis(object):
     def decay_in_tpc(df, ctaus):
         if type(ctaus) is not list:
             ctaus = [ctaus]
+        out = []
         for ctau in ctaus:
             df[f'decay_point_{ctau}_x'] = df['int_point_x'] + ctau*df['unitary_decay_length_x']
             df[f'decay_point_{ctau}_y'] = df['int_point_y'] + ctau*df['unitary_decay_length_y']
@@ -267,8 +191,8 @@ class exp_analysis(object):
             df[f'decay_in_tpc_{ctau}'] = (((p0d_length < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + tpc_length)) |
             (p0d_length + tpc_length + fgd_length < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + tpc_length + fgd_length + tpc_length)) |
             (p0d_length + 2*(tpc_length + fgd_length) < df[f'decay_point_{ctau}_z']) & (df[f'decay_point_{ctau}_z'] < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-            (detector_splitting[0][0] < df[f'decay_point_{ctau}_x']) & (df[f'decay_point_{ctau}_x'] < detector_splitting[0][1]) &\
-            (detector_splitting[1][0] < df[f'decay_point_{ctau}_y']) & (df[f'decay_point_{ctau}_y'] < detector_splitting[1][1])
+            (0 < df[f'decay_point_{ctau}_x']) & (df[f'decay_point_{ctau}_x'] < p0d_dimensions[0]) &\
+            (0 < df[f'decay_point_{ctau}_y']) & (df[f'decay_point_{ctau}_y'] < p0d_dimensions[1])
     
     @staticmethod
     def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
@@ -279,8 +203,8 @@ class exp_analysis(object):
             (p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
             (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
             (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-            (detector_splitting[0][0] < decay_x) & (decay_x < detector_splitting[0][1]) &\
-            (detector_splitting[1][0] < decay_y) & (decay_y < detector_splitting[1][1])
+            (0 < decay_x) & (decay_x < p0d_dimensions[0]) &\
+            (0 < decay_y) & (decay_y < p0d_dimensions[1])
     
     def ctau_acceptance(self, ctaus):
         for df in self.dfs.values():
@@ -300,40 +224,25 @@ class exp_analysis(object):
                             df['cut4', '']
 
     @staticmethod
-    def kde_Nd_weights(x, x_i, smoothing, kernel='epa'):
-        """x is where to evaluate (could be a grid), x_i are the montecarlo points for training"""
-        assert x.shape[-1] == x_i.shape[-1] #number of dimensions
-        x_i = np.expand_dims(x_i, axis=list(range(1, len(x.shape))))
-        x = np.expand_dims(x, axis=0) #add the axis for the number of points over which to sum.
-        x_dist = (x - x_i)
-        if kernel == 'gaus':
-            smoothing = np.diag(smoothing)**2
-            kde_weights = multivariate_normal.pdf(x_dist, cov=smoothing)
-        elif kernel == 'epa':
-            kde_weights = epa_kernel2d(x_dist, smoothing)
-        return kde_weights
-
-    @staticmethod
-    def kde_on_a_point(df, this_m4mz, smoothing=[0.005, 0.05], kernel='epa'):
-        if type(this_m4mz) != np.ndarray:
-            this_m4mz = np.array(this_m4mz)
+    def kde_on_a_point(df, this_m4mz, distance='lin', smoothing=[0.005, 0.05], kernel='epa'):
+        this_m4mz = np.asarray(this_m4mz)
         this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
-        return df['actual_weight'].values * exp_analysis.kde_Nd_weights(x=this_m4mz,
+        return df['actual_weight'].values * kde_Nd_weights(x=this_m4mz,
                                                                         x_i=this_m4mz_values,
                                                                         smoothing=smoothing,
+                                                                        distance=distance,
                                                                         kernel=kernel)
 
-    def kde_on_a_grid(self, m4_scan, mz_scan, smoothing=[0.005, 0.05], kernel='epa'):
+    @staticmethod
+    def kde_on_a_grid(df, m4_scan, mz_scan, distance='lin', smoothing=[0.005, 0.05], kernel='epa'):
         grid_to_eval = np.stack(np.meshgrid(m4_scan, mz_scan, indexing='ij'), axis=-1)
-        this_kde_weights = self.kde_Nd_weights(grid_to_eval,
-                                               self.m4mz_values,
-                                               smoothing,
-                                               kernel)
-        return self.actual_weight_values[:, np.newaxis, np.newaxis] * this_kde_weights
-
-    def kde_benchmark_grid(self, smoothing=[0.005, 0.05], kernel='epa'):
-        '''I believe this function needs to become more flexible, similar to the one below'''
-        return self.kde_on_a_grid(self.m4_scan, self.mz_scan, smoothing, kernel)
+        this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
+        this_kde_weights = kde_Nd_weights(x=grid_to_eval,
+                                               x_i=this_m4mz_values,
+                                               smoothing=smoothing,
+                                               distance=distance,
+                                               kernel=kernel)
+        return df['actual_weight'].values[:, np.newaxis, np.newaxis] * this_kde_weights
 
     def no_scan_benchmark_grid(self, function):
         out = []
@@ -347,14 +256,22 @@ class exp_analysis(object):
                     out[-1].append(function(self.dfs[(m4, mz)]))
         return np.array(out)
 
-    def kde_n_events(self, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], kernel='epa'):
+    @staticmethod
+    def kde_n_events(df, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], distance='lin', kernel='epa'):
         if ctau is not None:
-            self.decay_in_tpc(self.df_base, ctau)
-            aux_df = self.df_base.query(f'decay_in_tpc_{ctau}')
+            ctau_mask = exp_analysis.decay_in_tpc_fast(df['int_point_x'],
+                                                    df['int_point_y'],
+                                                    df['int_point_z'],
+                                                    df['unitary_decay_length_x'],
+                                                    df['unitary_decay_length_y'],
+                                                    df['unitary_decay_length_z'],
+                                                    ctau)
+            aux_df = df[ctau_mask]
         else:
-            aux_df = self.df_base
+            aux_df = df
         if selection_query is not None:
             aux_df = aux_df.query(selection_query)
+
         kde_weights = mu * self.kde_on_a_point(df=aux_df, 
                                           this_m4mz=m4mz, 
                                           smoothing=smoothing, 
@@ -372,10 +289,11 @@ class exp_analysis(object):
         kde_weights = mu * exp_analysis.kde_on_a_point(df=df, 
                                                   this_m4mz=m4mz, 
                                                   smoothing=smoothing, 
+                                                  distance=distance,
                                                   kernel=kernel)
         return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
     
-    def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], kernel='epa'):
+    def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], distance='lin', kernel='epa'):
         out = []
         for m4 in self.m4_scan:
             out.append([])
@@ -384,74 +302,12 @@ class exp_analysis(object):
                         out[-1].append([0, 0])
                         continue
                 else:
-                    out[-1].append(self.kde_n_events((m4, mz),
-                                                     ctau,
-                                                     mu,
-                                                     selection_query,
-                                                     smoothing,
-                                                     kernel))
+                    out[-1].append(self.kde_n_events(self.df_base,
+                                                     m4mz=(m4, mz),
+                                                     ctau=ctau,
+                                                     mu=mu,
+                                                     selection_query=selection_query,
+                                                     smoothing=smoothing,
+                                                     distance=distance,
+                                                     kernel=kernel))
         return np.array(out)
-
-    # Next are pretty old functions which should be re-written
-#     @staticmethod
-#     def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
-#         decay_x = int_x + ctau*length_x
-#         decay_y = int_y + ctau*length_y
-#         decay_z = int_z + ctau*length_z
-#         out = (((p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
-#             (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
-#             (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-#             (detector_splitting[0][0] < decay_x) & (decay_x < detector_splitting[0][1]) &\
-#             (detector_splitting[1][0] < decay_y) & (decay_y < detector_splitting[1][1])
-#         return out
-
-    @staticmethod
-    def mu_sigma2_of_theta(df, m4, mz, ctau, smooth_m4, smooth_mz, selection_step='cut_based_geometric'):
-        m4_values = df['m4', ''].values
-        mz_values = df['mzprime', ''].values
-        df_values = np.stack([m4_values, mz_values], axis=-1)
-        this_kde_weights = exp_analysis.kde_Nd_weights(np.array([m4, mz]), df_values, smoothing=[smooth_m4, smooth_mz])
-        weight_values = this_kde_weights * df['actual_weight', ''].values
-
-        if selection_step == 'no_selection':
-            pass
-        if 'cut_based' in selection_step:
-            weight_values *= df['cut_based', ''].values
-        if 'geometric' in selection_step:
-            weight_values *= exp_analysis.decay_in_tpc(df, ctau)
-
-        return weight_values.sum(), (weight_values**2).sum()
-
-    @staticmethod
-    def mu_sigma2_of_theta_no_geometry(x_0, x_1, x_i_0, x_i_1, smoothing_0, smoothing_1, actual_weights):
-        total_weights = actual_weights
-        mask = total_weights != 0
-        total_weights = total_weights[mask]
-        x_i_0 = x_i_0[mask]
-        x_i_1 = x_i_1[mask]
-        total_weights != 0
-        random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
-        random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
-        this_kde_weights = random_weights_0 * random_weights_1
-        
-        weight_values = this_kde_weights * total_weights
-
-        return weight_values.sum(), (weight_values**2).sum()
-
-    @staticmethod
-    def mu_sigma2_of_theta_full(x_0, x_1, x_i_0, x_i_1, smoothing_0, smoothing_1, actual_weights, ctau, int_x, int_y, int_z, length_x, length_y, length_z, mu):
-        geometric_weights = exp_analysis.decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau)
-        total_weights = actual_weights * geometric_weights
-        total_weights = actual_weights
-        mask = total_weights != 0
-        total_weights = total_weights[mask]
-        x_i_0 = x_i_0[mask]
-        x_i_1 = x_i_1[mask]
-        total_weights != 0
-        random_weights_0 = gaussian1d(x_i_0-x_0, 0, smoothing_0)
-        random_weights_1 = gaussian1d(x_i_1-x_1, 0, smoothing_1)
-        this_kde_weights = random_weights_0 * random_weights_1
-        
-        weight_values = this_kde_weights * total_weights * mu
-
-        return weight_values.sum(), (weight_values**2).sum()

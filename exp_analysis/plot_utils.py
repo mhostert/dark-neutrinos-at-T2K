@@ -9,7 +9,7 @@ from matplotlib.pyplot import *
 from matplotlib.backends.backend_pdf import PdfPages
 import os
 
-def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=None, kernel=None, smoothing_pars=None, suptitle=False):
+def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=None, kernel=None, smoothing_pars=None, suptitle=False, same_line=False):
     if ax is not None:
         plt.sca(ax)
     title_string = ''
@@ -24,13 +24,14 @@ def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=No
     if smoothing_pars is not None:
         title_string += f'smoothing pars = {smoothing_pars[0]} GeV, {smoothing_pars[1]} GeV\n'
     title_string = title_string.strip()
-    
+    if same_line:
+        title_string = title_string.replace('\n', ', ')
     if not suptitle:
         plt.title(title_string)
     else:
         plt.suptitle(title_string)
 
-def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors_to_annotate=None, colornorm='div', main_to_annotate=None, err_to_annotate=None, **kwargs):
+def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors_to_annotate=None, colornorm='div', main_to_annotate=None, err_to_annotate=None, in_log=False, **kwargs):
     if main_to_annotate is not None:
         assert len(main_to_annotate) == len(err_to_annotate)
     if colornorm == 'div':        
@@ -38,6 +39,9 @@ def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors
         plt.pcolormesh(data.T, cmap='BrBG', norm=aux_norm)
     elif colornorm == 'normal':
         plt.pcolormesh(data.T)
+    if in_log:
+        xcenters = [f'{xcenter:.2g}' for xcenter in xcenters]
+        ycenters = [f'{ycenter:.2g}' for ycenter in ycenters]
     plt.xticks(ticks=np.arange(0.5, len(xcenters)),
                labels=xcenters)
     plt.yticks(ticks=np.arange(0.5, len(ycenters)),
