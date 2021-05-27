@@ -17,7 +17,7 @@ def bound(filename, xmin, xmax, npoints = 1000):
     x = np.linspace(np.log10(xmin), np.log10(xmax), npoints)
     return [np.power(10, x), np.power(10, y(x))]
 
-def plot_constraints(ax, xmin, xmax):
+def plot_constraints(ax, xmin, xmax, separated=True):
     # GENERAL BOUNDS
     lw = 0.5
     dashes = (6, 0.1)
@@ -25,38 +25,53 @@ def plot_constraints(ax, xmin, xmax):
     color_line = 'black'
     color_fill = 'lightgrey'
     fsize = 12
-
+    
     x, y = bound(fpath('BESIII', 'g-2e.dat'), xmin = xmin , xmax = xmax)
-    ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
     ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'$(g-2)_e$', xy=(1.4e-3, 2e-4), rotation=28, fontsize=0.7*fsize, color=color_line)
+    if separated:
+        ax.annotate(r'$(g-2)_e$', xy=(1.4e-3, 2e-4), rotation=28, fontsize=0.7*fsize, color=color_line)
 
     x, y = bound(fpath('BESIII', 'NA62.dat'), xmin = xmin , xmax = xmax)
-    ax.plot(x,y,color = color_line, lw = lw, dashes = dashes)
+    if separated:
+        ax.plot(x,y,color = color_line, lw = lw, dashes = dashes)
     ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'NA62', xy=(3.3e-2, 5e-3), rotation=90, fontsize=0.7*fsize, color=color_line)
+    if separated:
+        ax.annotate(r'NA62', xy=(3.3e-2, 5e-3), rotation=90, fontsize=0.7*fsize, color=color_line)
 
     x, y = bound(fpath('BESIII', 'E949.dat'), xmin = xmin , xmax = xmax)
-    ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
     ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'E949', xy=(1.6e-2, 1.1e-2), rotation=90, fontsize=0.7*fsize, color=color_line)
+    if separated:
+        ax.annotate(r'E949', xy=(1.6e-2, 1.1e-2), rotation=90, fontsize=0.7*fsize, color=color_line)
 
     x, y = bound(fpath('BESIII', 'BaBar.dat'), xmin = xmin , xmax = xmax)
-    ax.plot(x, y, color = color_line, lw = lw, dashes = (3,1))
-    ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', hatch='\\\\\\', lw = 0.5, alpha = alpha, zorder=-1)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = (3,1))
+#     ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', hatch='\\\\\\', lw = 0.5, alpha = alpha, zorder=-1)
+    ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', lw = 0.5, alpha = alpha, zorder=-1)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'BaBar$^*$', xy=(0.6, 5e-4), rotation=0, fontsize=0.7*fsize, color=color_line)
+    ax.annotate(r'BaBar$^*$', xy=(3, 2e-4), rotation=0, fontsize=0.7*fsize, color=color_line)
 
     x, y = bound(fpath('Curtin_et_al', 'LHC_current.dat'), xmin = xmin, xmax = xmax)
-    ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
     ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'EWPO', xy=(3e-3, 3.1e-2), rotation=0, fontsize=0.7*fsize, color=color_line)
+    if separated:
+        ax.annotate(r'EWPO', xy=(3e-3, 3.1e-2), rotation=0, fontsize=0.7*fsize, color=color_line)
 
     x, y = bound(fpath('DISMcKeen', 'DIS_bounds.dat'), xmin = xmin, xmax = xmax)
-    ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
     ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
-    ax.annotate(r'DIS', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
+    if separated:
+        ax.annotate(r'DIS', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
+
+    if not separated:
+        ax.annotate('Other dark\nphoton constrains', xy=(0.012, 0.01), rotation=0, fontsize=0.7*fsize, color=color_line)
