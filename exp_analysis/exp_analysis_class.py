@@ -225,7 +225,7 @@ class exp_analysis(object):
                             df['cut4', '']
 
     @staticmethod
-    def kde_on_a_point(df, this_m4mz, distance='lin', smoothing=[0.005, 0.05], kernel='epa'):
+    def kde_on_a_point(df, this_m4mz, distance='log', smoothing=[0.1, 0.1], kernel='epa'):
         this_m4mz = np.asarray(this_m4mz)
         this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
         return df['actual_weight'].values * kde_Nd_weights(x=this_m4mz,
@@ -235,7 +235,7 @@ class exp_analysis(object):
                                                                         kernel=kernel)
 
     @staticmethod
-    def kde_on_a_grid(df, m4_scan, mz_scan, distance='lin', smoothing=[0.005, 0.05], kernel='epa'):
+    def kde_on_a_grid(df, m4_scan, mz_scan, distance='log', smoothing=[0.1, 0.1], kernel='epa'):
         grid_to_eval = np.stack(np.meshgrid(m4_scan, mz_scan, indexing='ij'), axis=-1)
         this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
         this_kde_weights = kde_Nd_weights(x=grid_to_eval,
@@ -258,7 +258,7 @@ class exp_analysis(object):
         return np.array(out)
 
     @staticmethod
-    def kde_n_events(df, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], distance='lin', kernel='epa'):
+    def kde_n_events(df, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
         if ctau is not None:
             ctau_mask = exp_analysis.decay_in_tpc_fast(df['int_point_x'],
                                                     df['int_point_y'],
@@ -273,14 +273,15 @@ class exp_analysis(object):
         if selection_query is not None:
             aux_df = aux_df.query(selection_query)
 
-        kde_weights = mu * self.kde_on_a_point(df=aux_df, 
+        kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
                                           this_m4mz=m4mz, 
-                                          smoothing=smoothing, 
+                                          smoothing=smoothing,
+                                          distance=distance,
                                           kernel=kernel)
         return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
     
     @staticmethod
-    def kde_n_events_fast(df, m4mz, ctau=None, int_point=None, decay_length=None, mu=1, smoothing=[0.005, 0.05], kernel='epa'):
+    def kde_n_events_fast(df, m4mz, ctau=None, int_point=None, decay_length=None, mu=1, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
         if ctau is not None:
             ctau_mask = exp_analysis.decay_in_tpc_fast(int_point[0], int_point[1], int_point[2], 
                                                        decay_length[0], decay_length[1], decay_length[2], 
@@ -294,7 +295,7 @@ class exp_analysis(object):
                                                   kernel=kernel)
         return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
     
-    def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.005, 0.05], distance='lin', kernel='epa'):
+    def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
         out = []
         for m4 in self.m4_scan:
             out.append([])

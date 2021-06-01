@@ -186,7 +186,7 @@ class dark_nus_mcmc(object):
         if self.exp_analysis_obj.hierarchy == 'heavy':
             ranges['log10_Vmu4_alpha_epsilon2'] = (np.log10(self.exp_analysis_obj.lower_bound_Vmu4_alpha_epsilon2), 
                                                           np.log10(self.exp_analysis_obj.upper_bound_Vmu4_alpha_epsilon2))
-            ranges['log10_Valpha4_alpha_epsilon2'] = (np.log10(self.exp_analysis_obj.lower_bound_Valpha4_alpha_epsilon2), 
+            ranges['log10_Valpha4_alpha_epsilon2'] = (np.log10(self.exp_analysis_obj.lower_bound_Vmu4_alpha_epsilon2), 
                                                           np.log10(self.exp_analysis_obj.upper_bound_Valpha4_alpha_epsilon2))
         elif self.exp_analysis_obj.hierarchy == 'light':
             ranges['log10_Vmu4'] = (np.log10(self.exp_analysis_obj.lower_bound_Vmu4), np.log10(self.exp_analysis_obj.upper_bound_Vmu4))
@@ -230,13 +230,15 @@ class heavy_minimal_mcmc(dark_nus_mcmc):
 class heavy_nonminimal_mcmc(dark_nus_mcmc):
 
     def initialise_mcmc(self, nwalkers, pool, blobs_dtype=None, set_backend=False, reset_backend=True, log_ms=False):
+        self.log_ms = log_ms
         while reset_backend:
+            print('new trial to set up start points')
             m4_mz_0 = self.points_on_triangle(nwalkers, log=self.log_ms)
             log10_Vmu4_alpha_epsilon2_0 = np.random.uniform(np.log10(self.exp_analysis_obj.lower_bound_Vmu4_alpha_epsilon2),
                                                             np.log10(self.exp_analysis_obj.upper_bound_Vmu4_alpha_epsilon2),
                                                             nwalkers)
             log10_Valpha4_alpha_epsilon2_0 = np.random.uniform(log10_Vmu4_alpha_epsilon2_0,
-                                                               np.log10(self.exp_analysis_obj.upper_bound_Valpha4_alpha_epsilon2))
+                                                     np.log10(self.exp_analysis_obj.upper_bound_Valpha4_alpha_epsilon2))
             p0 = np.column_stack([m4_mz_0, log10_Vmu4_alpha_epsilon2_0, log10_Valpha4_alpha_epsilon2_0])
             start_posterior = []
             for i in range(nwalkers):
