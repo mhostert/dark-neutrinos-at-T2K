@@ -9,6 +9,7 @@ from kde_utils import kde_Nd_weights, log_distance
 from fourvec import *
 from parameters_dict import *
 from const import *
+from ctau_utils import *
 
 droplist = ['plm_t', 'plm_x', 'plm_y', 'plm_z', 'plp_t', 'plp_x', 'plp_y', 'plp_z',
        'pnu_t', 'pnu_x', 'pnu_y', 'pnu_z', 'pHad_t', 'pHad_x', 'pHad_y',

@@ -112,7 +112,8 @@ class experiment():
 								2.9e6*16.0/18.0,
 								0,
 								12.9e6] # grams
-			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+			self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
+			self.FLAVOURS = [pdg.numu]
 
 		elif self.EXP_FLAG == ND280_nubar:
 			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_minus250kA.txt"
@@ -131,6 +132,7 @@ class experiment():
 								0,
 								12.9e6] # grams
 			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+			self.FLAVOURS = [pdg.numubar]
 		
 		else:
 			print('ERROR! No experiment chosen.')

@@ -53,7 +53,7 @@ def main(argv):
 																		"uboone",
 																		"nd280_nu",
 																		"nd280_nubar"],
-																		default="nd280_nu")
+																		default="nd280_nubar")
 
 	parser.add_argument("--nodif", help="remove diffractive events", action="store_true")
 	parser.add_argument("--nocoh", help="remove coherent events", action="store_true")
@@ -70,7 +70,7 @@ def main(argv):
 	parser.add_argument("--hierarchy",
 						 type=str,
 						 help="light or heavy Z' case",
-						 default='heavy',
+						 default='light',
 						 choices=['light', 'heavy'])
 
 	args = parser.parse_args()
@@ -128,7 +128,7 @@ def main(argv):
 	# Run MC and get events
 
 	print(f"Using: m4 = {args.M4} mzprime={args.mzprime}")
-	bag = MC.run_MC(BSMparams, myexp, [pdg.numu], INCLUDE_DIF=False)
+	bag = MC.run_MC(BSMparams, myexp, INCLUDE_DIF=False)
 
 	### NAMING 
 	## HEPEVT Event file name

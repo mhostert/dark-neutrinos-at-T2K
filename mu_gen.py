@@ -150,7 +150,7 @@ def main(argv):
 	# Run MC and get events
 	if MODEL==const.THREEPLUSONE:
 
-		bag = MC.run_MC(BSMparams, myexp, [pdg.numu], INCLUDE_DIF=False)
+		bag = MC.run_MC(BSMparams, myexp, INCLUDE_DIF=False)
 
 		### NAMING 
 		## HEPEVT Event file name
