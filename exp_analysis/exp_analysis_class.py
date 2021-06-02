@@ -257,7 +257,7 @@ class exp_analysis(object):
         return np.array(out)
 
     @staticmethod
-    def kde_n_events(df, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
+    def kde_n_events(df, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False):
         if ctau is not None:
             ctau_mask = exp_analysis.decay_in_tpc_fast(df['int_point_x'],
                                                     df['int_point_y'],
@@ -267,6 +267,8 @@ class exp_analysis(object):
                                                     df['unitary_decay_length_z'],
                                                     ctau)
             aux_df = df[ctau_mask]
+            if provide_n_samples:
+                N_ctau = ctau_mask.sum()
         else:
             aux_df = df
         if selection_query is not None:
@@ -277,7 +279,11 @@ class exp_analysis(object):
                                           smoothing=smoothing,
                                           distance=distance,
                                           kernel=kernel)
-        return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
+        if not provide_n_samples:
+            return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
+        else:
+            N_kde = np.count_nonzero(kde_weights)
+            return kde_weights.sum(), np.sqrt((kde_weights**2).sum()), N_ctau, N_kde
     
     @staticmethod
     def kde_n_events_fast(df, m4mz, ctau=None, int_point=None, decay_length=None, mu=1, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
