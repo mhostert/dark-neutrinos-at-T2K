@@ -25,7 +25,6 @@ from . import Cfourvec as Cfv
 from . import C_MC
 
 from . import fourvec
-from . import fluxes
 from . import decay_rates
 from . import const 
 from . import model 
@@ -260,10 +259,10 @@ def Combine_MC_output(cases, Ifactors=None, flags=None):
 	return dic
 
 # THIS FUNCTION NEEDS SOME OPTIMIZING... currently setting event flags by hand.
-def run_MC(BSMparams, exp, FLAVOURS, INCLUDE_HC=True, INCLUDE_HF=False, INCLUDE_COH=True, INCLUDE_DIF=False):
+def run_MC(BSMparams, exp, INCLUDE_HC=True, INCLUDE_HF=False, INCLUDE_COH=True, INCLUDE_DIF=False):
 	cases = []
 	flags = []
-	for flavour in FLAVOURS:
+	for flavour in exp.FLAVOURS:
 		for i in range(np.size(exp.MATERIALS_A)):
 
 			# include helicity conserving scattering

@@ -41,6 +41,7 @@ class experiment():
 			self.MATERIALS_Z=[1,6]
 			self.MATERIALS_TOT_MASS =[818e6/14*2,818e6/14*12] # grams
 			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+			self.FLAVOURS = [pdg.numu]
 
 		elif self.EXP_FLAG == uBOONE:
 			self.FLUXFILE="fluxes/MiniBooNE_nu_mode_flux.dat"
@@ -54,6 +55,7 @@ class experiment():
 			self.POTS = 13.2e20 
 			self.MATERIALS_A = [40.0]
 			self.MATERIALS_Z = [18.0]
+			self.FLAVOURS = [pdg.numu]
 		
 		elif self.EXP_FLAG == MINERVA_LE:
 			self.FLUXFILE="fluxes/MINERVA_LE_numu_flux.dat"
@@ -67,6 +69,7 @@ class experiment():
 			self.POTS = 3.43e20*0.73
 			self.A_NUMBER = 12.0
 			self.Z_NUMBER = 6.0
+			self.FLAVOURS = [pdg.numu]
 		
 		elif self.EXP_FLAG == MINERVA_ME:
 			self.FLUXFILE="fluxes/MINERVA_ME_numu_flux.dat"
@@ -81,6 +84,7 @@ class experiment():
 			self.POTS = 1.16e21*0.73
 			self.A_NUMBER = 12.0
 			self.Z_NUMBER = 6.0
+			self.FLAVOURS = [pdg.numu]
 
 		elif self.EXP_FLAG == CHARMII:
 			self.FLUXFILE="fluxes/CHARMII.dat"
@@ -95,6 +99,7 @@ class experiment():
 			self.POTS = 2.5e19*0.79
 			self.A_NUMBER = 12.0
 			self.Z_NUMBER = 6.0
+			self.FLAVOURS = [pdg.numu]
 
 		elif self.EXP_FLAG == ND280_nu:
 			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_plus250kA.txt"
@@ -112,7 +117,8 @@ class experiment():
 								2.9e6*16.0/18.0,
 								0,
 								12.9e6] # grams
-			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+			self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
+			self.FLAVOURS = [pdg.numu]
 
 		elif self.EXP_FLAG == ND280_nubar:
 			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_minus250kA.txt"
@@ -131,6 +137,7 @@ class experiment():
 								0,
 								12.9e6] # grams
 			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+			self.FLAVOURS = [pdg.numubar]
 		
 		else:
 			print('ERROR! No experiment chosen.')

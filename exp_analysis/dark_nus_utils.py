@@ -31,6 +31,16 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000):
         subprocess_cmd(dark_gen_run)
 
 
+def produce_samples_without_scanning_m4mz(case, D_or_M, m4mz= [0.15, 0.03], neval=100000):
+    print(f"Generating events for m4={m4mz[0]} GeV and mzprime={m4mz[1]}")
+    dark_gen_run = [f'cd ..; python3 dark_gen.py --M4 {m4mz[0]} --mzprime {m4mz[1]} '\
+                   f'--UMU4 {physics_parameters[case]["Umu4"]} '\
+                   f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
+                   f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                   f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M}']
+    subprocess_cmd(dark_gen_run)
+
+
 def produce_scan_sample(case, D_or_M, neval=1000000):
     mu_gen_run = ['cd ..; python3 mu_gen.py '\
                    f'--mzprime_min {physics_parameters[case]["mz_limits"][0]} '\

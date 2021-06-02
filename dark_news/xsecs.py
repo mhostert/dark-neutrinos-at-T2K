@@ -85,11 +85,79 @@ class dsigma_zprime(vg.BatchIntegrand):
 				params = self.params
 				Mn = self.mh
 				
-
 				Enu = self.Enu
 
-				s = MA**2 + 2*Enu*MA
+				#######################
+				# # Upscattering N decay
+				# alphaD = params.gprime**2/4.0/np.pi
+				# Umu4 = params.Umu4
+				# epsilon = params.chi * const.cw
+				# UD4     = params.UD4				
+				# Mzprime = params.Mzprime
 
+				# s = MA**2 + 2*Enu*MA
+
+				# E1CM = (s - MA**2)/2.0/np.sqrt(s)
+				# E3CM = (s + Mn**2 - MA**2)/2.0/np.sqrt(s)
+
+				# p1CM = E1CM # massless
+				# p3CM = np.sqrt(E3CM**2 - Mn**2)
+
+				# # Q2lmin = np.log(-(Mn**2 - 2 *  E1CM*(E3CM - p3CM) ))
+				# # Q2lmax = np.log(-(Mn**2 - 2 *  E1CM*(E3CM + p3CM)))
+				# Q2lmin = np.log(-(Mn*Mn- 2 * ( E1CM*E3CM - p1CM*p3CM) ))
+				# Q2lmax = np.log(-(Mn*Mn- 2 * ( E1CM*E3CM + p1CM*p3CM)))
+
+				# Q2l = (Q2lmax - Q2lmin) * x[:, 0] + Q2lmin
+				# Q2 = np.exp(Q2l)
+
+				# u = 2*MA**2 + Mn**2 - s + Q2
+
+				# # Start sigma
+				# dsigma = 1.0
+
+				# # BSM parameters
+				# dsigma *= Umu4**2*alphaD*4.0*np.pi/4.0
+				# dsigma *= epsilon**2
+
+				# # Z' propagator
+				# dsigma *= 1.0/(Q2 + Mzprime**2)**2
+
+				# # Hadronic tensor coupling
+				# dsigma *= Power(const.eQED,2)
+
+				# if Z == 1:
+				# 	F1 = const.F1_EM(Q2)#F1_SM(Q2)
+				# 	F2 = const.F2_EM(Q2)#F2_SM(Q2)
+				# 	FA = 0
+				# 	dsigma *= 16*Power(Enu,2)*(4*(Power(F1,2) + Power(FA,2))*Power(MA,2) + Power(F2,2)*Q2) + ((Power(Mn,2) + Q2)*(-16*(F1 - FA)*(F1 + FA)*Power(MA,4) - 4*F2*(2*F1 + F2)*Power(MA,2)*Power(Mn,2) + 4*(2*Power(F1,2) + Power(F2,2) + 4*F2*FA + 2*Power(FA,2) + 4*F1*(F2 + FA))*Power(MA,2)*Q2 + Power(F2,2)*Power(Mn,2)*Q2))/Power(MA,2) - (8*Enu*(8*F1*FA*Power(MA,2)*Q2 + 8*F2*FA*Power(MA,2)*Q2 + 4*Power(F1,2)*Power(MA,2)*(Power(Mn,2) + Q2) + 4*Power(FA,2)*Power(MA,2)*(Power(Mn,2) + Q2) + Power(F2,2)*Q2*(Power(Mn,2) + Q2)))/MA
+				# 	# dsigma *= 16*F2*FA*Q2*(2*Power(MA,2) + Power(Mn,2) + Q2 - 2*s) + 8*F1*(4*FA*Power(MA,2)*Q2 - (Power(Mn,2) + Q2)*(F2*Power(Mn,2) - 2*(F2 + FA)*Q2) - 4*FA*Q2*s) + 8*Power(FA,2)*(2*Power(MA,4) + Q2*(Power(Mn,2) + Q2) + 4*Power(MA,2)*(Power(Mn,2) + Q2 - s) - 2*(Power(Mn,2) + Q2)*s + 2*Power(s,2)) + 8*Power(F1,2)*(Q2*(Power(Mn,2) + Q2) + 2*(Power(MA,4) - (2*Power(MA,2) + Power(Mn,2) + Q2)*s + Power(s,2))) + (Power(F2,2)*(4*Power(MA,4)*Q2 - 4*Power(MA,2)*(Power(Mn,4) - Power(Mn,2)*Q2 + 2*Q2*(-Q2 + s)) + Q2*(Power(Mn,4) + Power(Mn,2)*(Q2 - 4*s) + 4*s*(-Q2 + s))))/Power(MA,2)
+
+				# else:
+				# 	F1 = const.FEMcoh(np.sqrt(Q2),MA)
+				# 	F2 = 0
+				# 	FA = 0
+				# 	dsigma *= Z*Z*4.0*Power(F1,2)*(4*Power(MA,4) + Power(Mn,4) + Power(Mn,2)*Q2 - 4*(2*Power(MA,2) + Power(Mn,2) + Q2)*s + 4*Power(s,2))
+				# 	# dsigma *= Z*Z*4*Power(F1,2)*(4*Power(MA,4) + Power(Mn,4) + Power(Mn,2)*Q2 - 4*(2*Power(MA,2) + Power(Mn,2) + Q2)*s + 4*Power(s,2))
+					
+				# betaPS = np.sqrt(1.0 - 2*(Mn**2 + MA**2)/s + (Mn**2 - MA**2)**2/s**2)
+				# dsigma *= betaPS/(32.0*np.pi**2)
+				
+				# dsigma *= 1.0/(4.0*Enu*MA) 
+				# dsigma *= 1.0/2.0/p1CM/p3CM
+
+				# # Integrated over phi 
+				# dsigma *= 2*np.pi
+				# dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
+
+
+
+
+
+
+
+
+				s = MA**2 + 2*Enu*MA
 				E1CM = (s - MA**2)/2.0/np.sqrt(s)
 				E3CM = (s + Mn**2 - MA**2)/2.0/np.sqrt(s)
 
@@ -154,9 +222,9 @@ class dsigma_zprime(vg.BatchIntegrand):
 					MZPRIME=Mzprime
 					cw = const.cw
 
-					# FCOH=const.Fcoh(np.sqrt(Q2),MA)
-					FEM=const.FEMcoh(np.sqrt(Q2),MA)
-					FWEAK=const.FWEAKcoh(np.sqrt(Q2),MA)
+					FCOH = const.FEMcoh(np.sqrt(Q2),MA)
+					FEM = const.FEMcoh(np.sqrt(Q2),MA)
+					FWEAK = const.FWEAKcoh(np.sqrt(Q2),MA)
 					t = -Q2
 
 					deV = Z*const.eQED*params.epsilon
@@ -165,22 +233,31 @@ class dsigma_zprime(vg.BatchIntegrand):
 					h = self.h_upscattered
 
 					# Dirac
-					if params.Dirac == 1:
+					if params.D_or_M == 'dirac':
 						dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((-4*(M*M)*(mHNL*mHNL) + (M*M + mHNL*mHNL - s)*(M*M + mHNL*mHNL - s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) + 2*h*mHNL*(4*(M*M) - t)*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(-(M*M) + s))/(4.*mHNL) - ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)) - 2*((-(M*M) + s)/2. + (-(M*M) - mHNL*mHNL + s + t)/2.)*(2*(M*M) + mHNL*mHNL - 2*s + h*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt(s)*((-(M*M) + s)/(2.*Sqrt(s)) + (M*M + s)/(2.*Sqrt(s))) - t + 2*h*mHNL*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(M*M + s))/(4.*mHNL) + ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s))))*(Z*Z))/(64.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
 					# Majorana
-					else:
-						# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((-4*(M*M)*(mHNL*mHNL) + (M*M + mHNL*mHNL - s)*(M*M + mHNL*mHNL - s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) + 2*h*mHNL*(4*(M*M) - t)*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(-(M*M) + s))/(4.*mHNL) - ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)) - 2*((-(M*M) + s)/2. + (-(M*M) - mHNL*mHNL + s + t)/2.)*(2*(M*M) + mHNL*mHNL - 2*s + h*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt(s)*((-(M*M) + s)/(2.*Sqrt(s)) + (M*M + s)/(2.*Sqrt(s))) - t + 2*h*mHNL*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(M*M + s))/(4.*mHNL) + ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s))))*(Z*Z))/(32.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
+					elif params.D_or_M == 'majorana':
 						dsigma = -((deV*deV*dij*dji*(FEM*FEM)*((MZBOSON*MZBOSON - t)*(MZBOSON*MZBOSON - t)) + 2*deV*(cji*dij + cij*dji)*dWV*FEM*FWEAK*(MZBOSON*MZBOSON - t)*(MZPRIME*MZPRIME - t) + cij*cji*(dWV*dWV)*(FWEAK*FWEAK)*((MZPRIME*MZPRIME - t)*(MZPRIME*MZPRIME - t)))*(((4*(M*M) - t)*(mHNL*mHNL - t))/2. - h*mHNL*(4*(M*M) - t)*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(-(M*M) + s))/(4.*mHNL) - ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)) - 2*((-(M*M) + s)/2. + (-(M*M) - mHNL*mHNL + s + t)/2.)*((-(M*M) - mHNL*mHNL + s)/2. - (h*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt(s)*((-(M*M) + s)/(2.*Sqrt(s)) + (M*M + s)/(2.*Sqrt(s))))/2. + (-(M*M) + s + t)/2. - h*mHNL*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(M*M + s))/(4.*mHNL) + ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)))))/(16.*pi*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((MZBOSON*MZBOSON - t)*(MZBOSON*MZBOSON - t))*((MZPRIME*MZPRIME - t)*(MZPRIME*MZPRIME - t)))
-						# averaged
-						# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((mHNL*mHNL*mHNL*mHNL + (M*M - s)*(M*M - s) - 2*(mHNL*mHNL)*(M*M + s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) - 2*(((-(M*M) + s)*(2*(M*M) + mHNL*mHNL - 2*s - t))/2. + ((2*(M*M) + mHNL*mHNL - 2*s - t)*(-(M*M) - mHNL*mHNL + s + t))/2.))*(Z*Z))/(16.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
+					else:
+						print("Could not identify Dirac or Majorana nature of HNL.")
+				
+					# # Dirac
+					# if params.Dirac == 1:
+					# 	dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((-4*(M*M)*(mHNL*mHNL) + (M*M + mHNL*mHNL - s)*(M*M + mHNL*mHNL - s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) + 2*h*mHNL*(4*(M*M) - t)*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(-(M*M) + s))/(4.*mHNL) - ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)) - 2*((-(M*M) + s)/2. + (-(M*M) - mHNL*mHNL + s + t)/2.)*(2*(M*M) + mHNL*mHNL - 2*s + h*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt(s)*((-(M*M) + s)/(2.*Sqrt(s)) + (M*M + s)/(2.*Sqrt(s))) - t + 2*h*mHNL*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(M*M + s))/(4.*mHNL) + ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s))))*(Z*Z))/(64.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
+					# # Majorana
+					# else:
+					# 	# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((-4*(M*M)*(mHNL*mHNL) + (M*M + mHNL*mHNL - s)*(M*M + mHNL*mHNL - s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) + 2*h*mHNL*(4*(M*M) - t)*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(-(M*M) + s))/(4.*mHNL) - ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)) - 2*((-(M*M) + s)/2. + (-(M*M) - mHNL*mHNL + s + t)/2.)*(2*(M*M) + mHNL*mHNL - 2*s + h*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt(s)*((-(M*M) + s)/(2.*Sqrt(s)) + (M*M + s)/(2.*Sqrt(s))) - t + 2*h*mHNL*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(M*M + s))/(4.*mHNL) + ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s))))*(Z*Z))/(32.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
+					# 	dsigma = -((deV*deV*dij*dji*(FEM*FEM)*((MZBOSON*MZBOSON - t)*(MZBOSON*MZBOSON - t)) + 2*deV*(cji*dij + cij*dji)*dWV*FEM*FWEAK*(MZBOSON*MZBOSON - t)*(MZPRIME*MZPRIME - t) + cij*cji*(dWV*dWV)*(FWEAK*FWEAK)*((MZPRIME*MZPRIME - t)*(MZPRIME*MZPRIME - t)))*(((4*(M*M) - t)*(mHNL*mHNL - t))/2. - h*mHNL*(4*(M*M) - t)*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(-(M*M) + s))/(4.*mHNL) - ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)) - 2*((-(M*M) + s)/2. + (-(M*M) - mHNL*mHNL + s + t)/2.)*((-(M*M) - mHNL*mHNL + s)/2. - (h*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt(s)*((-(M*M) + s)/(2.*Sqrt(s)) + (M*M + s)/(2.*Sqrt(s))))/2. + (-(M*M) + s + t)/2. - h*mHNL*((Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*(M*M + s))/(4.*mHNL) + ((-(M*M) + mHNL*mHNL + s)*(-(mHNL*mHNL) + ((-(M*M) + s)*(-(M*M) + mHNL*mHNL + s))/(2.*s) + t))/(2.*mHNL*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*s)))))/(16.*pi*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((MZBOSON*MZBOSON - t)*(MZBOSON*MZBOSON - t))*((MZPRIME*MZPRIME - t)*(MZPRIME*MZPRIME - t)))
+					# 	# averaged
+					# 	# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((mHNL*mHNL*mHNL*mHNL + (M*M - s)*(M*M - s) - 2*(mHNL*mHNL)*(M*M + s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) - 2*(((-(M*M) + s)*(2*(M*M) + mHNL*mHNL - 2*s - t))/2. + ((2*(M*M) + mHNL*mHNL - 2*s - t)*(-(M*M) - mHNL*mHNL + s + t))/2.))*(Z*Z))/(16.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
 
-				dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
+					dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
 
+					# print(dsigma*1e10)
+					####################################
+					return dsigma
 
-				####################################
-				return dsigma
-
-def get_sigma_zprime(params, Enu, MA, Z, nu_produced=pdg.neutrino4, h_upscattered=-1):
+def get_sigma_zprime(params, Enu, MA, Z, nu_produced=pdg.neutrino4, h_upscattered=-1, neval=20000, nitn=20):
 	
 	if nu_produced ==pdg.neutrino4:
 		Mn = params.m4
@@ -197,11 +274,52 @@ def get_sigma_zprime(params, Enu, MA, Z, nu_produced=pdg.neutrino4, h_upscattere
 
 		integ = vg.Integrator(dim*[[0.0, 1.0]])
 
-		result = integ(batch_f,nitn = MC.NINT, neval = MC.NEVAL, rtol=1e-6)
+		integ(batch_f,nitn = nitn, neval = neval)
+		result = integ(batch_f,nitn = nitn, neval = neval)
 
 		integral = result.mean
 	else:
 		integral = 0.0
+	# ##########################################################################
+	# # READ SAMPLES
+	# Q2points 	= []
+	# weights 	= []
+	# my_integral = 0.0
+	# variance = 0.0
+	# for x, wgt, hcube in integ.random_batch(yield_hcube=True):
+		
+	# 	wgt_fx = wgt*batch_f(x)
 
-	return integral*const.GeV2_to_cm2
+	# 	Q2points = np.concatenate((Q2points,x[:,0]))
+	# 	weights = np.concatenate((weights,wgt_fx))
+
+	# 	for i in range(hcube[0], hcube[-1] + 1):
+	# 		idx = (hcube == i)
+	# 		nwf = np.sum(idx)
+	# 		wf  = wgt_fx[idx]
+
+	# 		sum_wf = np.sum(wf)
+	# 		sum_wf2 = np.sum(wf ** 2) # sum of (wgt * f(x)) ** 2
+
+	# 		my_integral += sum_wf
+	# 		variance += (sum_wf2 * nwf - sum_wf ** 2) / (nwf - 1.)
+	
+	# Q2p = np.array(Q2points)
+	# print(my_integral*const.GeV2_to_cm2, variance)
+
+
+	# s = MA**2 + 2*Enu*MA
+	# E1CM = (s - MA**2)/2.0/np.sqrt(s)
+	# E3CM = (s + Mn**2 - MA**2)/2.0/np.sqrt(s)
+
+	# p1CM = E1CM # massless
+	# p3CM = np.sqrt(E3CM**2 - Mn**2)
+
+	# Q2lmin = np.log(-(Mn**2 - 2 * ( E1CM*E3CM - p1CM*p3CM) ))
+	# Q2lmax = np.log(-(Mn**2 - 2 * ( E1CM*E3CM + p1CM*p3CM)))
+
+	# Q2l = (Q2lmax - Q2lmin) * x[:, 0] + Q2lmin
+	# Q2 = np.exp(Q2l)
+
+	return integral*const.GeV2_to_cm2#, Q2
 
