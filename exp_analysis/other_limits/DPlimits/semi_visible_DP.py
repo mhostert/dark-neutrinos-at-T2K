@@ -56,7 +56,7 @@ def plot_constraints(ax, xmin, xmax, separated=True):
 #     ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', hatch='\\\\\\', lw = 0.5, alpha = alpha, zorder=-1)
     ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', lw = 0.5, alpha = alpha, zorder=-1)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'BaBar$^*$', xy=(3, 2e-4), rotation=0, fontsize=0.7*fsize, color=color_line)
+    ax.annotate(r'BaBar$^*$'+'\n'+r'$|V_{{ND}}|^2 = 10^{-4}$', xy=(5.5, 1.2e-3), rotation=0, fontsize=0.7*fsize, color=color_line, horizontalalignment='right')
 
     x, y = bound(fpath('Curtin_et_al', 'LHC_current.dat'), xmin = xmin, xmax = xmax)
     if separated:
@@ -74,4 +74,4 @@ def plot_constraints(ax, xmin, xmax, separated=True):
         ax.annotate(r'DIS', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
 
     if not separated:
-        ax.annotate('Other dark\nphoton constrains', xy=(0.012, 0.01), rotation=0, fontsize=0.7*fsize, color=color_line)
+        ax.annotate('Other dark\nphoton constraints', xy=(0.011, 0.018), rotation=0, fontsize=0.7*fsize, color=color_line)
