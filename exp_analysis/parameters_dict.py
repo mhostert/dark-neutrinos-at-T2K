@@ -58,14 +58,6 @@ p0d_dimensions = [210.3, 223.9, 240]
 detector_splitting = {0: [0, 30.5],
                       1: [30.5, 209.6],
                       2: [209.6, 240.0]}
-detector_splitting = {0: [0, 30.5],
-                      1: [30.5, 209.6],
-                      2: [209.6, 240.0]}
-detector_splitting = {0: [0, 30.5],
-                      1: [30.5, 209.6],
-                      2: [209.6, 240.0]}
-
-
 
 mol2natoms = 6.02214e23 # Avogadro's number
 ton2grams = 1e6

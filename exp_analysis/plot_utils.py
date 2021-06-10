@@ -64,18 +64,16 @@ def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors
     plt.xlabel(xlabel)
     plt.ylabel(ylabel)
 
-def kde_variable_plot(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection_query='no_cuts', cumulative=False, existing_axis=None):
-    assert m4mz in list(exp_analysis_obj.dfs.keys())
-
+def kde_variable_plot(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection_query='no_cuts', additional_scaling=1, cumulative=False, existing_axis=None):
     selected_df = exp_analysis_obj.df_base.query(selection_query)
-    kde_weights = exp_analysis_obj.kde_on_a_point(selected_df, m4mz, smoothing_pars)
+    kde_weights = exp_analysis_obj.kde_on_a_point(selected_df, this_m4mz=m4mz, smoothing=smoothing_pars) * additional_scaling
 
-    kde_prediction, bin_edges = np.histogram(exp_analysis_obj.df_base[var],
+    kde_prediction, bin_edges = np.histogram(selected_df[var],
              range=range,
              bins=bins,
              weights=kde_weights,
             )
-    kde_errors2 = np.histogram(exp_analysis_obj.df_base[var],
+    kde_errors2 = np.histogram(selected_df[var],
                  range=range,
                  bins=bins,
                  weights=kde_weights**2,
