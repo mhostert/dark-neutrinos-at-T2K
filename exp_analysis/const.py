@@ -39,6 +39,3 @@ def get_decay_rate_in_s(G):
 	return 1.0/G*invGeV_to_s
 def get_decay_rate_in_cm(G):
 	return 1.0/G*invGeV_to_cm
-
-print(get_decay_rate_in_cm(2e-11))
-
