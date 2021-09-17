@@ -77,6 +77,41 @@ class exp_analysis(object):
             self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
             self.actual_weight_values = self.df_base['actual_weight'].values
 
+    def setResolution(self, smearing_p, p_binning, smearing_theta, theta_binning):
+        # needs to deal with overflow and underflow bins - TODO
+        
+        # normalise smearing_matrices so that each column sums to 1
+        self.smearing_p = (smearing_p.T/smearing_p.sum(axis=1)).T
+        self.smearing_theta = (smearing_theta.T/smearing_theta.sum(axis=1)).T
+        
+        self.df_base['em_beam_theta_reco'] = true2reco(self.df_base['em_beam_theta'], 
+                                                     smearing_theta, theta_binning, theta_binning)
+        self.df_base['ep_beam_theta_reco'] = true2reco(self.df_base['ep_beam_theta'], 
+                                                     smearing_theta, theta_binning, theta_binning)
+        self.df_base['em_energy_reco'] = true2reco(self.df_base['em_energy'], 
+                                                     smearing_p, p_binning, p_binning)
+        self.df_base['ep_energy_reco'] = true2reco(self.df_base['ep_energy'], 
+                                                     smearing_p, p_binning, p_binning)
+        
+        emp_opening_cos_angle = np.sin(self.df_base['em_beam_theta_reco'])*np.cos(self.df_base['em_beam_phi']) *\
+                                np.sin(self.df_base['ep_beam_theta_reco'])*np.cos(self.df_base['ep_beam_phi']) +\
+                                np.sin(self.df_base['em_beam_theta_reco'])*np.sin(self.df_base['em_beam_phi']) *\
+                                np.sin(self.df_base['ep_beam_theta_reco'])*np.sin(self.df_base['ep_beam_phi']) +\
+                                np.cos(self.df_base['em_beam_theta_reco'])*np.cos(self.df_base['ep_beam_theta_reco'])
+        
+        self.df_base['ee_mass_reco'] = 2*self.df_base['em_energy_reco']*self.df_base['ep_energy_reco']*\
+                                        (1 - emp_opening_cos_angle)
+        
+    @staticmethod
+    def true2reco(true_entries, smearing_matrix, binning_true, binning_reco):
+        # still needs to deal with overflow and underflow bins
+        np.testing.assert_allclose(smearing_matrix.sum(axis=1), np.ones(smearing_matrix.shape[1]))
+        smearing_matrix_cumsum = smearing_matrix.cumsum(axis=1)
+        aux_p = np.random.rand(len(true_entries))
+        true_entries_digitized = np.digitize(true_entries, binning_true)
+        reco_entries_digitized = (smearing_matrix_cumsum[true_entries_digitized] < aux_p[:.None]).sum(axis=1)
+        return binning_reco[reco_entries_digitized]
+        
     @staticmethod
     def compute_analysis_variables(df):
         for comp in ['t','x','y','z']:
@@ -95,14 +130,16 @@ class exp_analysis(object):
         df['ee_beam_theta', ''] = np.arccos(df['pee', 'z']/np.sqrt(dot3_df(df['pee'], df['pee'])))
         # dark nu vars
         df['nu_dark_beam_costheta', ''] = df['pdark', 'z']/np.sqrt(dot3_df(df['pdark'], df['pdark']))
-        # e- vars        
+        # e- vars
         df['em_energy', ''] = df['plm', 't']
-        df['em_beam_theta', ''] = np.arccos(df['plm', 'z']/np.sqrt(dot3_df(df['plm'], df['plm'])))
-        df['em_beam_costheta', ''] = np.arccos(df['plm', 'z']/np.sqrt(dot3_df(df['plm'], df['plm'])))
-        # e+ vars        
+        df['em_beam_costheta', ''] = df['plm', 'z']/np.sqrt(dot3_df(df['plm'], df['plm']))
+        df['em_beam_theta', ''] = np.arccos(df['em_beam_costheta', ''])
+        
+        # e+ vars
         df['ep_energy', ''] = df['plp', 't']
-        df['ep_beam_theta', ''] = np.arccos(df['plp', 'z']/np.sqrt(dot3_df(df['plp'], df['plp'])))
-        df['ep_beam_costheta', ''] = np.arccos(df['plp', 'z']/np.sqrt(dot3_df(df['plp'], df['plp'])))
+        df['ep_beam_costheta', ''] = df['plp', 'z']/np.sqrt(dot3_df(df['plp'], df['plp']))
+        df['ep_beam_theta', ''] = np.arccos(df['ep_beam_costheta', ''])
+        
         # high level vars
         df['experimental_t', ''] = (df['plm','t'] - df['plm','z'] + df['plp','t'] - df['plp','z'])**2 +\
                                     df['plm','x']**2 + df['plm','y']**2 + df['plp','x']**2 + df['plp','y']**2
@@ -172,7 +209,7 @@ class exp_analysis(object):
     
     @staticmethod
     def is_point_in_tpc(x, y, z):
-        return (((p0d_length < z) & (z < (p0d_length + tpc_length))) |
+        return ((((p0d_length - 0.45) < z) & (z < (p0d_length + tpc_length))) |
                 ((p0d_length + tpc_length + fgd_length < z) & (z < (p0d_length + tpc_length + fgd_length + tpc_length))) |
                 ((p0d_length + 2*(tpc_length + fgd_length) < z) & (z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
                 ((0 < x) & (x < p0d_dimensions[0])) &\
@@ -248,7 +285,7 @@ class exp_analysis(object):
         decay_y = int_y + ctau*length_y
         decay_z = int_z + ctau*length_z
         return ((
-            (p0d_length < decay_z) & (decay_z < (p0d_length + tpc_length)) |
+            ((p0d_length - 0.45) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
             (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
             (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
             (0 < decay_x) & (decay_x < p0d_dimensions[0]) &\
@@ -262,7 +299,7 @@ class exp_analysis(object):
     @staticmethod
     def compute_selection(df):
         df['no_cuts', ''] = np.ones(len(df), dtype=bool)
-        df['cut1', ''] = (df['ee_beam_costheta', ''] > 0.99)
+        df['cut1', ''] = (df['ee_beam_costheta', ''] > 0.992)
         df['cut2', ''] = (df['experimental_t', ''] < 0.03)
         df['cut3', ''] = (df['ee_costheta', ''] > 0)
         df['cut4', ''] = (df['ee_momentum', ''] > 0.150)
@@ -305,7 +342,7 @@ class exp_analysis(object):
         return np.array(out)
 
     @staticmethod
-    def kde_n_events(df, m4mz, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False):
+    def kde_n_events(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False):
         if ctau is not None:
             ctau_mask = exp_analysis.decay_in_tpc_fast(df['int_point_x'],
                                                     df['int_point_y'],
@@ -320,18 +357,20 @@ class exp_analysis(object):
         else:
             aux_df = df
         if selection_query is not None:
-            aux_df = aux_df.query(selection_query)
-
-        kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
-                                          this_m4mz=m4mz, 
-                                          smoothing=smoothing,
-                                          distance=distance,
-                                          kernel=kernel)
+            aux_df = aux_df.query(selection_query)   
+        if m4mz is not None:
+            kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
+                                              this_m4mz=m4mz, 
+                                              smoothing=smoothing,
+                                              distance=distance,
+                                              kernel=kernel)
+        else:
+            kde_weights = mu * aux_df['actual_weight'].values
         if not provide_n_samples:
-            return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
+            return kde_weights.sum(), (kde_weights**2).sum()
         else:
             N_kde = np.count_nonzero(kde_weights)
-            return kde_weights.sum(), np.sqrt((kde_weights**2).sum()), N_ctau, N_kde
+            return kde_weights.sum(), (kde_weights**2).sum(), N_ctau, N_kde
     
     @staticmethod
     def kde_n_events_new(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False):
@@ -348,17 +387,20 @@ class exp_analysis(object):
         if ctau is not None:
             ctau_weights = exp_analysis.compute_ctau_weights(aux_df, ctau)
     
-        kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
-                                          this_m4mz=m4mz, 
-                                          smoothing=smoothing,
-                                          distance=distance,
-                                          kernel=kernel)
+        if m4mz is not None:
+            kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
+                                              this_m4mz=m4mz, 
+                                              smoothing=smoothing,
+                                              distance=distance,
+                                              kernel=kernel)
+        else:
+            kde_weights = mu * aux_df['actual_weight'].values
         kde_weights *= ctau_weights
         if not provide_n_samples:
-            return kde_weights.sum(), np.sqrt((kde_weights**2).sum())
+            return kde_weights.sum(), (kde_weights**2).sum()
         else:
             N_kde = np.count_nonzero(kde_weights)
-            return kde_weights.sum(), np.sqrt((kde_weights**2).sum()), N_ctau, N_kde
+            return kde_weights.sum(), (kde_weights**2).sum(), N_ctau, N_kde
 
     def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
         out = []
