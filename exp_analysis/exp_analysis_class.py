@@ -77,21 +77,17 @@ class exp_analysis(object):
             self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
             self.actual_weight_values = self.df_base['actual_weight'].values
 
-    def setResolution(self, smearing_p, p_binning, smearing_theta, theta_binning):
-        # needs to deal with overflow and underflow bins - TODO
-        
-        # normalise smearing_matrices so that each column sums to 1
-        self.smearing_p = (smearing_p.T/smearing_p.sum(axis=1)).T
-        self.smearing_theta = (smearing_theta.T/smearing_theta.sum(axis=1)).T
-        
-        self.df_base['em_beam_theta_reco'] = true2reco(self.df_base['em_beam_theta'], 
-                                                     smearing_theta, theta_binning, theta_binning)
-        self.df_base['ep_beam_theta_reco'] = true2reco(self.df_base['ep_beam_theta'], 
-                                                     smearing_theta, theta_binning, theta_binning)
-        self.df_base['em_energy_reco'] = true2reco(self.df_base['em_energy'], 
-                                                     smearing_p, p_binning, p_binning)
-        self.df_base['ep_energy_reco'] = true2reco(self.df_base['ep_energy'], 
-                                                     smearing_p, p_binning, p_binning)
+    def setResolution(self, smearing_p, p_binning_true, p_binning_reco, smearing_theta, theta_binning_true, theta_binning_reco):    
+        self.smearing_theta = self.prepareSmearingMatrix(smearing_theta, theta_binning_true, theta_binning_reco)
+        self.df_base['em_beam_theta_reco'] = self.true2reco(self.df_base['em_beam_theta'], 
+                                                     self.smearing_theta, theta_binning_true, theta_binning_reco)
+        self.df_base['ep_beam_theta_reco'] = self.true2reco(self.df_base['ep_beam_theta'], 
+                                                     self.smearing_theta, theta_binning_true, theta_binning_reco)
+        self.smearing_p = self.prepareSmearingMatrix(smearing_p, p_binning_true, p_binning_reco)
+        self.df_base['em_energy_reco'] = self.true2reco(self.df_base['em_energy'], 
+                                                     self.smearing_p, p_binning_true, p_binning_reco)
+        self.df_base['ep_energy_reco'] = self.true2reco(self.df_base['ep_energy'], 
+                                                     self.smearing_p, p_binning_true, p_binning_reco)
         
         emp_opening_cos_angle = np.sin(self.df_base['em_beam_theta_reco'])*np.cos(self.df_base['em_beam_phi']) *\
                                 np.sin(self.df_base['ep_beam_theta_reco'])*np.cos(self.df_base['ep_beam_phi']) +\
@@ -99,19 +95,34 @@ class exp_analysis(object):
                                 np.sin(self.df_base['ep_beam_theta_reco'])*np.sin(self.df_base['ep_beam_phi']) +\
                                 np.cos(self.df_base['em_beam_theta_reco'])*np.cos(self.df_base['ep_beam_theta_reco'])
         
-        self.df_base['ee_mass_reco'] = 2*self.df_base['em_energy_reco']*self.df_base['ep_energy_reco']*\
-                                        (1 - emp_opening_cos_angle)
-        
+        self.df_base['ee_mass_reco'] = np.sqrt(2*self.df_base['em_energy_reco']*self.df_base['ep_energy_reco']*\
+                                        (1 - emp_opening_cos_angle))
+    
+    @staticmethod
+    def prepareSmearingMatrix(smearing_matrix, binning_true, binning_reco):
+        # normalise smearing_matrices so that each column sums to 1
+        smearing_matrix_sum = smearing_matrix.sum(axis=1)
+        bin_centers = (binning_true[1:] + binning_true[:-1])/2
+        indices_x = np.where(smearing_matrix_sum == 0)[0]
+        indices_y = np.digitize(bin_centers[indices_x], binning_reco) - 1 #-1 becuase no entry should be in the underflow
+        smearing_matrix[indices_x, indices_y] = 1
+        return (smearing_matrix.T/smearing_matrix.sum(axis=1)).T
+    
     @staticmethod
     def true2reco(true_entries, smearing_matrix, binning_true, binning_reco):
         # still needs to deal with overflow and underflow bins
-        np.testing.assert_allclose(smearing_matrix.sum(axis=1), np.ones(smearing_matrix.shape[1]))
+        np.testing.assert_allclose(smearing_matrix.sum(axis=1), np.ones(smearing_matrix.shape[0]), rtol=1e-5)
         smearing_matrix_cumsum = smearing_matrix.cumsum(axis=1)
+        true_entries_digitized = np.digitize(true_entries, binning_true) - 1 #-1 becuase no entry should be in the underflow
+        overflow_indices = np.where(true_entries_digitized == (len(binning_true) - 1))[0]
+        true_entries_digitized[overflow_indices] = len(binning_true) - 2
         aux_p = np.random.rand(len(true_entries))
-        true_entries_digitized = np.digitize(true_entries, binning_true)
-        reco_entries_digitized = (smearing_matrix_cumsum[true_entries_digitized] < aux_p[:.None]).sum(axis=1)
-        return binning_reco[reco_entries_digitized]
-        
+        reco_entries_digitized = (smearing_matrix_cumsum[true_entries_digitized] < aux_p[:,None]).sum(axis=1)
+        bin_centers = (binning_reco[1:] + binning_reco[:-1])/2
+        out = bin_centers[reco_entries_digitized]
+        out[overflow_indices] = true_entries[overflow_indices]
+        return out
+    
     @staticmethod
     def compute_analysis_variables(df):
         for comp in ['t','x','y','z']:
@@ -134,11 +145,13 @@ class exp_analysis(object):
         df['em_energy', ''] = df['plm', 't']
         df['em_beam_costheta', ''] = df['plm', 'z']/np.sqrt(dot3_df(df['plm'], df['plm']))
         df['em_beam_theta', ''] = np.arccos(df['em_beam_costheta', ''])
+        df['em_beam_phi', ''] = np.arctan2(df['plm', 'y'], df['plm', 'x'])
         
         # e+ vars
         df['ep_energy', ''] = df['plp', 't']
         df['ep_beam_costheta', ''] = df['plp', 'z']/np.sqrt(dot3_df(df['plp'], df['plp']))
         df['ep_beam_theta', ''] = np.arccos(df['ep_beam_costheta', ''])
+        df['ep_beam_phi', ''] = np.arctan2(df['plp', 'y'], df['plp', 'x'])
         
         # high level vars
         df['experimental_t', ''] = (df['plm','t'] - df['plm','z'] + df['plp','t'] - df['plp','z'])**2 +\
