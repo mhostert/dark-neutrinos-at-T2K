@@ -48,7 +48,14 @@ for physics_params in physics_parameters.values():
     # physics_params['lower_bound_log10_Vmu4_alpha_epsilon2'] = np.log10(physics_params['lower_bound_Vmu4_alpha_epsilon2'])
     # physics_params['upper_bound_log10_Valpha4_alpha_epsilon2'] = np.log10(physics_params['upper_bound_Valpha4_alpha_epsilon2'])
 
-total_pot = 2e21
+# total_pot = 2e21
+
+tpc_systematic_uncertainties = {'FHC': 0.2, 'RHC': 0.2} # percentage
+
+pot_case_flux = {
+    'heavy' : {'FHC': 12.34e20, 'RHC': 6.29e20},
+    'light' : {'FHC': 11.92e20, 'RHC': 6.29e20},
+}
 
 tpc_length = 100 #cm
 fgd_length = 36.5 #cm
@@ -105,3 +112,13 @@ cuts_dict = {
     'cut3' : r'cos $\theta_{ee}$ > 0',
     'cut4' : r'$p_{ee}$ > 0.15',
 }
+
+# for light analysis
+# fgd_pot_fhc = 11.92e20
+# fgd_pot_rhc = 6.29e20
+
+fgd_mass = 0.9195 # ton
+# fgd_mass_full = 1848.6 * 1e-9 * 184**2  * 15
+fgd_efficiency = 0.1
+fgd_binning = np.linspace(0.00, 0.2, 21)
+fgd_systematic_uncertainties = {'FHC': 0.23, 'RHC': 0.21} # percentage

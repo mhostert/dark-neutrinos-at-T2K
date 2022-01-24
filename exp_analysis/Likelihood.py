@@ -158,7 +158,7 @@ def LEff(k, weight_sum, weight_sq_sum):
             return -np.inf
 
     # Return the poisson likelihood in the appropriate limiting case
-    if weight_sq_sum == 0:
+    if weight_sq_sum < 1e-2:
         return poissonLikelihood(k, weight_sum, weight_sq_sum)
 
     alpha = np.power(weight_sum, 2.0) / weight_sq_sum + 1.0

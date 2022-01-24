@@ -67,3 +67,12 @@ def T(v4, beta, theta, phi):
 
 def Tinv(v4, beta, theta, phi):
 	return R( R( L(v4, beta), -theta, Y), phi, Z)
+
+
+def cos_opening_angle(theta1, phi1, theta2, phi2):
+    return np.sin(theta1)*np.cos(phi1) * np.sin(theta2)*np.cos(phi2) +\
+           np.sin(theta1)*np.sin(phi1) * np.sin(theta2)*np.sin(phi2) +\
+           np.cos(theta1)*np.cos(theta2)
+
+def inv_mass_massless(energy1, energy2, cos_open_angle):
+    return np.sqrt(2 * energy1 * energy2 * (1 - cos_open_angle))
