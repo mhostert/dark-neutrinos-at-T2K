@@ -33,7 +33,7 @@ class cascade(vg.BatchIntegrand):
 		self.MC_case = MC_case
 		self.flux = MC_case.flux
 				
-	def __call__(self, x):
+	def __call__(self, x, jac):
 
 		MA = self.MC_case.MA
 		Z = self.MC_case.Z
@@ -149,7 +149,7 @@ class cascade(vg.BatchIntegrand):
 
 		#############
 		return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5,
-				'decay rate N' : dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5,
+				'decay rate N' : dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5/jac[:,0]/jac[:,1],
 				'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan}
 
 
