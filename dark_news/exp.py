@@ -136,7 +136,7 @@ class experiment():
 								2.9e6*16.0/18.0,
 								0,
 								12.9e6] # grams
-			self.TOT_MASS =np.sum(self.MATERIALS_TOT_MASS)
+			self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
 			self.FLAVOURS = [pdg.numubar]
 		
 		else:

@@ -9,14 +9,23 @@ from matplotlib.pyplot import *
 from matplotlib.backends.backend_pdf import PdfPages
 import os
 
-def set_plot_title(ax=None, selection_query=None, m4mz=None, exp_analysis_obj=None, kernel=None, smoothing_pars=None, suptitle=False, same_line=False):
+def set_plot_title(ax=None, selection_query=None, m4mz=None, m4=None, mz=None, Umu4_2=None, alpha_d=None, epsilon=None,
+                   exp_analysis_obj=None, kernel=None, smoothing_pars=None, suptitle=False, same_line=False):
     if ax is not None:
         plt.sca(ax)
     title_string = ''
     if selection_query is not None:
         title_string += f'selection = {selection_query}\n'
     if m4mz is not None:
-        title_string += f'@ $m_4={m4mz[0]}$ GeV, $m_{{Z^\prime}}={m4mz[1]}$ GeV\n'
+        title_string += f'$m_N={m4mz[0]}$ GeV, $m_{{Z^\prime}}={m4mz[1]}$ GeV\n'
+    elif (m4 is not None) and (mz is not None):
+        title_string += f'$m_N={m4}$ GeV, $m_{{Z^\prime}}={mz}$ GeV\n'
+    if Umu4_2 is not None:
+        title_string += f'$|U_{{\mu N}}|^2={Umu4_2}$\n'
+    if alpha_d is not None:
+        title_string += f'$\\alpha_{{dark}}={alpha_d}$\n'
+    if epsilon is not None:
+        title_string += f'$\epsilon={epsilon}$\n'   
     if exp_analysis_obj is not None:
         title_string += f'{exp_analysis_obj.hierarchy} {exp_analysis_obj.D_or_M}\n'
     if kernel is not None:
