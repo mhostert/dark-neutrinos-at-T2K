@@ -48,8 +48,6 @@ for physics_params in physics_parameters.values():
     # physics_params['lower_bound_log10_Vmu4_alpha_epsilon2'] = np.log10(physics_params['lower_bound_Vmu4_alpha_epsilon2'])
     # physics_params['upper_bound_log10_Valpha4_alpha_epsilon2'] = np.log10(physics_params['upper_bound_Valpha4_alpha_epsilon2'])
 
-# total_pot = 2e21
-
 tpc_systematic_uncertainties = {'FHC': 0.2, 'RHC': 0.2} # percentage
 
 pot_case_flux = {
@@ -60,8 +58,13 @@ pot_case_flux = {
 tpc_length = 100 #cm
 fgd_length = 36.5 #cm
 p0d_length = 240 #cm
+lead_layer_thickness = 0.45 #cm
+n_lead_layers = 14
 
 p0d_dimensions = [210.3, 223.9, 240]
+
+tpc_fiducial_volume_dimensions = [170, 196, 56.3]
+
 detector_splitting = {0: [0, 30.5],
                       1: [30.5, 209.6],
                       2: [209.6, 240.0]}
@@ -122,3 +125,4 @@ fgd_mass = 0.9195 # ton
 fgd_efficiency = 0.1
 fgd_binning = np.linspace(0.00, 0.2, 21)
 fgd_systematic_uncertainties = {'FHC': 0.23, 'RHC': 0.21} # percentage
+

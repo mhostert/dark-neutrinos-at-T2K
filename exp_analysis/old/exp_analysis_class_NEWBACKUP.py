@@ -387,15 +387,13 @@ class exp_analysis(object):
         decay_y = int_y + ctau*length_y
         decay_z = int_z + ctau*length_z
         
-        return exp_analysis.is_point_in_tpc(decay_x, decay_y, decay_z)
-
-        # ((p0d_length - lead_layer_thickness) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
-        # return ((
-        #     ((p0d_length) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
-        #     (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
-        #     (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-        #     (0 < decay_x) & (decay_x < p0d_dimensions[0]) &\
-        #     (0 < decay_y) & (decay_y < p0d_dimensions[1])
+            # ((p0d_length - lead_layer_thickness) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
+        return ((
+            ((p0d_length) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
+            (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
+            (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
+            (0 < decay_x) & (decay_x < p0d_dimensions[0]) &\
+            (0 < decay_y) & (decay_y < p0d_dimensions[1])
     
     def ctau_acceptance(self, ctaus):
         for df in self.dfs.values():
@@ -448,6 +446,70 @@ class exp_analysis(object):
         return np.array(out)
 
     @staticmethod
+    def kde_n_events_old(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False, return_df=False):
+        if ctau is not None:
+            ctau_mask = exp_analysis.decay_in_tpc_fast(df['int_point_x'],
+                                                    df['int_point_y'],
+                                                    df['int_point_z'],
+                                                    df['unitary_decay_length_x'],
+                                                    df['unitary_decay_length_y'],
+                                                    df['unitary_decay_length_z'],
+                                                    ctau)
+            aux_df = df[ctau_mask]
+            if provide_n_samples:
+                N_ctau = ctau_mask.sum()
+        else:
+            aux_df = df
+        if selection_query is not None:
+            aux_df = aux_df.query(selection_query)   
+        if m4mz is not None:
+            kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
+                                              this_m4mz=m4mz, 
+                                              smoothing=smoothing,
+                                              distance=distance,
+                                              kernel=kernel)
+        else:
+            kde_weights = mu * aux_df['actual_weight'].values
+        if not return_df:
+            if not provide_n_samples:
+                return kde_weights.sum(), (kde_weights**2).sum()
+            else:
+                N_kde = np.count_nonzero(kde_weights)
+                return kde_weights.sum(), (kde_weights**2).sum(), N_ctau, N_kde
+        else:
+            return kde_weights, aux_df
+    
+    # @staticmethod
+    # def kde_n_events_new(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False):
+    #     if ctau is not None:
+    #         ctau_mask = df['decay_in_tpc']
+    #         if provide_n_samples:
+    #             N_ctau = ctau_mask.sum()
+    #         aux_df = df[ctau_mask]
+    #     else:
+    #         aux_df = df
+    #     if selection_query is not None:
+    #         aux_df = aux_df.query(selection_query)
+        
+    #     if ctau is not None:
+    #         ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctau)
+    
+    #     if m4mz is not None:
+    #         kde_weights = mu * exp_analysis.kde_on_a_point(df=aux_df, 
+    #                                           this_m4mz=m4mz, 
+    #                                           smoothing=smoothing,
+    #                                           distance=distance,
+    #                                           kernel=kernel)
+    #     else:
+    #         kde_weights = mu * aux_df['actual_weight'].values
+    #     kde_weights *= ctau_weights
+    #     if not provide_n_samples:
+    #         return kde_weights.sum(), (kde_weights**2).sum()
+    #     else:
+    #         N_kde = np.count_nonzero(kde_weights)
+    #         return kde_weights.sum(), (kde_weights**2).sum(), N_ctau, N_kde
+
+    @staticmethod
     def kde_n_events(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False, ctau_mode='expo'):
         # ctau_mode = "expo", "unif", "integral", "integral_last_layer_lead"
         if selection_query is not None:
@@ -473,11 +535,13 @@ class exp_analysis(object):
             elif ctau_mode == 'integral':
                 ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctau)
             elif ctau_mode == 'integral_last_layer_lead':
-                aux_df = aux_df.query('lead')
                 ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctau,
                                                                           appendix_z='_last_layer_lead')
         else:
             ctau_weights = np.ones(len(aux_df))
+
+        if provide_n_samples:
+            N_ctau = len(aux_df)
 
         if m4mz is not None:
             kde_weights = exp_analysis.kde_on_a_point(df=aux_df, 
@@ -487,17 +551,14 @@ class exp_analysis(object):
                                               kernel=kernel)
         else:
             kde_weights = aux_df['actual_weight'].values
-        
-        if provide_n_samples:
-            N_ctau = len(aux_df)
-            N_kde = np.count_nonzero(kde_weights)
-            
+
         kde_weights *= mu
         kde_weights *= ctau_weights
 
         if not provide_n_samples:
             return kde_weights.sum(), (kde_weights**2).sum()
         else:
+            N_kde = np.count_nonzero(kde_weights)
             return kde_weights.sum(), (kde_weights**2).sum(), N_ctau, N_kde
 
     def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
