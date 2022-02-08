@@ -257,47 +257,14 @@ class exp_analysis(object):
             
     @staticmethod
     def is_point_in_tpc(x, y, z):
-        # return ((((p0d_length - lead_layer_thickness) < z) & (z < (p0d_length + tpc_length))) |
-        return ((((p0d_length) < z) & (z < (p0d_length + tpc_length))) |
-                ((p0d_length + tpc_length + fgd_length < z) & (z < (p0d_length + tpc_length + fgd_length + tpc_length))) |
-                ((p0d_length + 2*(tpc_length + fgd_length) < z) & (z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-                ((0 < x) & (x < p0d_dimensions[0])) &\
-                ((0 < y) & (y < p0d_dimensions[1]))
-        
-    @staticmethod
-    def compute_decay_point_unif(df):
-        df['pdark_dir', 'x'] = df['pdark', 'x']/df['p3dark', '']
-        df['pdark_dir', 'y'] = df['pdark', 'y']/df['p3dark', '']
-        df['pdark_dir', 'z'] = df['pdark', 'z']/df['p3dark', '']
-        
-        t_1_0 = (p0d_length + tpc_length + fgd_length - df['int_point', 'z'])/df['pdark_dir', 'z']
-        x_1_0 = df['int_point', 'x'] + t_1_0 * df['pdark_dir', 'x']
-        y_1_0 = df['int_point', 'y'] + t_1_0 * df['pdark_dir', 'y']
-        in_tpc_1 = (x_1_0 > 0) & (x_1_0 < p0d_dimensions[0]) &\
-                   (y_1_0 > 0) & (y_1_0 < p0d_dimensions[1])
-        
-        t_2_0 = (p0d_length + 2*(tpc_length + fgd_length) - df['int_point', 'z'])/df['pdark_dir', 'z']
-        x_2_0 = df['int_point', 'x'] + t_2_0 * df['pdark_dir', 'x']
-        y_2_0 = df['int_point', 'y'] + t_2_0 * df['pdark_dir', 'y']
-        in_tpc_2 = (x_2_0 > 0) & (x_2_0 < p0d_dimensions[0]) &\
-                   (y_2_0 > 0) & (y_2_0 < p0d_dimensions[1])
-        
-        how_many_tpcs = np.ones(len(df))
-        which_tpc = np.zeros(len(df))
-        which_tpc[in_tpc_2] = np.random.choice([0, 1, 2], in_tpc_2.sum())
-        how_many_tpcs[in_tpc_2] = 3
-        in_tpc_1_but_not_2 = in_tpc_1 & ~in_tpc_2
-        which_tpc[in_tpc_1_but_not_2] = np.random.choice([0, 1, 2], in_tpc_1_but_not_2.sum())
-        how_many_tpcs[in_tpc_1_but_not_2] = 2
-        
-        df[f'decay_point', 'z'] = p0d_length + which_tpc*(tpc_length + fgd_length) + np.random.uniform(0, tpc_length, len(df))
-        df[f'd_decay'] = (df[f'decay_point', 'z'] - df['int_point', 'z'])/df['pdark_dir', 'z']
-        df[f'decay_point', 'x'] = df['int_point', 'x'] + df[f'd_decay'] * df['pdark_dir', 'x']
-        df[f'decay_point', 'y'] = df['int_point', 'y'] + df[f'd_decay'] * df['pdark_dir', 'y']
-        df[f'decay_in_tpc'] = exp_analysis.is_point_in_tpc(df['decay_point', 'x'],
-                                                           df['decay_point', 'y'],
-                                                           df['decay_point', 'z'])
-        df[f'importance_weight'] = (how_many_tpcs)*(tpc_length/df['pdark_dir', 'z'])
+        is_in_x = (tpc_fiducial_volume_endpoints[0][0] < x) & (x < tpc_fiducial_volume_endpoints[0][1])
+        is_in_y = (tpc_fiducial_volume_endpoints[1][0] < y) & (y < tpc_fiducial_volume_endpoints[1][1])
+        is_in_z_tpc1 = (tpc_fiducial_volume_endpoints[2][0] < z) & (z < tpc_fiducial_volume_endpoints[2][1])
+        z_tpc2 = z - tpc_length - fgd_length
+        is_in_z_tpc2 = (tpc_fiducial_volume_endpoints[2][0] < z_tpc2) & (z_tpc2 < tpc_fiducial_volume_endpoints[2][1])
+        z_tpc3 = z - 2 * (tpc_length - fgd_length)
+        is_in_z_tpc3 = (tpc_fiducial_volume_endpoints[2][0] < z_tpc3) & (z_tpc3 < tpc_fiducial_volume_endpoints[2][1])
+        return is_in_x & is_in_y & (is_in_z_tpc1 | is_in_z_tpc2 | is_in_z_tpc3)
         
     @staticmethod
     def compute_decay_integral(df, appendix_z=""):
@@ -306,20 +273,20 @@ class exp_analysis(object):
         df['pdark_dir', 'z'] = df['pdark', 'z']/df['p3dark', '']
         
         int_point_z = df['int_point'+appendix_z, 'z']
-        t_0_0 = (p0d_length - int_point_z)/df['pdark_dir', 'z']
-        t_0_1 = (p0d_length + tpc_length - int_point_z)/df['pdark_dir', 'z']
+        t_0_0 = (tpc_fiducial_volume_endpoints[2][0] - int_point_z)/df['pdark_dir', 'z']
+        t_0_1 = (tpc_fiducial_volume_endpoints[2][1] - int_point_z)/df['pdark_dir', 'z']
         
-        t_1_0 = (p0d_length + tpc_length + fgd_length - int_point_z)/df['pdark_dir', 'z']
-        t_1_1 = (p0d_length + 2*tpc_length + fgd_length - int_point_z)/df['pdark_dir', 'z']
+        t_1_0 = (tpc_fiducial_volume_endpoints[2][0] + tpc_length + fgd_length - int_point_z)/df['pdark_dir', 'z']
+        t_1_1 = (tpc_fiducial_volume_endpoints[2][1] + tpc_length + fgd_length - int_point_z)/df['pdark_dir', 'z']
         
-        t_2_0 = (p0d_length + 2*(tpc_length + fgd_length) - int_point_z)/df['pdark_dir', 'z']
-        t_2_1 = (p0d_length + 3*tpc_length + 2*fgd_length - int_point_z)/df['pdark_dir', 'z']
+        t_2_0 = (tpc_fiducial_volume_endpoints[2][0] + 2 * (tpc_length + fgd_length) - int_point_z)/df['pdark_dir', 'z']
+        t_2_1 = (tpc_fiducial_volume_endpoints[2][1] + 2 * (tpc_length + fgd_length) - int_point_z)/df['pdark_dir', 'z']
     
         # now computing integral of the exponential in the volume
-        poe_x_min = (0 - df['int_point', 'x'])/df['pdark_dir', 'x']
-        poe_x_max = (p0d_dimensions[0] - df['int_point', 'x'])/df['pdark_dir', 'x']
-        poe_y_min = (0 - df['int_point', 'y'])/df['pdark_dir', 'y']
-        poe_y_max = (p0d_dimensions[1] - df['int_point', 'y'])/df['pdark_dir', 'y']
+        poe_x_min = (tpc_fiducial_volume_endpoints[0][0] - df['int_point', 'x'])/df['pdark_dir', 'x']
+        poe_x_max = (tpc_fiducial_volume_endpoints[0][1] - df['int_point', 'x'])/df['pdark_dir', 'x']
+        poe_y_min = (tpc_fiducial_volume_endpoints[1][0] - df['int_point', 'y'])/df['pdark_dir', 'y']
+        poe_y_max = (tpc_fiducial_volume_endpoints[1][1] - df['int_point', 'y'])/df['pdark_dir', 'y']
 
         poe_s = np.stack([poe_x_min, poe_x_max, poe_y_min, poe_y_max], axis=1)
         min_points = np.min(np.where(poe_s > np.atleast_2d(t_0_0.values).T, 
@@ -354,12 +321,7 @@ class exp_analysis(object):
         if appendix_z == '_last_layer_lead':
             out /= n_lead_layers
         return out
-    
-    @staticmethod
-    def compute_ctau_importance_weights(df, ctau):
-        scale = df['betagamma']*ctau
-        return 1/scale * np.exp(-df[f'd_decay']/scale) * df[f'importance_weight']
-    
+
     @staticmethod
     def unitary_decay_length(df):
         d_decay = np.random.exponential(scale=df['betagamma', '']) # it's for ctau=1
@@ -373,13 +335,13 @@ class exp_analysis(object):
             ctaus = [ctaus]
         out = []
         for ctau in ctaus:
-            df[f'decay_point_{ctau}_x'] = df['int_point_x'] + ctau*df['unitary_decay_length_x']
-            df[f'decay_point_{ctau}_y'] = df['int_point_y'] + ctau*df['unitary_decay_length_y']
-            df[f'decay_point_{ctau}_z'] = df['int_point_z'] + ctau*df['unitary_decay_length_z']
+            df[f'decay_point_{ctau}_x'.replace('.', '')] = df['int_point_x'] + ctau*df['unitary_decay_length_x']
+            df[f'decay_point_{ctau}_y'.replace('.', '')] = df['int_point_y'] + ctau*df['unitary_decay_length_y']
+            df[f'decay_point_{ctau}_z'.replace('.', '')] = df['int_point_z'] + ctau*df['unitary_decay_length_z']
             
-            df[f'decay_in_tpc_{ctau}'] = exp_analysis.is_point_in_tpc(df[f'decay_point_{ctau}_x'],
-                                                         df[f'decay_point_{ctau}_y'],
-                                                         df[f'decay_point_{ctau}_z'])
+            df[f'decay_in_tpc_{ctau}'.replace('.', '')] = exp_analysis.is_point_in_tpc(df[f'decay_point_{ctau}_x'.replace('.', '')],
+                                                         df[f'decay_point_{ctau}_y'.replace('.', '')],
+                                                         df[f'decay_point_{ctau}_z'.replace('.', '')])
     
     @staticmethod
     def decay_in_tpc_fast(int_x, int_y, int_z, length_x, length_y, length_z, ctau):
@@ -388,14 +350,6 @@ class exp_analysis(object):
         decay_z = int_z + ctau*length_z
         
         return exp_analysis.is_point_in_tpc(decay_x, decay_y, decay_z)
-
-        # ((p0d_length - lead_layer_thickness) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
-        # return ((
-        #     ((p0d_length) < decay_z) & (decay_z < (p0d_length + tpc_length)) |
-        #     (p0d_length + tpc_length + fgd_length < decay_z) & (decay_z < (p0d_length + tpc_length + fgd_length + tpc_length)) |
-        #     (p0d_length + 2*(tpc_length + fgd_length) < decay_z) & (decay_z < (p0d_length + 2*(tpc_length + fgd_length) + tpc_length)))) &\
-        #     (0 < decay_x) & (decay_x < p0d_dimensions[0]) &\
-        #     (0 < decay_y) & (decay_y < p0d_dimensions[1])
     
     def ctau_acceptance(self, ctaus):
         for df in self.dfs.values():
@@ -448,8 +402,8 @@ class exp_analysis(object):
         return np.array(out)
 
     @staticmethod
-    def kde_n_events(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False, ctau_mode='expo'):
-        # ctau_mode = "expo", "unif", "integral", "integral_last_layer_lead"
+    def kde_n_events(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False, ctau_mode='expo', return_df=False):
+        # ctau_mode = "expo", "integral", "integral_last_layer_lead"
         if selection_query is not None:
             aux_df = df.query(selection_query)
         else:
@@ -466,10 +420,6 @@ class exp_analysis(object):
                                                     ctau)
                 aux_df = aux_df[ctau_mask]
                 ctau_weights = np.ones(len(aux_df))
-            elif ctau_mode == 'unif':
-                ctau_mask = df['decay_in_tpc']
-                aux_df = aux_df[ctau_mask]
-                ctau_weights = exp_analysis.compute_ctau_importance_weights(aux_df, ctau)
             elif ctau_mode == 'integral':
                 ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctau)
             elif ctau_mode == 'integral_last_layer_lead':
@@ -494,11 +444,13 @@ class exp_analysis(object):
             
         kde_weights *= mu
         kde_weights *= ctau_weights
-
-        if not provide_n_samples:
-            return kde_weights.sum(), (kde_weights**2).sum()
-        else:
+        
+        if return_df:
+            return kde_weights, aux_df
+        elif provide_n_samples:
             return kde_weights.sum(), (kde_weights**2).sum(), N_ctau, N_kde
+        else:
+            return kde_weights.sum(), (kde_weights**2).sum()
 
     def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
         out = []

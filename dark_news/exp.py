@@ -101,44 +101,68 @@ class experiment():
 			self.Z_NUMBER = 6.0
 			self.FLAVOURS = [pdg.numu]
 
-		elif self.EXP_FLAG == ND280_nu:
+		elif self.EXP_FLAG == "nd280_nu":
 			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_plus250kA.txt"
 			self.FLUX_NORM=1.0/1e21/0.05
 			self.EMIN = 0.05
 			self.EMAX = 20.0
 			# Detector targets
-			self.POTS = 12.34e20
-			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208']
-			self.MATERIALS_A=[1, 12, 16, 63.546, 65.38, 207.2]
-			self.MATERIALS_Z=[1, 6, 8, 29, 30, 82]
-			self.MATERIALS_TOT_MASS =[
-								2.9e6*2.0/18.0,
-								0,
-								2.9e6*16.0/18.0,
-								0,
-								12.9e6] # grams
-			self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
+			# self.POTS = 12.34e20
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208', 'Ar']
+			self.MATERIALS_A=[1, 12, 16, 63.546, 65.38, 207.2, 40]
+			self.MATERIALS_Z=[1, 6, 8, 29, 30, 82, 18]
+			# self.MATERIALS_TOT_MASS =[
+			# 					2.9e6*2.0/18.0,
+			# 					0,
+			# 					2.9e6*16.0/18.0,
+			# 					0,
+			# 					12.9e6] # grams
+			# self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
 			self.FLAVOURS = [pdg.numu]
 
-		elif self.EXP_FLAG == ND280_nubar:
+		elif self.EXP_FLAG == "nd280_nubar":
 			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_minus250kA.txt"
 			self.FLUX_NORM=1.0/1e21/0.05
 			self.EMIN = 0.05
 			self.EMAX = 20.0
 			# Detector targets
-			self.POTS = 12.34e20
-			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208']
-			self.MATERIALS_A=[1, 12, 16, 63.546, 65.38, 207.2]
-			self.MATERIALS_Z=[1, 6, 8, 29, 30, 82]
-			self.MATERIALS_TOT_MASS =[
-								2.9e6*2.0/18.0,
-								0,
-								2.9e6*16.0/18.0,
-								0,
-								12.9e6] # grams
-			self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
+			# self.POTS = 12.34e20
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Cu29', 'Zn30', 'Pb208', 'Ar']
+			self.MATERIALS_A=[1, 12, 16, 63.546, 65.38, 207.2, 40]
+			self.MATERIALS_Z=[1, 6, 8, 29, 30, 82, 18]
+			# self.MATERIALS_TOT_MASS =[
+			# 					2.9e6*2.0/18.0,
+			# 					0,
+			# 					2.9e6*16.0/18.0,
+			# 					0,
+			# 					12.9e6] # grams
+			# self.TOT_MASS = np.sum(self.MATERIALS_TOT_MASS)
 			self.FLAVOURS = [pdg.numubar]
-		
+
+		elif self.EXP_FLAG == "nd280_nu_light":
+			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_plus250kA.txt"
+			self.FLUX_NORM=1.0/1e21/0.05
+			self.EMIN = 0.05
+			self.EMAX = 20.0
+			# Detector targets
+			# self.POTS = 12.34e20
+			self.MATERIALS_NAME=['H1', 'C12', 'Ar']
+			self.MATERIALS_A=[1, 12, 40]
+			self.MATERIALS_Z=[1, 6, 18]
+			self.FLAVOURS = [pdg.numu]
+
+		elif self.EXP_FLAG == "nd280_nubar_light":
+			self.FLUXFILE="fluxes/T2Kflux2016/t2kflux_2016_nd280_minus250kA.txt"
+			self.FLUX_NORM=1.0/1e21/0.05
+			self.EMIN = 0.05
+			self.EMAX = 20.0
+			# Detector targets
+			# self.POTS = 12.34e20
+			self.MATERIALS_NAME=['H1', 'C12', 'Ar']
+			self.MATERIALS_A=[1, 12, 40]
+			self.MATERIALS_Z=[1, 6, 18]
+			self.FLAVOURS = [pdg.numubar]
+            
 		else:
 			print('ERROR! No experiment chosen.')
 
