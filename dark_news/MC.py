@@ -12,22 +12,15 @@ from collections import defaultdict
 from functools import partial
 
 import matplotlib.pyplot as plt
-from matplotlib import rc, rcParams
-from matplotlib.pyplot import *
-from matplotlib.legend_handler import HandlerLine2D
 #CYTHON
 import pyximport
 pyximport.install(
     language_level=3,
     pyimport=False,
     )
-from . import Cfourvec as Cfv
 from . import C_MC
 
-from . import fourvec
-from . import decay_rates
 from . import const 
-from . import model 
 from . import integrands
 from . import pdg 
 
@@ -188,15 +181,15 @@ class MC_events:
 			dic = integrands.cascade_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N'] # the Zprime width is trivially accounted for
             
-			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**2 * dic['m4_scan']**3.5
-			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**2 * dic['m4_scan']**3.5
+			# weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**2 * dic['m4_scan']**3.5
+			# weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**2 * dic['m4_scan']**3.5
 		
 		elif params.hierarchy == 'heavy':
 			dic = integrands.three_body_phase_space(samples=SAMPLES, MC_case=self)
 			decay_rates=result['decay rate N']
             
-			weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**8 * dic['m4_scan']**5
-			weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**4 * dic['m4_scan']**5
+			# weights['full integrand'] = weights['full integrand']/dic['mzprime_scan']**8 * dic['m4_scan']**5
+			# weights['decay rate N'] = weights['decay rate N']/dic['mzprime_scan']**4 * dic['m4_scan']**5
 		else:
 			print("Could not find hierarchy")
 

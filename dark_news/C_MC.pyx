@@ -37,13 +37,22 @@ def get_samples(int DIM, object integ, object batch_f):
         
         SAMPLES = [[] for i in range(DIM)]
         weights = defaultdict(partial(np.ndarray,0))
-        for x, wgt in integ.random_batch():
-            for regime in batch_f(x).keys():
-                weights[regime] = np.append(weights[regime], wgt*(batch_f(x)[regime]))
+        for x, y, wgt in integ.random_batch(yield_y=True, fcn=batch_f):
+
+            # compute integrand on samples including jacobian factors
+            if integ.uses_jac:
+                fx = batch_integrand(x, jac=integ.map.jac1d(y))
+            else:
+                fx = batch_integrand(x, jac=None)
+
+            for fx_i in fx.keys():
+                weights[fx_i] = np.append(weights[fx_i], wgt*fx[fx_i])
+        
+            # for regime in batch_f(x).keys():
+            #     weights[regime] = np.append(weights[regime], wgt*(batch_f(x)[regime]))
             # weights['pel'] = np.append(weights['pel'], wgt*(batch_f(x)['pel']))
             # weights['coh'] = np.append(weights['coh'], wgt*(batch_f(x)['coh']))
             for i in range(DIM):
                 SAMPLES[i] = np.concatenate((SAMPLES[i],x[:,i]))
 
         return np.array(SAMPLES), weights
-
