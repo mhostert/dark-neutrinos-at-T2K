@@ -30,6 +30,16 @@ physics_parameters['light'] = {
     'lower_bound_epsilon': 10**(-5),
 }
 
+bp_h1 = {
+    'm4':0.1,
+    'mz':1.25,
+    'Umu4_2':2.2e-7,
+    'Ud4_2':1,
+    'alpha_d':0.4,
+    'epsilon':2.1e-2,
+}
+
+
 for physics_params in physics_parameters.values():
     physics_params['upper_bound_epsilon'] = upper_bound_epsilon
     physics_params['upper_bound_Vmu4'] = upper_bound_Umu4_2
@@ -52,7 +62,8 @@ tpc_systematic_uncertainties = {'FHC': 0.2, 'RHC': 0.2} # percentage
 
 pot_case_flux = {
     'heavy' : {'FHC': 12.34e20, 'RHC': 6.29e20},
-    'light' : {'FHC': 11.92e20, 'RHC': 6.29e20},
+    # 'light' : {'FHC': 11.92e20, 'RHC': 6.29e20}, #nue CCQE
+    'light' : {'FHC': 5.738e20}, # single photon
 }
 
 tpc_length = 100 #cm
@@ -61,9 +72,17 @@ p0d_length = 240 #cm
 lead_layer_thickness = 0.45 #cm
 n_lead_layers = 14
 
-p0d_dimensions = [210.3, 223.9, 240]
+p0d_dimensions = [210.3, 223.9, p0d_length]
 
 tpc_fiducial_volume_dimensions = [170, 196, 56.3]
+tpc_fiducial_volume_gap = 16 #maybe 15.5
+
+tpc_fiducial_volume_endpoints = [[(p0d_dimensions[0] - tpc_fiducial_volume_dimensions[0])/2, 
+                                  (p0d_dimensions[0] + tpc_fiducial_volume_dimensions[0])/2],
+                                 [(p0d_dimensions[1] - tpc_fiducial_volume_dimensions[1])/2, 
+                                  (p0d_dimensions[1] + tpc_fiducial_volume_dimensions[1])/2],
+                                 [p0d_dimensions[2] + tpc_fiducial_volume_gap,
+                                  p0d_dimensions[2] + tpc_fiducial_volume_gap + tpc_fiducial_volume_dimensions[2]]]
 
 detector_splitting = {0: [0, 30.5],
                       1: [30.5, 209.6],
@@ -123,6 +142,25 @@ cuts_dict = {
 fgd_mass = 0.9195 # ton
 # fgd_mass_full = 1848.6 * 1e-9 * 184**2  * 15
 fgd_efficiency = 0.1
-fgd_binning = np.linspace(0.00, 0.2, 21)
+# fgd_binning = np.linspace(0.00, 0.2, 21) #nue CCQE
+fgd_binning = np.linspace(0.00, 0.3, 61) #single photon
+fgd_bin_centers = (fgd_binning[1:] + fgd_binning[:-1])/2
 fgd_systematic_uncertainties = {'FHC': 0.23, 'RHC': 0.21} # percentage
 
+selection = 'carbon'
+ratio_fgd_mass_p0d_carbon = fgd_mass / mass_material['carbon']
+
+# upgrade
+fgd1_fid_volume = 174.9 * 174.9 * 14.4
+fgd1_fid_volume_gap = 5.75
+ratio_fgd2_fgd1 = 1
+super_fgd_volume = (192 - fgd1_fid_volume_gap) * (192 - fgd1_fid_volume_gap) * 56
+
+# total_pot_fgd_analysis = pot_case_flux['light']['FHC'] + pot_case_flux['light']['RHC'] #nue CCQE
+total_pot_fgd_analysis = pot_case_flux['light']['FHC'] #single photon
+pot_before_upgrade = 4e21
+pot_after_upgrade = 16e21
+total_pot = pot_before_upgrade + pot_after_upgrade
+
+fgd_sensitivity_scale_factor = (1 + ratio_fgd2_fgd1) * total_pot/total_pot_fgd_analysis +\
+                               super_fgd_volume * pot_after_upgrade / (fgd1_fid_volume * total_pot_fgd_analysis)
