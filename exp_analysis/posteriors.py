@@ -9,7 +9,7 @@ likelihood_levels_2d = {0.68: -2.3/2,
           0.9: -4.61/2,
           0.95: -5.99/2}
 
-def load_mc_data(sideband, base_folder_digitized='../digitized/nueCCQE_ND280_2020/'):
+def load_mc_data(sideband, base_folder_digitized='../digitized/T2K_single_photon/'):
     digitized_data = np.loadtxt(base_folder_digitized + sideband + '_electron_data.dat')
     digitized_data[:, 0] = parameters_dict.fgd_bin_centers
     digitized_data[:, 1] = digitized_data[:, 1].astype(int)
@@ -20,7 +20,7 @@ def load_mc_data(sideband, base_folder_digitized='../digitized/nueCCQE_ND280_202
 
 digitized_data = {}
 digitized_MCtot = {}
-for sideband in ['FHC','RHC']:
+for sideband in ['FHC']:
     data, MCtot = load_mc_data(sideband)
     digitized_data[sideband] = data    
     digitized_MCtot[sideband] = MCtot

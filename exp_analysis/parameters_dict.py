@@ -62,7 +62,8 @@ tpc_systematic_uncertainties = {'FHC': 0.2, 'RHC': 0.2} # percentage
 
 pot_case_flux = {
     'heavy' : {'FHC': 12.34e20, 'RHC': 6.29e20},
-    'light' : {'FHC': 11.92e20, 'RHC': 6.29e20},
+    # 'light' : {'FHC': 11.92e20, 'RHC': 6.29e20}, #nue CCQE
+    'light' : {'FHC': 5.738e20}, # single photon
 }
 
 tpc_length = 100 #cm
@@ -141,7 +142,8 @@ cuts_dict = {
 fgd_mass = 0.9195 # ton
 # fgd_mass_full = 1848.6 * 1e-9 * 184**2  * 15
 fgd_efficiency = 0.1
-fgd_binning = np.linspace(0.00, 0.2, 21)
+# fgd_binning = np.linspace(0.00, 0.2, 21) #nue CCQE
+fgd_binning = np.linspace(0.00, 0.3, 61) #single photon
 fgd_bin_centers = (fgd_binning[1:] + fgd_binning[:-1])/2
 fgd_systematic_uncertainties = {'FHC': 0.23, 'RHC': 0.21} # percentage
 
@@ -154,7 +156,8 @@ fgd1_fid_volume_gap = 5.75
 ratio_fgd2_fgd1 = 1
 super_fgd_volume = (192 - fgd1_fid_volume_gap) * (192 - fgd1_fid_volume_gap) * 56
 
-total_pot_fgd_analysis = pot_case_flux['light']['FHC'] + pot_case_flux['light']['RHC']
+# total_pot_fgd_analysis = pot_case_flux['light']['FHC'] + pot_case_flux['light']['RHC'] #nue CCQE
+total_pot_fgd_analysis = pot_case_flux['light']['FHC'] #single photon
 pot_before_upgrade = 4e21
 pot_after_upgrade = 16e21
 total_pot = pot_before_upgrade + pot_after_upgrade
