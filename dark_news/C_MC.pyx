@@ -41,9 +41,9 @@ def get_samples(int DIM, object integ, object batch_f):
 
             # compute integrand on samples including jacobian factors
             if integ.uses_jac:
-                fx = batch_integrand(x, jac=integ.map.jac1d(y))
+                fx = batch_f(x, jac=integ.map.jac1d(y))
             else:
-                fx = batch_integrand(x, jac=None)
+                fx = batch_f(x, jac=None)
 
             for fx_i in fx.keys():
                 weights[fx_i] = np.append(weights[fx_i], wgt*fx[fx_i])
