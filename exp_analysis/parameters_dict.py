@@ -62,8 +62,8 @@ tpc_systematic_uncertainties = {'FHC': 0.2, 'RHC': 0.2} # percentage
 
 pot_case_flux = {
     'heavy' : {'FHC': 12.34e20, 'RHC': 6.29e20},
-    # 'light' : {'FHC': 11.92e20, 'RHC': 6.29e20}, #nue CCQE
-    'light' : {'FHC': 5.738e20}, # single photon
+    'light' : {'FHC': 11.92e20, 'RHC': 6.29e20}, #nue CCQE
+    # 'light' : {'FHC': 5.738e20}, # single photon
 }
 
 tpc_length = 100 #cm
@@ -86,7 +86,12 @@ tpc_fiducial_volume_endpoints = [[(p0d_dimensions[0] - tpc_fiducial_volume_dimen
 
 detector_splitting = {0: [0, 30.5],
                       1: [30.5, 209.6],
-                      2: [209.6, 240.0]}
+                      2: [209.6, 240.0],
+                      3: [tpc_fiducial_volume_endpoints[2][0], tpc_fiducial_volume_endpoints[2][1]],
+                      4: [tpc_fiducial_volume_endpoints[2][0] + tpc_length + fgd_length, 
+                          tpc_fiducial_volume_endpoints[2][1] + tpc_length + fgd_length],
+                      5: [tpc_fiducial_volume_endpoints[2][0] + 2*(tpc_length + fgd_length), 
+                          tpc_fiducial_volume_endpoints[2][1] + 2*(tpc_length + fgd_length)]}
 
 mol2natoms = 6.02214e23 # Avogadro's number
 ton2grams = 1e6
@@ -97,17 +102,21 @@ geometry_material = {
     'copper': [1],
     'zinc': [1],
     'lead': [0, 2],
+    'argon': [3, 4, 5],
 }
 
+# to be removed
 material_dict = {
     0.9385: 'hydrogen',
     11.262: 'carbon',
     15.016: 'oxygen',
     59.637921: 'copper',
     61.35913: 'zinc',
-    194.4572: 'lead'
+    194.4572: 'lead',
+    37.54 : 'argon',
 }
 
+# to be removed
 gev_mass = dict(zip(material_dict.values(), material_dict.keys()))
 
 molar_mass = {
@@ -116,16 +125,33 @@ molar_mass = {
     'oxygen': 15.999,
     'copper': 63.546,
     'zinc': 65.38,
-    'lead': 207.2
+    'lead': 207.2,
+    'argon': 39.948
+}
+
+atomic_mass_gev = {
+    'hydrogen': 0.9385,
+    'carbon': 11.262,
+    'oxygen': 15.016,
+    'copper': 59.637921,
+    'zinc': 61.35913,
+    'lead': 194.4572,
+    'argon': 37.54 ,
 }
 
 mass_material = {
-    'hydrogen': 3.3*2*molar_mass['hydrogen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']),
-    'oxygen': 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']),
-    'carbon': 8.221,
-    'copper': 1.315*0.66, # percentage of copper in typical brass
-    'zinc': 1.315*0.34, # percentage of zinc in typical brass
-    'lead': 3.634,
+    'heavy' : {
+        'hydrogen': 3.3*2*molar_mass['hydrogen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']),
+        'oxygen': 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']),
+        'carbon': 8.221,
+        'copper': 1.315*0.66, # percentage of copper in typical brass
+        'zinc': 1.315*0.34, # percentage of zinc in typical brass
+        'lead': 3.634,
+        'argon': 0.01},
+    'light' : {
+        'hydrogen': 0,
+        'carbon': 0.9195,
+        'argon': 0.01}
 }
 
 cuts_dict = {
@@ -135,10 +161,6 @@ cuts_dict = {
     'cut4' : r'$p_{ee}$ > 0.15',
 }
 
-# for light analysis
-# fgd_pot_fhc = 11.92e20
-# fgd_pot_rhc = 6.29e20
-
 fgd_mass = 0.9195 # ton
 # fgd_mass_full = 1848.6 * 1e-9 * 184**2  * 15
 fgd_efficiency = 0.1
@@ -147,8 +169,8 @@ fgd_binning = np.linspace(0.00, 0.3, 61) #single photon
 fgd_bin_centers = (fgd_binning[1:] + fgd_binning[:-1])/2
 fgd_systematic_uncertainties = {'FHC': 0.23, 'RHC': 0.21} # percentage
 
-selection = 'carbon'
-ratio_fgd_mass_p0d_carbon = fgd_mass / mass_material['carbon']
+# selection = 'carbon'
+# ratio_fgd_mass_p0d_carbon = fgd_mass / mass_material['carbon']
 
 # upgrade
 fgd1_fid_volume = 174.9 * 174.9 * 14.4

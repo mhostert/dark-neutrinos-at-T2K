@@ -1,3 +1,4 @@
+import os
 import subprocess             
 import itertools
 import pickle
@@ -88,6 +89,7 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
                 this_exp_analyis.load_grid_dfs()
             my_exp_analyses[f'{hierarchy}_{D_or_M}_{flux}'] = this_exp_analyis
             if dump:
+                os.makedirs(f'{this_exp_analyis.base_folder}exp_analysis_objects/', exist_ok=True)
                 f = open(filename_pickle, 'wb+')
                 pickle.dump(this_exp_analyis, f)
                 f.close()

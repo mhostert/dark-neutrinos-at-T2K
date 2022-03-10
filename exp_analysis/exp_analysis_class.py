@@ -80,7 +80,6 @@ class exp_analysis(object):
             self.unitary_decay_length(df)
             self.compute_selection(df)
             self.compute_decay_integral(df)
-            self.compute_decay_integral(df, appendix_z="_last_layer_lead")
         
         # flatten index of pandas multiindex
         df.columns = ['_'.join(col) if (col[1]!='') else col[0] for col in df.columns.values]
@@ -205,6 +204,13 @@ class exp_analysis(object):
                                                             mz_values[0],
                                                             self.Vmu4_alpha_epsilon2,
                                                             D_or_M=self.D_or_M)
+                print(m4_values[0], mz_values[0], self.Vmu4_alpha_epsilon2, self.D_or_M)
+                print(gamma_general(m4_values[0],
+                                                            mz_values[0],
+                                                            self.Vmu4_alpha_epsilon2,
+                                                            D_or_M=self.D_or_M))
+                print(df['total_decay_rate', ''][0])
+                print()
             elif which_scan == 'm4_mz':
                 df['total_decay_rate', ''] = gamma_general(m4_values,
                                                             mz_values,
@@ -229,7 +235,7 @@ class exp_analysis(object):
         df['adjusted_weight', ''] = weight_values / df['total_decay_rate', '']
         
         ntarget_material = {}
-        for material, mass in mass_material.items():
+        for material, mass in mass_material[self.hierarchy].items():
             ntarget_material[material] = mass*ton2grams/molar_mass[material]*mol2natoms
             material_mask = (df['recoil_mass', ''] == gev_mass[material])
             if material_mask.sum() == 0:
@@ -252,9 +258,7 @@ class exp_analysis(object):
                 region_mask = (region == splitting)
                 total_mask = material_mask & region_mask
                 df.loc[total_mask, ('int_point', 'z')] = rg.uniform(*boundaries, total_mask.sum())
-        
-        df['int_point_last_layer_lead', 'z'] = rg.uniform(p0d_length - lead_layer_thickness, p0d_length, len(df))
-            
+                    
     @staticmethod
     def is_point_in_tpc(x, y, z):
         is_in_x = (tpc_fiducial_volume_endpoints[0][0] < x) & (x < tpc_fiducial_volume_endpoints[0][1])
@@ -310,16 +314,14 @@ class exp_analysis(object):
             df[f'exp_integral_points_{i}'+appendix_z] = exp_integral_points[:,i]
         
     @staticmethod
-    def compute_ctau_integral_weights(df, ctau, appendix_z=""):
+    def compute_ctau_integral_weights(df, ctau):
         scale = df['betagamma']*ctau
-        out = np.exp(-df[f'exp_integral_points_0'+appendix_z]/scale) -\
-               np.exp(-df[f'exp_integral_points_1'+appendix_z]/scale) +\
-               np.exp(-df[f'exp_integral_points_2'+appendix_z]/scale) -\
-               np.exp(-df[f'exp_integral_points_3'+appendix_z]/scale) +\
-               np.exp(-df[f'exp_integral_points_4'+appendix_z]/scale) -\
-               np.exp(-df[f'exp_integral_points_5'+appendix_z]/scale)
-        if appendix_z == '_last_layer_lead':
-            out /= n_lead_layers
+        out = np.exp(-df[f'exp_integral_points_0']/scale) -\
+               np.exp(-df[f'exp_integral_points_1']/scale) +\
+               np.exp(-df[f'exp_integral_points_2']/scale) -\
+               np.exp(-df[f'exp_integral_points_3']/scale) +\
+               np.exp(-df[f'exp_integral_points_4']/scale) -\
+               np.exp(-df[f'exp_integral_points_5']/scale)
         return out
 
     @staticmethod
@@ -403,7 +405,7 @@ class exp_analysis(object):
 
     @staticmethod
     def kde_n_events(df, m4mz=None, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa', provide_n_samples=False, ctau_mode='expo', return_df=False):
-        # ctau_mode = "expo", "integral", "integral_last_layer_lead"
+        # ctau_mode = "expo", "integral"
         if selection_query is not None:
             aux_df = df.query(selection_query)
         else:
@@ -422,10 +424,6 @@ class exp_analysis(object):
                 ctau_weights = np.ones(len(aux_df))
             elif ctau_mode == 'integral':
                 ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctau)
-            elif ctau_mode == 'integral_last_layer_lead':
-                aux_df = aux_df.query('lead')
-                ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctau,
-                                                                          appendix_z='_last_layer_lead')
         else:
             ctau_weights = np.ones(len(aux_df))
 
