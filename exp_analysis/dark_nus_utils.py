@@ -25,9 +25,9 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000, exp='nd280_nu')
     for m4, mz_prime in itertools.product(physics_parameters[case]['m4_scan'], physics_parameters[case]['mz_scan']):
         print(f"Generating events for m4={m4} GeV and mzprime={mz_prime}")
         dark_gen_run = [f'cd ..; python3 dark_gen.py --M4 {m4} --mzprime {mz_prime} '\
-                       f'--UMU4 {physics_parameters[case]["Umu4"]} '\
-                       f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
-                       f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                       f'--UMU4 {physics_parameters[case]["bp"]["Umu4_2"]} '\
+                       f'--alpha_dark {physics_parameters[case]["bp"]["alpha_dark"]} '\
+                       f'--epsilon2 {physics_parameters[case]["bp"]["epsilon"]**2} '\
                        f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M} '\
                        f'--exp {exp}']
         subprocess_cmd(dark_gen_run)
@@ -36,9 +36,9 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000, exp='nd280_nu')
 def produce_samples_without_scanning_m4mz(case, D_or_M, m4mz=[0.15, 0.03], neval=100000, exp='nd280_nu'):
     print(f"Generating events for m4={m4mz[0]} GeV and mzprime={m4mz[1]}")
     dark_gen_run = [f'cd ..; python3 dark_gen.py --M4 {m4mz[0]} --mzprime {m4mz[1]} '\
-                   f'--UMU4 {physics_parameters[case]["Umu4"]} '\
-                   f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
-                   f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                   f'--UMU4 {physics_parameters[case]["bp"]["Umu4_2"]} '\
+                   f'--alpha_dark {physics_parameters[case]["bp"]["alpha_dark"]} '\
+                   f'--epsilon2 {physics_parameters[case]["bp"]["epsilon"]**2} '\
                    f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M} '\
                    f'--exp {exp}']
     subprocess_cmd(dark_gen_run)
@@ -50,9 +50,9 @@ def produce_scan_sample(case, D_or_M, neval=1000000, exp='nd280_nu'):
                    f'--mzprime_max {physics_parameters[case]["mz_limits"][1]} '\
                    f'--M4_min {physics_parameters[case]["m4_limits"][0]} '\
                    f'--M4_max {physics_parameters[case]["m4_limits"][1]} '\
-                   f'--UMU4 {physics_parameters[case]["Umu4"]} '\
-                   f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
-                   f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                   f'--UMU4 {physics_parameters[case]["bp"]["Umu4_2"]} '\
+                   f'--alpha_dark {physics_parameters[case]["bp"]["alpha_dark"]} '\
+                   f'--epsilon2 {physics_parameters[case]["bp"]["epsilon"]**2} '\
                    f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M} '\
                    f'--exp {exp}']
 

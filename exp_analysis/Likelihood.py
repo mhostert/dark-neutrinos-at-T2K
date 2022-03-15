@@ -166,6 +166,38 @@ def LEff(k, weight_sum, weight_sq_sum):
     L = gammaPriorPoissonLikelihood(k, alpha, beta)
     return L
 
+LEff_v = np.vectorize(LEff)
+# def LEff_v(k, weight_sum, weight_sq_sum):
+#     """Vectorized version of the function above
+#     """
+#     condlist = [((weight_sum <= 0) | (weight_sq_sum < 0)) & k==0,
+#                 ((weight_sum <= 0) | (weight_sq_sum < 0)) & k!=0,
+#                 (weight_sq_sum > 0) & (weight_sq_sum < 1e-2),
+#     choicelist = [0,
+#                   -np.inf,
+#                   poissonLikelihood(k, weight_sum, weight_sq_sum)]
+#     return np.select
+#                   gammaPriorPoissonLikelihood(k, 
+#                                               np.power(weight_sum, 2.0) / weight_sq_sum + 1.0, 
+#                                               weight_sum / weight_sq_sum)
+#     return np.where((weight_sum <= 0) | (weight_sq_sum < 0),
+                    
+#     # Return -inf for ill formed an likelihood or 0 without observation
+#     if weight_sum <= 0 or weight_sq_sum < 0:
+#         if k == 0:
+#             return 0
+#         else:
+#             return -np.inf
+
+#     # Return the poisson likelihood in the appropriate limiting case
+#     if weight_sq_sum < 1e-2:
+#         return poissonLikelihood(k, weight_sum, weight_sq_sum)
+
+#     alpha = np.power(weight_sum, 2.0) / weight_sq_sum + 1.0
+#     beta = weight_sum / weight_sq_sum
+#     L = gammaPriorPoissonLikelihood(k, alpha, beta)
+#     return L
+
 def computeLMean(k, weights):
     """Computes Log of the L_Mean Likelihood from a list of weights.
        This is the poisson likelihood with gamma distribution prior where the

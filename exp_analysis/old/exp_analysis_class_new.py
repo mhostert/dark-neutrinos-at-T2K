@@ -6,8 +6,6 @@ import pandas as pd
 from sklearn.neighbors import BallTree
 from kde_utils import kde_Nd_weights, log_distance
 
-from Likelihood import LEff_v
-
 from const import alphaQED
 from fourvec import *
 from parameters_dict import *
@@ -15,23 +13,10 @@ from const import *
 from ctau_utils import *
 
 droplist = ['plm_t', 'plm_x', 'plm_y', 'plm_z', 'plp_t', 'plp_x', 'plp_y', 'plp_z',
-            'pnu_t', 'pnu_x', 'pnu_y', 'pnu_z', 'pHad_t', 'pHad_x', 'pHad_y',
-            'pHad_z', 'weight_decay', 'regime', 'pee_t',
-            'pdark_t', 'pee_x', 'pdark_x', 'pee_y', 'pdark_y', 'pee_z', 'pdark_z',
-            'recoil_mass', 'p3dark']
-
-def full_likelihood(m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses):
-    leff, mu, sigma2 = 0, 0, 0
-    for analysis in analyses:
-        for flux, sub_analysis in analysis.items():
-            print(flux)
-            this_analysis_object = exp_analyses_objects[f'{hierarchy}_{D_or_M}_{flux}']
-            out = this_analysis_object.compute_likelihood(this_analysis_object.df_base, 
-                                                            m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2, sub_analysis)
-            leff += out[0]
-            mu += out[1]
-            sigma2 += out[2]
-    return leff, mu, sigma2
+       'pnu_t', 'pnu_x', 'pnu_y', 'pnu_z', 'pHad_t', 'pHad_x', 'pHad_y',
+       'pHad_z', 'weight_decay', 'regime', 'pee_t',
+       'pdark_t', 'pee_x', 'pdark_x', 'pee_y', 'pdark_y', 'pee_z', 'pdark_z',
+       'recoil_mass', 'p3dark']
 
 class exp_analysis(object):
     
@@ -45,8 +30,11 @@ class exp_analysis(object):
         elif flux == 'RHC':
             self.base_folder = base_folder + '/nd280_nubar'
         self.base_folder += '/3plus1/'
+        self.pot = pot_case_flux[hierarchy][flux]
         self.dfs = {}
-
+        
+        self.compute_ctau_integral_weights_v = np.vectorize(self.compute_ctau_integral_weights, excluded=['df'])
+        
     def load_df_base(self, n_evt=1000000, filename=None, build_ball_tree=False, distance='log', smearing=False, smearing_folder='smearing_matrices/'):
         self.n_evt = n_evt
         print("loading df base")
@@ -109,7 +97,7 @@ class exp_analysis(object):
             self.m4_values = self.df_base['m4'].values
             self.mz_values = self.df_base['mzprime'].values
             self.m4mz_values = np.stack([self.m4_values, self.mz_values], axis=-1)
-            # self.actual_weight_values = self.df_base['actual_weight'].values
+            self.actual_weight_values = self.df_base['actual_weight'].values
 
     def adjust_weights_decay_width(self, df, which_scan=None):
         m4_values = df['m4', ''].values
@@ -245,7 +233,7 @@ class exp_analysis(object):
             #     continue
             # df[material, ''] = material_mask
             # df.loc[material_mask, ('actual_weight', '')] = df['adjusted_weight', ''][material_mask] * ntarget_material[material] * pot
-            out_weights[df[material]] = df['adjusted_weight'][df[material]] * ntarget * pot
+            out_weights[df[material]] = ntarget * pot
         return out_weights
 
     @staticmethod
@@ -255,8 +243,8 @@ class exp_analysis(object):
         df['int_point', 'x'] = rg.uniform(0, p0d_dimensions[0], len(df))
         df['int_point', 'y'] = rg.uniform(0, p0d_dimensions[1], len(df))
         
-        for material in atomic_mass_gev.keys():
-            material_mask = df[material, '']
+        for material_mass, material in material_dict.items():
+            material_mask = (df['recoil_mass', ''] == material_mass)
             region = rg.choice(geometry_material[material], len(df))
 
             for splitting, boundaries in detector_splitting.items():
@@ -276,12 +264,12 @@ class exp_analysis(object):
         return is_in_x & is_in_y & (is_in_z_tpc1 | is_in_z_tpc2 | is_in_z_tpc3)
         
     @staticmethod
-    def compute_decay_integral(df):
+    def compute_decay_integral(df, appendix_z=""):
         df['pdark_dir', 'x'] = df['pdark', 'x']/df['p3dark', '']
         df['pdark_dir', 'y'] = df['pdark', 'y']/df['p3dark', '']
         df['pdark_dir', 'z'] = df['pdark', 'z']/df['p3dark', '']
         
-        int_point_z = df['int_point', 'z']
+        int_point_z = df['int_point'+appendix_z, 'z']
         t_0_0 = (tpc_fiducial_volume_endpoints[2][0] - int_point_z)/df['pdark_dir', 'z']
         t_0_1 = (tpc_fiducial_volume_endpoints[2][1] - int_point_z)/df['pdark_dir', 'z']
         
@@ -315,22 +303,18 @@ class exp_analysis(object):
         exp_integral_points[:, 5] = np.where(which_tpc_exit.sum(axis=1) == 5,
                                                    min_points,
                                                    exp_integral_points[:, 5])
-        # exp_integral_points[exp_integral_points < 0] = 0
         for i in range(6):
-            df[f'exp_integral_points_{i}'] = exp_integral_points[:,i]
+            df[f'exp_integral_points_{i}'+appendix_z] = exp_integral_points[:,i]
         
     @staticmethod
     def compute_ctau_integral_weights(df, ctau):
-        ctau = np.asarray(ctau)
-        scale = np.expand_dims(df['betagamma'], axis=list(range(1, 1+len(ctau.shape))))*\
-                np.expand_dims(ctau, axis=0)
-        exp_dims = list(range(1, len(scale.shape)))
-        out = np.exp(-np.expand_dims(df[f'exp_integral_points_0'], axis=exp_dims)/scale) -\
-               np.exp(-np.expand_dims(df[f'exp_integral_points_1'], axis=exp_dims)/scale) +\
-               np.exp(-np.expand_dims(df[f'exp_integral_points_2'], axis=exp_dims)/scale) -\
-               np.exp(-np.expand_dims(df[f'exp_integral_points_3'], axis=exp_dims)/scale) +\
-               np.exp(-np.expand_dims(df[f'exp_integral_points_4'], axis=exp_dims)/scale) -\
-               np.exp(-np.expand_dims(df[f'exp_integral_points_5'], axis=exp_dims)/scale)
+        scale = df['betagamma']*ctau
+        out = np.exp(-df[f'exp_integral_points_0']/scale) -\
+               np.exp(-df[f'exp_integral_points_1']/scale) +\
+               np.exp(-df[f'exp_integral_points_2']/scale) -\
+               np.exp(-df[f'exp_integral_points_3']/scale) +\
+               np.exp(-df[f'exp_integral_points_4']/scale) -\
+               np.exp(-df[f'exp_integral_points_5']/scale)
         return out
         
     @staticmethod
@@ -384,21 +368,21 @@ class exp_analysis(object):
         this_m4mz = np.asarray(this_m4mz)
         this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
         return kde_Nd_weights(x=this_m4mz,
-                                x_i=this_m4mz_values,
-                                smoothing=smoothing,
-                                distance=distance,
-                                kernel=kernel)
+                                                                        x_i=this_m4mz_values,
+                                                                        smoothing=smoothing,
+                                                                        distance=distance,
+                                                                        kernel=kernel)
 
     #perhaps soon not needed any more?
-    # @staticmethod
-    # def kde_on_a_grid(df, m4_scan, mz_scan, distance='log', smoothing=[0.1, 0.1], kernel='epa'):
-    #     grid_to_eval = np.stack(np.meshgrid(m4_scan, mz_scan, indexing='ij'), axis=-1)
-    #     this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
-    #     return kde_Nd_weights(x=grid_to_eval,
-    #                             x_i=this_m4mz_values,
-    #                             smoothing=smoothing,
-    #                             distance=distance,
-    #                             kernel=kernel)
+    @staticmethod
+    def kde_on_a_grid(df, m4_scan, mz_scan, distance='log', smoothing=[0.1, 0.1], kernel='epa'):
+        grid_to_eval = np.stack(np.meshgrid(m4_scan, mz_scan, indexing='ij'), axis=-1)
+        this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
+        return kde_Nd_weights(x=grid_to_eval,
+                                               x_i=this_m4mz_values,
+                                               smoothing=smoothing,
+                                               distance=distance,
+                                               kernel=kernel)
         # return df['actual_weight'].values[:, np.newaxis, np.newaxis] * this_kde_weights
 
     def no_scan_benchmark_grid(self, function):
@@ -439,6 +423,8 @@ class exp_analysis(object):
             aux_grid_Vd4_alpha_epsilon2 = aux_grid_alpha_d * aux_grid_Ud4_2 * alphaQED * aux_grid_epsilon**2
             grid_Vd4_alpha_epsilon2 = np.expand_dims(aux_grid_Vd4_alpha_epsilon2, axis=[0, 1, 2, 5])
             return grid_m4, grid_mz, grid_Vmu4_alpha_epsilon2, grid_Vd4_alpha_epsilon2
+            # need to check if I can evaluate ctau on this output
+            # need to check if I can evaluate kde on a point on grid_m4, grid_mz
         
     def compute_expectation(self, df, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2,
                             ntarget_per_material, pot,
@@ -473,20 +459,20 @@ class exp_analysis(object):
                                grid_alpha_d * grid_Ud4_2 * alphaQED * grid_epsilon**2, 
                                self.D_or_M)
             ctaus = np.expand_dims(ctaus, axis=[5])
-            ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
+            ctau_weights = exp_analysis.compute_ctau_integral_weights_v(aux_df, ctaus)
         elif self.hierarchy == 'light':
             ctaus = None
             ctau_weights = np.ones(len(aux_df))
             ctau_weights = np.expand_dims(ctau_weights, axis=list(range(1, 7)))
             
         # kde weights
-        kde_weights = self.kde_on_a_point(aux_df, np.stack(np.meshgrid(m4, mz, indexing='ij'), axis=-1),
+        kde_weights = self.kde_on_a_grid(aux_df, m4, mz,
                                          distance, smoothing, kernel)
         kde_weights = np.expand_dims(kde_weights, axis=(3, 4, 5, 6))
         N_kde = np.count_nonzero(kde_weights, axis=0)
         
         # pot_ntarget weights
-        pot_ntarget_weights = self.compute_pot_ntarget_weights(aux_df, ntarget_per_material, pot)
+        pot_ntarget_weights = self.compute_pot_ntarget_weights(df, ntarget_per_material, pot)
         pot_ntarget_weights = np.expand_dims(pot_ntarget_weights, axis=list(range(1, 7)))
         
         all_weights = upscattering_weights *\
@@ -495,35 +481,7 @@ class exp_analysis(object):
                       pot_ntarget_weights *\
                       efficiency_factor
         
-        # return aux_df, (upscattering_weights, ctau_weights, kde_weights, pot_ntarget_weights, efficiency_factor)
         return aux_df, all_weights, N_kde, ctaus
-
-    def compute_likelihood(self, df, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2, analysis):
-        aux_df, all_weights, N_kde, ctaus = self.compute_expectation(df, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2,
-                                                                    analysis['n_target'], 
-                                                                    analysis['pot'],
-                                                                    analysis['selection'],
-                                                                    analysis['efficiency'])
-
-        mu_hist = all_weights.sum(axis=0)
-        sigma2_hist = (all_weights**2).sum(axis=0)
-        mu = mu_hist
-        sigma2 = sigma2_hist
-        # if analysis['var'] is not None:
-        #     #need to be adjusted https://stackoverflow.com/questions/40018125/binning-of-data-along-one-axis-in-numpy
-        #     mu_hist, _ = np.apply_along_axis(hist_1d, axis=1, arr=x)
-        #     mu_hist, _ = np.histogram(aux_df[analysis['var']], 
-        #                                 weights=all_weights, 
-        #                                 bins=analysis['binning'])
-        #     sigma2_hist, _ = np.histogram(aux_df[analysis['var']], 
-        #                                 weights=all_weights**2, 
-        #                                 bins=analysis['binning'])
-
-        leff = LEff_v(analysis['data'], 
-                        mu_hist, 
-                        sigma2_hist + (analysis['syst']*mu_hist)**2)
-
-        return leff, mu, sigma2, N_kde, ctaus
 
     # def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
     #     out = []
