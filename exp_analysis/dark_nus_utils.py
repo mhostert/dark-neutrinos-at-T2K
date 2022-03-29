@@ -43,7 +43,7 @@ def produce_samples_without_scanning_m4mz(case, D_or_M, m4mz=[0.15, 0.03], neval
     subprocess_cmd(dark_gen_run)
 
 
-def produce_scan_sample(case, D_or_M, neval=1000000, exp='nd280_nu'):
+def produce_scan_sample(case, D_or_M, neval=100000, exp='nd280_nu'):
     mu_gen_run = ['cd ..; python3 mu_gen.py '\
                    f'--mzprime_min {physics_parameters[case]["mz_limits"][0]} '\
                    f'--mzprime_max {physics_parameters[case]["mz_limits"][1]} '\
@@ -80,7 +80,7 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
         if dump or direct_load_objects:
             filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
         if not direct_load_objects:
-            this_exp_analyis.load_df_base(1000000,
+            this_exp_analyis.load_df_base(100000,
                                           build_ball_tree=build_ball_tree,
                                           distance=distance,
                                           smearing=smearing)
