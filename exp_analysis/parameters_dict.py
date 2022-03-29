@@ -102,7 +102,7 @@ geometry_material = {
     'copper': [1],
     'zinc': [1],
     'lead': [0, 2],
-    'argon': [3, 4, 5],
+    # 'argon': [3, 4, 5],
 }
 
 atomic_mass_gev = {
@@ -112,7 +112,7 @@ atomic_mass_gev = {
     'copper': 59.637921,
     'zinc': 61.35913,
     'lead': 194.4572,
-    'argon': 37.54 ,
+    # 'argon': 37.54 ,
 }
 
 cuts_dict = {

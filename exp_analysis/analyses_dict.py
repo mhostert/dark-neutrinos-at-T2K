@@ -7,7 +7,7 @@ molar_mass = {
     'copper': 63.546,
     'zinc': 65.38,
     'lead': 207.2,
-    'argon': 39.948
+    # 'argon': 39.948
 }
 mol2natoms = 6.02214e23 # Avogadro's number
 ton2grams = 1e6
@@ -36,7 +36,8 @@ analyses['tpc'] = {
         'data':0,
         'mc':0,
         'masses':tpc_masses,
-        'selection':'cut_based & (~argon)',
+        # 'selection':'cut_based & (~argon)',
+                'selection':'cut_based',
         'efficiency': 0.1,
     },
     'RHC':{
@@ -47,7 +48,8 @@ analyses['tpc'] = {
         'data':0,
         'mc':0,
         'masses':tpc_masses,
-        'selection':'cut_based & (~argon)',
+        # 'selection':'cut_based & (~argon)',
+                'selection':'cut_based',
         'efficiency': 0.1,
     }
 }
