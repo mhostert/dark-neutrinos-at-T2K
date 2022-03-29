@@ -58,7 +58,7 @@ def produce_scan_sample(case, D_or_M, neval=1000000, exp='nd280_nu'):
 
     subprocess_cmd(mu_gen_run)
                   
-def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], fluxes=['FHC', 'RHC'], dump=False, timeit=False, direct_load_objects=False, build_ball_tree=False, distance='log', load_grid=True):
+def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], fluxes=['FHC', 'RHC'], dump=False, timeit=False, direct_load_objects=False, build_ball_tree=False, distance='log', load_grid=True, nentries=1000000):
     assert not (dump and direct_load_objects)
     if type(hierarchies) is not list:
         hierarchies = [hierarchies]
@@ -81,7 +81,7 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
         if dump or direct_load_objects:
             filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
         if not direct_load_objects:
-            this_exp_analyis.load_df_base(1000000,
+            this_exp_analyis.load_df_base(nentries,
                                           build_ball_tree=build_ball_tree,
                                           distance=distance,
                                           smearing=smearing)

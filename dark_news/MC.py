@@ -12,15 +12,22 @@ from collections import defaultdict
 from functools import partial
 
 import matplotlib.pyplot as plt
+from matplotlib import rc, rcParams
+from matplotlib.pyplot import *
+from matplotlib.legend_handler import HandlerLine2D
 #CYTHON
 import pyximport
 pyximport.install(
     language_level=3,
     pyimport=False,
     )
+from . import Cfourvec as Cfv
 from . import C_MC
 
+from . import fourvec
+from . import decay_rates
 from . import const 
+from . import model 
 from . import integrands
 from . import pdg 
 
@@ -158,14 +165,14 @@ class MC_events:
 		# COMPUTE TOTAL INTEGRAL
 		# Sample the integrand to adapt integrator
 		# nstrat = DIM*[1]
-		integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, uses_jac=True)
+		integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup)
 		# if params.scan:
 		# 	nstrat = integ.nstrat
 		# 	nstrat[-1] = 1
 		# 	nstrat[-2] = 1
 		# 	warmup = integ(batch_f, nitn=NINT_warmup, neval=NEVAL_warmup, nstrat=nstrat)
 		# Sample again, now saving result
-		result = integ(batch_f, nitn=NINT, neval=NEVAL, uses_jac=True)
+		result = integ(batch_f, nitn=NINT, neval=NEVAL)
 		# if params.scan:
 		# 	nstrat = integ.nstrat
 		# 	nstrat[:-2] = int((NEVAL)**(1/(DIM-2)))
