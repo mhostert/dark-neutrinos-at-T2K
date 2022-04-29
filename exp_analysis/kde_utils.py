@@ -1,9 +1,9 @@
 import numpy as np
 from scipy.stats import norm, uniform, multivariate_normal
 
-def log_distance(x, y):
+def log_distance(x1, x2):
     return np.sqrt((np.log10(x1/x2)**2).sum(axis=-1))
-    
+
 def epa_kernel2d(x, sigma):
     return np.where((x[..., 0]/sigma[0])**2 + (x[..., 1]/sigma[1])**2 > 1,
                     0,

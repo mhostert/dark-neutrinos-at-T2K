@@ -4,15 +4,16 @@ import itertools
 import pickle
 from time import time, process_time
 
-from parameters_dict import physics_parameters
+from parameters_dict import physics_parameters, likelihood_calculation_pars
 from exp_analysis_class import exp_analysis
+from analyses_dict import analyses
 
 
 # run shell commands from notebook
 def subprocess_cmd(command, verbose=2):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdout,stderr = process.communicate()
-    if verbose==2:  
+    if verbose==2:
         # print(command)
         print(stdout.decode("utf-8"))
         print(stderr.decode("utf-8"))
@@ -25,9 +26,9 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000, exp='nd280_nu')
     for m4, mz_prime in itertools.product(physics_parameters[case]['m4_scan'], physics_parameters[case]['mz_scan']):
         print(f"Generating events for m4={m4} GeV and mzprime={mz_prime}")
         dark_gen_run = [f'cd ..; python3 dark_gen.py --M4 {m4} --mzprime {mz_prime} '\
-                       f'--UMU4 {physics_parameters[case]["Umu4"]} '\
-                       f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
-                       f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                       f'--UMU4 {physics_parameters[case]["bp"]["Umu4_2"]} '\
+                       f'--alpha_dark {physics_parameters[case]["bp"]["alpha_dark"]} '\
+                       f'--epsilon2 {physics_parameters[case]["bp"]["epsilon"]**2} '\
                        f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M} '\
                        f'--exp {exp}']
         subprocess_cmd(dark_gen_run)
@@ -36,9 +37,9 @@ def produce_samples_without_scanning(case, D_or_M, neval=100000, exp='nd280_nu')
 def produce_samples_without_scanning_m4mz(case, D_or_M, m4mz=[0.15, 0.03], neval=100000, exp='nd280_nu'):
     print(f"Generating events for m4={m4mz[0]} GeV and mzprime={m4mz[1]}")
     dark_gen_run = [f'cd ..; python3 dark_gen.py --M4 {m4mz[0]} --mzprime {m4mz[1]} '\
-                   f'--UMU4 {physics_parameters[case]["Umu4"]} '\
-                   f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
-                   f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                   f'--UMU4 {physics_parameters[case]["bp"]["Umu4_2"]} '\
+                   f'--alpha_dark {physics_parameters[case]["bp"]["alpha_dark"]} '\
+                   f'--epsilon2 {physics_parameters[case]["bp"]["epsilon"]**2} '\
                    f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M} '\
                    f'--exp {exp}']
     subprocess_cmd(dark_gen_run)
@@ -50,15 +51,15 @@ def produce_scan_sample(case, D_or_M, neval=1000000, exp='nd280_nu'):
                    f'--mzprime_max {physics_parameters[case]["mz_limits"][1]} '\
                    f'--M4_min {physics_parameters[case]["m4_limits"][0]} '\
                    f'--M4_max {physics_parameters[case]["m4_limits"][1]} '\
-                   f'--UMU4 {physics_parameters[case]["Umu4"]} '\
-                   f'--alpha_dark {physics_parameters[case]["alpha_dark"]} '\
-                   f'--epsilon2 {physics_parameters[case]["epsilon2"]} '\
+                   f'--UMU4 {physics_parameters[case]["bp"]["Umu4_2"]} '\
+                   f'--alpha_dark {physics_parameters[case]["bp"]["alpha_dark"]} '\
+                   f'--epsilon2 {physics_parameters[case]["bp"]["epsilon"]**2} '\
                    f'--neval {neval} --noplot --hierarchy {case} --D_or_M {D_or_M} '\
                    f'--exp {exp}']
 
     subprocess_cmd(mu_gen_run)
                   
-def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], fluxes=['FHC', 'RHC'], dump=False, timeit=False, direct_load_objects=False, build_ball_tree=False, distance='log', load_grid=True):
+def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'], fluxes=['FHC', 'RHC'], dump=False, timeit=False, direct_load_objects=False, build_ball_tree=False, distance='log', load_grid=True, nentries=1000000):
     assert not (dump and direct_load_objects)
     if type(hierarchies) is not list:
         hierarchies = [hierarchies]
@@ -81,7 +82,7 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
         if dump or direct_load_objects:
             filename_pickle = f'{this_exp_analyis.base_folder}exp_analysis_objects/{this_exp_analyis.hierarchy}_{this_exp_analyis.D_or_M}.pckl'
         if not direct_load_objects:
-            this_exp_analyis.load_df_base(1000000,
+            this_exp_analyis.load_df_base(nentries,
                                           build_ball_tree=build_ball_tree,
                                           distance=distance,
                                           smearing=smearing)
@@ -102,3 +103,30 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
             end_process = process_time()
             print(f'Wall time: {end - start} s, CPU time: {end_process - start_process}')  
     return my_exp_analyses
+
+def store_events_weights(expectation_output, analysis, pars, name, analysis_name, nu_mode, additional_vars=None, save_folder='./likelihood_weights/'):
+    out = {}
+    columns = list(analysis['masses'].keys())
+    if analysis['var'] is not None:
+        columns.append(analysis['var'])
+    if additional_vars is not None:
+        if type(additional_vars) is not list:
+            additional_vars = [additional_vars]
+        columns += additional_vars
+    out['df'] = expectation_output[0][columns]
+    out['weights'] = expectation_output[1]
+    out['n_kde'] = expectation_output[2]
+    out['pars'] = pars
+    pickle.dump(out, open(f"{save_folder}{name}_{analysis_name}_{nu_mode}.pckl", "wb"))
+    
+def retrieve_events_weights(name, analysis_name, nu_mode, save_folder='./likelihood_weights/'):
+    return pickle.load(open(f"{save_folder}{name}_{analysis_name}_{nu_mode}.pckl", "rb"))
+
+def retrieve_full_analysis(case_vars, hierarchy, analyses=analyses):
+    this_case = f'{hierarchy}_{case_vars[0]}_{case_vars[1]}'
+    retrieved = {}
+    for nu_mode in analyses[likelihood_calculation_pars[this_case]['analysis_name']].keys():
+        retrieved[nu_mode] = retrieve_events_weights(this_case, 
+                            analysis_name=likelihood_calculation_pars[this_case]['analysis_name'], 
+                            nu_mode=nu_mode)
+    return retrieved
