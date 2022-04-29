@@ -4,15 +4,16 @@ import itertools
 import pickle
 from time import time, process_time
 
-from parameters_dict import physics_parameters
+from parameters_dict import physics_parameters, likelihood_calculation_pars
 from exp_analysis_class import exp_analysis
+from analyses_dict import analyses
 
 
 # run shell commands from notebook
 def subprocess_cmd(command, verbose=2):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
     stdout,stderr = process.communicate()
-    if verbose==2:  
+    if verbose==2:
         # print(command)
         print(stdout.decode("utf-8"))
         print(stderr.decode("utf-8"))
@@ -102,3 +103,30 @@ def load_datasets(hierarchies=['heavy', 'light'], D_or_Ms=['dirac', 'majorana'],
             end_process = process_time()
             print(f'Wall time: {end - start} s, CPU time: {end_process - start_process}')  
     return my_exp_analyses
+
+def store_events_weights(expectation_output, analysis, pars, name, analysis_name, nu_mode, additional_vars=None, save_folder='./likelihood_weights/'):
+    out = {}
+    columns = list(analysis['masses'].keys())
+    if analysis['var'] is not None:
+        columns.append(analysis['var'])
+    if additional_vars is not None:
+        if type(additional_vars) is not list:
+            additional_vars = [additional_vars]
+        columns += additional_vars
+    out['df'] = expectation_output[0][columns]
+    out['weights'] = expectation_output[1]
+    out['n_kde'] = expectation_output[2]
+    out['pars'] = pars
+    pickle.dump(out, open(f"{save_folder}{name}_{analysis_name}_{nu_mode}.pckl", "wb"))
+    
+def retrieve_events_weights(name, analysis_name, nu_mode, save_folder='./likelihood_weights/'):
+    return pickle.load(open(f"{save_folder}{name}_{analysis_name}_{nu_mode}.pckl", "rb"))
+
+def retrieve_full_analysis(case_vars, hierarchy, analyses=analyses):
+    this_case = f'{hierarchy}_{case_vars[0]}_{case_vars[1]}'
+    retrieved = {}
+    for nu_mode in analyses[likelihood_calculation_pars[this_case]['analysis_name']].keys():
+        retrieved[nu_mode] = retrieve_events_weights(this_case, 
+                            analysis_name=likelihood_calculation_pars[this_case]['analysis_name'], 
+                            nu_mode=nu_mode)
+    return retrieved

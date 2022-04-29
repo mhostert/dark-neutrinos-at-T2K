@@ -20,17 +20,34 @@ droplist = ['plm_t', 'plm_x', 'plm_y', 'plm_z', 'plp_t', 'plp_x', 'plp_y', 'plp_
             'pdark_t', 'pee_x', 'pdark_x', 'pee_y', 'pdark_y', 'pee_z', 'pdark_z',
             'recoil_mass', 'p3dark']
 
-def full_likelihood(m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses):
+def compute_likelihood_from_retrieved(out_events_weights, exp_analysis_obj, analysis, like_normalized=True):
+    if analysis['selection'] is not None:
+        selection_mask = out_events_weights['df'].eval(analysis['selection'])
+        aux_df = out_events_weights['df'][selection_mask]
+        all_weights = out_events_weights['weights'][selection_mask]
+    else:
+        aux_df = out_events_weights['df']
+        all_weights = out_events_weights['weights']
+    pot_ntarget_weights = exp_analysis_obj.compute_pot_ntarget_weights(aux_df, 
+                                                                       analysis['n_target'], 
+                                                                       analysis['pot'])
+    all_weights = all_weights.T * pot_ntarget_weights * analysis['efficiency']
+    return exp_analysis_obj.compute_likelihood(aux_df, all_weights.T, analysis, like_normalized)
+
+def full_likelihood(m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses, like_normalized=False):
     leff, mu, sigma2 = 0, 0, 0
     for analysis in analyses:
         for flux, sub_analysis in analysis.items():
             print(flux)
             this_analysis_object = exp_analyses_objects[f'{hierarchy}_{D_or_M}_{flux}']
-            out = this_analysis_object.compute_likelihood(this_analysis_object.df_base, 
-                                                            m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2, sub_analysis)
+            out = this_analysis_object.compute_likelihood_from_pars(this_analysis_object.df_base, 
+                                                            m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, sub_analysis,
+                                                                   like_normalized=like_normalized)
             leff += out[0]
             mu += out[1]
             sigma2 += out[2]
+    if like_normalized:
+        leff -= leff.min()
     return leff, mu, sigma2
 
 class exp_analysis(object):
@@ -47,7 +64,7 @@ class exp_analysis(object):
         self.base_folder += '/3plus1/'
         self.dfs = {}
 
-    def load_df_base(self, n_evt=1000000, filename=None, build_ball_tree=False, distance='log', smearing=False, smearing_folder='smearing_matrices/'):
+    def load_df_base(self, n_evt=1000000, filename=None, build_ball_tree=False, distance=default_kde_pars['distance'], smearing=False, smearing_folder='smearing_matrices/'):
         self.n_evt = n_evt
         print("loading df base")
         if filename is None:
@@ -90,11 +107,11 @@ class exp_analysis(object):
         self.compute_analysis_variables(df)
         self.adjust_weights_decay_width(df, which_scan)
         self.create_material_mask(df)
+        self.compute_selection(df)
         
         if self.hierarchy == 'heavy':
             self.compute_interaction_point(df)
             self.unitary_decay_length(df)
-            self.compute_selection(df)
             self.compute_decay_integral(df)
         
         # flatten index of pandas multiindex
@@ -127,7 +144,7 @@ class exp_analysis(object):
                                                         self.Vmu4_alpha_epsilon2,
                                                         D_or_M=self.D_or_M)
 
-        df['adjusted_weight', ''] = weight_values / df['total_decay_rate', '']
+        df['generator_weight', ''] = weight_values / df['total_decay_rate', '']
         
     def setResolution(self, smearing_p, p_binning_true, p_binning_reco, smearing_theta, theta_binning_true, theta_binning_reco):    
         self.smearing_theta = self.prepareSmearingMatrix(smearing_theta, theta_binning_true, theta_binning_reco)
@@ -142,8 +159,10 @@ class exp_analysis(object):
                                                      self.smearing_p, p_binning_true, p_binning_reco)
         
         self.df_base['emp_opening_cos_angle_reco'] = cos_opening_angle(self.df_base['em_beam_theta_reco'],
-                                                                       self.df_base['em_beam_phi'], self.df_base['ep_beam_theta_reco'], 
+                                                                       self.df_base['em_beam_phi'], 
+                                                                       self.df_base['ep_beam_theta_reco'], 
                                                                        self.df_base['ep_beam_phi'])
+        
         self.df_base['ee_mass_reco'] = inv_mass_massless(self.df_base['em_energy_reco'],
                                                          self.df_base['ep_energy_reco'],
                                                          self.df_base['emp_opening_cos_angle_reco'])
@@ -244,8 +263,9 @@ class exp_analysis(object):
             # if material_mask.sum() == 0:
             #     continue
             # df[material, ''] = material_mask
-            # df.loc[material_mask, ('actual_weight', '')] = df['adjusted_weight', ''][material_mask] * ntarget_material[material] * pot
-            out_weights[df[material]] = df['adjusted_weight'][df[material]] * ntarget * pot
+            # df.loc[material_mask, ('actual_weight', '')] = df['generator_weight', ''][material_mask] * ntarget_material[material] * pot
+            # out_weights[df[material]] = df['generator_weight'][df[material]] * ntarget * pot
+            out_weights[df[material]] = ntarget * pot
         return out_weights
 
     @staticmethod
@@ -296,16 +316,22 @@ class exp_analysis(object):
         poe_x_max = (tpc_fiducial_volume_endpoints[0][1] - df['int_point', 'x'])/df['pdark_dir', 'x']
         poe_y_min = (tpc_fiducial_volume_endpoints[1][0] - df['int_point', 'y'])/df['pdark_dir', 'y']
         poe_y_max = (tpc_fiducial_volume_endpoints[1][1] - df['int_point', 'y'])/df['pdark_dir', 'y']
-
+        
+        # I want to check this next block
         poe_s = np.stack([poe_x_min, poe_x_max, poe_y_min, poe_y_max], axis=1)
-        min_points = np.min(np.where(poe_s > np.atleast_2d(t_0_0.values).T, 
-                                     poe_s, np.inf), axis=1)
-        min_points[np.isinf(min_points)] = -np.inf
-        exp_integral_points = np.stack([t_0_0, t_0_1, t_1_0, t_1_1, t_2_0, t_2_1,], axis=-1)
-
-        which_tpc_exit = np.atleast_2d(min_points).T > exp_integral_points
+        
+        exp_integral_points = np.stack([t_0_0, t_0_1, t_1_0, t_1_1, t_2_0, t_2_1,], axis=1)
+        exp_integral_points = np.where(df['pdark_dir', 'z'].values[..., np.newaxis] >= 0,
+                                       exp_integral_points,
+                                       np.flip(exp_integral_points, axis=1))
+        exp_integral_points = np.where(exp_integral_points > 0,
+                               exp_integral_points,
+                               0)
+        
+        min_points = np.min(np.where(poe_s > 0, poe_s, np.inf), axis=1)
+                 
+        which_tpc_exit = min_points[..., np.newaxis] > exp_integral_points
         exp_integral_points[~which_tpc_exit] = 0
-        exp_integral_points[df['pdark_dir', 'z'] <= 0] = 0
         exp_integral_points[:, 1] = np.where(which_tpc_exit.sum(axis=1) == 1,
                                                    min_points,
                                                    exp_integral_points[:, 1])
@@ -315,7 +341,6 @@ class exp_analysis(object):
         exp_integral_points[:, 5] = np.where(which_tpc_exit.sum(axis=1) == 5,
                                                    min_points,
                                                    exp_integral_points[:, 5])
-        # exp_integral_points[exp_integral_points < 0] = 0
         for i in range(6):
             df[f'exp_integral_points_{i}'] = exp_integral_points[:,i]
         
@@ -380,7 +405,7 @@ class exp_analysis(object):
                             df['cut4', '']
 
     @staticmethod
-    def kde_on_a_point(df, this_m4mz, distance='log', smoothing=[0.1, 0.1], kernel='epa'):
+    def kde_on_a_point(df, this_m4mz, distance=default_kde_pars['distance'], smoothing=default_kde_pars['smoothing'], kernel=default_kde_pars['kernel']):
         this_m4mz = np.asarray(this_m4mz)
         this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
         return kde_Nd_weights(x=this_m4mz,
@@ -388,18 +413,6 @@ class exp_analysis(object):
                                 smoothing=smoothing,
                                 distance=distance,
                                 kernel=kernel)
-
-    #perhaps soon not needed any more?
-    # @staticmethod
-    # def kde_on_a_grid(df, m4_scan, mz_scan, distance='log', smoothing=[0.1, 0.1], kernel='epa'):
-    #     grid_to_eval = np.stack(np.meshgrid(m4_scan, mz_scan, indexing='ij'), axis=-1)
-    #     this_m4mz_values = np.stack([df['m4'], df['mzprime']], axis=-1)
-    #     return kde_Nd_weights(x=grid_to_eval,
-    #                             x_i=this_m4mz_values,
-    #                             smoothing=smoothing,
-    #                             distance=distance,
-    #                             kernel=kernel)
-        # return df['actual_weight'].values[:, np.newaxis, np.newaxis] * this_kde_weights
 
     def no_scan_benchmark_grid(self, function):
         out = []
@@ -413,64 +426,72 @@ class exp_analysis(object):
                     out[-1].append(function(self.dfs[(m4, mz)]))
         return np.array(out)
     
-    def compute_effective_parameters(self, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2):
+    def compute_effective_parameters(self, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2):
         aux_grid_m4, aux_grid_mz = np.meshgrid(m4,
                                         mz,
                                         indexing='ij')
         grid_m4 = np.expand_dims(aux_grid_m4, axis=(3, 4, 5, 6))
         grid_mz = np.expand_dims(aux_grid_mz, axis=(3, 4, 5, 6))
 
-        aux_grid_Umu4_2, aux_grid_alpha_d, aux_grid_epsilon = np.meshgrid(Umu4_2,
-                                                               alpha_d,
+        aux_grid_Umu4_2, aux_grid_alpha_dark, aux_grid_epsilon = np.meshgrid(Umu4_2,
+                                                               alpha_dark,
                                                                epsilon,
                                                                indexing='ij')
-        aux_grid_Vmu4_alpha_epsilon2 = aux_grid_alpha_d * aux_grid_Umu4_2 * alphaQED * aux_grid_epsilon**2
+        aux_grid_Vmu4_alpha_epsilon2 = aux_grid_alpha_dark * aux_grid_Umu4_2 * alphaQED * aux_grid_epsilon**2
         grid_Vmu4_alpha_epsilon2 = np.expand_dims(aux_grid_Vmu4_alpha_epsilon2, axis=[0, 1, 2, 6])
 
         if self.hierarchy == 'light':
             return grid_m4, grid_mz, grid_Vmu4_alpha_epsilon2
         else:
-            aux_grid_m4, aux_grid_mz, aux_grid_Ud4_2, aux_grid_alpha_d, aux_grid_epsilon = np.meshgrid(m4,
+            aux_grid_m4, aux_grid_mz, aux_grid_Ud4_2, aux_grid_alpha_dark, aux_grid_epsilon = np.meshgrid(m4,
                                                                                     mz,
                                                                                     Ud4_2,
-                                                                                    alpha_d,
+                                                                                    alpha_dark,
                                                                                     epsilon,
                                                                                     indexing='ij')
-            aux_grid_Vd4_alpha_epsilon2 = aux_grid_alpha_d * aux_grid_Ud4_2 * alphaQED * aux_grid_epsilon**2
+            aux_grid_Vd4_alpha_epsilon2 = aux_grid_alpha_dark * aux_grid_Ud4_2 * alphaQED * aux_grid_epsilon**2
             grid_Vd4_alpha_epsilon2 = np.expand_dims(aux_grid_Vd4_alpha_epsilon2, axis=[0, 1, 2, 5])
             return grid_m4, grid_mz, grid_Vmu4_alpha_epsilon2, grid_Vd4_alpha_epsilon2
         
-    def compute_expectation(self, df, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2,
-                            ntarget_per_material, pot,
+    def compute_expectation(self, df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2,
+                            ntarget_per_material, 
+                            pot,
                             selection_query=None,
                             efficiency_factor=1,
-                            smoothing=[0.1, 0.1], distance='log', kernel='epa'):
-        # the output is (len(df), len(m4), len(mz), len(alpha_d), len(epsilon), len(Umu4_2), len(Ud4_2)
+                            distance=default_kde_pars['distance'], 
+                            smoothing=default_kde_pars['smoothing'], 
+                            kernel=default_kde_pars['kernel'],
+                            out_different_weights=False,
+                            no_pot_efficiency=False):
+        # the output is (len(df), len(m4), len(mz), len(alpha_dark), len(epsilon), len(Umu4_2), len(Ud4_2)
         if selection_query is not None:
             aux_df = df.query(selection_query)
         else:
             aux_df = df
         
+        # generator weights
+        generator_weights = np.expand_dims(aux_df['generator_weight'], axis=list(range(1, 7)))
+        
         # upscattering weights
-        grid_Umu4_2, grid_alpha_d, grid_epsilon = np.meshgrid(Umu4_2,
-                                                               alpha_d,
+        grid_Umu4_2, grid_alpha_dark, grid_epsilon = np.meshgrid(Umu4_2,
+                                                               alpha_dark,
                                                                epsilon,
                                                                indexing='ij')
-        Vmu4_alpha_epsilon2 = grid_alpha_d * grid_Umu4_2 * alphaQED * grid_epsilon**2
+        Vmu4_alpha_epsilon2 = grid_alpha_dark * grid_Umu4_2 * alphaQED * grid_epsilon**2
         upscattering_weights = Vmu4_alpha_epsilon2 / self.Vmu4_alpha_epsilon2
         upscattering_weights = np.expand_dims(upscattering_weights, axis=[0, 1, 2, 6])
         
         # ctau weights
         if self.hierarchy == 'heavy':
-            grid_m4, grid_mz, grid_Ud4_2, grid_alpha_d, grid_epsilon = np.meshgrid(m4,
+            grid_m4, grid_mz, grid_Ud4_2, grid_alpha_dark, grid_epsilon = np.meshgrid(m4,
                                                                                    mz,
                                                                                    Ud4_2,
-                                                                                   alpha_d,
+                                                                                   alpha_dark,
                                                                                    epsilon,
                                                                                    indexing='ij')
             ctaus = ctau_heavy(grid_m4, 
                                grid_mz, 
-                               grid_alpha_d * grid_Ud4_2 * alphaQED * grid_epsilon**2, 
+                               grid_alpha_dark * grid_Ud4_2 * alphaQED * grid_epsilon**2, 
                                self.D_or_M)
             ctaus = np.expand_dims(ctaus, axis=[5])
             ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
@@ -485,61 +506,70 @@ class exp_analysis(object):
         kde_weights = np.expand_dims(kde_weights, axis=(3, 4, 5, 6))
         N_kde = np.count_nonzero(kde_weights, axis=0)
         
-        # pot_ntarget weights
-        pot_ntarget_weights = self.compute_pot_ntarget_weights(aux_df, ntarget_per_material, pot)
-        pot_ntarget_weights = np.expand_dims(pot_ntarget_weights, axis=list(range(1, 7)))
+        all_weights = generator_weights *\
+                          upscattering_weights *\
+                          ctau_weights *\
+                          kde_weights
         
-        all_weights = upscattering_weights *\
-                      ctau_weights *\
-                      kde_weights *\
-                      pot_ntarget_weights *\
-                      efficiency_factor
-        
-        # return aux_df, (upscattering_weights, ctau_weights, kde_weights, pot_ntarget_weights, efficiency_factor)
-        return aux_df, all_weights, N_kde, ctaus
+        if no_pot_efficiency:
+            all_weights = np.squeeze(all_weights)
+            return aux_df, all_weights, N_kde, ctaus
+        else:
+            # pot_ntarget weights
+            pot_ntarget_weights = self.compute_pot_ntarget_weights(aux_df, ntarget_per_material, pot)
+            pot_ntarget_weights = np.expand_dims(pot_ntarget_weights, axis=list(range(1, 7)))
 
-    def compute_likelihood(self, df, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2, analysis):
-        aux_df, all_weights, N_kde, ctaus = self.compute_expectation(df, m4, mz, alpha_d, epsilon, Umu4_2, Ud4_2,
+            if out_different_weights:
+                return aux_df, (generator_weights, upscattering_weights, ctau_weights, kde_weights, pot_ntarget_weights, efficiency_factor), N_kde, ctaus
+            else:
+                all_weights *= pot_ntarget_weights * efficiency_factor
+                all_weights = np.squeeze(all_weights)
+                return aux_df, all_weights, N_kde, ctaus
+
+    def compute_likelihood_from_pars(self, df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, analysis, like_normalized=True):
+        aux_df, all_weights, N_kde, ctaus = self.compute_expectation(df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2,
                                                                     analysis['n_target'], 
                                                                     analysis['pot'],
                                                                     analysis['selection'],
                                                                     analysis['efficiency'])
-
+        return self.compute_likelihood(aux_df, all_weights, analysis, like_normalized)
+    
+    def compute_likelihood(self, aux_df, all_weights, analysis, like_normalized=True):
+        # moveaxis broacast_to etc. could be simplified if we store weights with the number of entries as last dimension
+        # possibly output mu, sigma2 and likelihood without summing? with a function that computes the final number?
+        all_weights = np.squeeze(all_weights)
         mu_hist = all_weights.sum(axis=0)
         sigma2_hist = (all_weights**2).sum(axis=0)
         mu = mu_hist
         sigma2 = sigma2_hist
-        # if analysis['var'] is not None:
-        #     #need to be adjusted https://stackoverflow.com/questions/40018125/binning-of-data-along-one-axis-in-numpy
-        #     mu_hist, _ = np.apply_along_axis(hist_1d, axis=1, arr=x)
-        #     mu_hist, _ = np.histogram(aux_df[analysis['var']], 
-        #                                 weights=all_weights, 
-        #                                 bins=analysis['binning'])
-        #     sigma2_hist, _ = np.histogram(aux_df[analysis['var']], 
-        #                                 weights=all_weights**2, 
-        #                                 bins=analysis['binning'])
+    
+        if analysis['var'] is not None:
+            xs = aux_df[analysis['var']].values
+            n_entries = len(xs)
+            xs = np.broadcast_to(xs, all_weights.T.shape).T
+            
+            aux_mu = np.concatenate([xs, all_weights], axis=0)
+            aux_sigma2 = np.concatenate([xs, all_weights**2], axis=0)
+            
+            
+            def hist1d(a):
+                return np.histogram(a[:n_entries], bins=analysis['binning'], weights=a[n_entries:])[0]
+            mu_hist = np.apply_along_axis(func1d=hist1d, 
+                                          axis=0, arr=aux_mu)
+            mu_hist = np.moveaxis(mu_hist, 0, -1)
+            sigma2_hist = np.apply_along_axis(func1d=hist1d, 
+                                          axis=0, arr=aux_sigma2)
+            sigma2_hist = np.moveaxis(sigma2_hist, 0, -1)
 
         leff = LEff_v(analysis['data'], 
-                        mu_hist, 
-                        sigma2_hist + (analysis['syst']*mu_hist)**2)
-
-        return leff, mu, sigma2, N_kde, ctaus
-
-    # def kde_n_events_benchmark_grid(self, ctau=None, mu=1, selection_query=None, smoothing=[0.1, 0.1], distance='log', kernel='epa'):
-    #     out = []
-    #     for m4 in self.m4_scan:
-    #         out.append([])
-    #         for mz in self.mz_scan:
-    #             if ((self.hierarchy == 'heavy') and (m4 >= mz)) or ((self.hierarchy == 'light') and (m4 <= mz)):
-    #                     out[-1].append([0, 0])
-    #                     continue
-    #             else:
-    #                 out[-1].append(self.kde_n_events(self.df_base,
-    #                                                  m4mz=(m4, mz),
-    #                                                  ctau=ctau,
-    #                                                  mu=mu,
-    #                                                  selection_query=selection_query,
-    #                                                  smoothing=smoothing,
-    #                                                  distance=distance,
-    #                                                  kernel=kernel))
-    #     return np.array(out)
+                      analysis['mc'] + mu_hist, 
+                        sigma2_hist + (analysis['syst']*(analysis['mc']+mu_hist))**2)
+        
+        if analysis['var'] is not None:
+            leff = leff.sum(axis=-1)
+            
+        if like_normalized:
+            leff *= -1
+            leff -= leff.min()
+        
+        return leff, mu, sigma2

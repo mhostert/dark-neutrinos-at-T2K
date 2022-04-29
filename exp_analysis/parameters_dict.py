@@ -1,6 +1,10 @@
 import numpy as np
 from const import alphaQED
 
+likelihood_levels_2d = {0.68: 2.3/2,
+          0.9: 4.61/2,
+          0.95: 5.99/2}
+
 upper_bound_epsilon = 0.05 # model independent constraint on epsilon - probably we can push to 3.5%
 upper_bound_Umu4_2 = 0.03 # 
 
@@ -12,16 +16,23 @@ physics_parameters['heavy'] = {
     'm4_scan' : [0.01, 0.1, 0.5],
     'mz_scan': [0.02, 0.2, 1, 5],
     'bp': {
-        'm4':0.12,
+        # 'm4':0.12,
+        'm4':0.1,
         'mz':1.25,
         'alpha_dark':0.4,
         'epsilon':np.sqrt(4.6e-4),
         'Umu4_2':2.2e-7,
-        'Ud4_2':0.1,
+        'Ud4_2':1,
+    },
+    'ticks': {
+        'Ud4_2': np.array([1]),
+        'mz': np.geomspace(0.13, 10, 20),
+        'epsilon': np.geomspace(1e-5, 1e-1, 25),
+        'm4': np.geomspace(0.005, 1, 20),
+        'Umu4_2': np.geomspace(1e-11, 1, 25),
     }
     # 'lower_bound_Vmu4_alpha_epsilon2': 10**(-17),
 }
-
 physics_parameters['light'] = {
     'm4_limits': (0.005, 2),
     'mz_limits': (0.005, 2),
@@ -34,12 +45,78 @@ physics_parameters['light'] = {
         'epsilon':np.sqrt(2e-10/alphaQED),
         'Umu4_2':8e-9,
         'Ud4_2':None,
+    },
+    'ticks': {
+        'mz': np.linspace(0.005, 0.095, 10),
+        'epsilon': np.geomspace(1e-5, 1e-1, 11),
+
+        'm4': np.linspace(0.0358, 1, 10),
+        'Umu4_2': np.geomspace(1e-10, 1e-4, 11),
     }
     # 'lower_bound_Vmu4_alpha_epsilon2': 10**(-21),
     # 'lower_bound_Vmu4': 10**(-10),
     # 'lower_bound_epsilon': 10**(-5),
 }
 
+
+likelihood_calculation_pars = {
+'heavy_mz_epsilon': { 
+    'name': 'mz_epsilon',
+    'hierarchy': 'heavy',
+    'analysis_name': 'tpc',
+    'pars': {
+        'm4':physics_parameters['heavy']['bp']['m4'],
+        'mz':physics_parameters['heavy']['ticks']['mz'],
+        'alpha_dark':physics_parameters['heavy']['bp']['alpha_dark'],
+        'epsilon':physics_parameters['heavy']['ticks']['epsilon'],
+        'Umu4_2':physics_parameters['heavy']['bp']['Umu4_2'],
+        'Ud4_2':physics_parameters['heavy']['bp']['Ud4_2'],
+    },
+    'additional_vars': 'cut_based',
+},
+'heavy_m4_Umu4_2': { 
+    'name': 'm4_Umu4_2',
+    'hierarchy': 'heavy',
+    'analysis_name': 'tpc',
+    'pars': {
+        'm4':physics_parameters['heavy']['ticks']['m4'],
+        'mz':physics_parameters['heavy']['bp']['mz'],
+        'alpha_dark':physics_parameters['heavy']['bp']['alpha_dark'],
+        'epsilon':physics_parameters['heavy']['bp']['epsilon'],
+        'Umu4_2':physics_parameters['heavy']['ticks']['Umu4_2'],
+        'Ud4_2':physics_parameters['heavy']['bp']['Ud4_2'],
+    },
+    'additional_vars': 'cut_based',
+},
+'light_mz_epsilon': { 
+    'name': 'mz_epsilon',
+    'hierarchy': 'light',
+    'analysis_name': 'nueccqe_fgd',
+    'pars': {
+        'm4':physics_parameters['light']['bp']['m4'],
+        'mz':physics_parameters['light']['ticks']['mz'],
+        'alpha_dark':physics_parameters['light']['bp']['alpha_dark'],
+        'epsilon':physics_parameters['light']['ticks']['epsilon'],
+        'Umu4_2':physics_parameters['light']['bp']['Umu4_2'],
+        'Ud4_2':physics_parameters['light']['bp']['Ud4_2'],
+    },
+    'additional_vars': 'cut_based',
+},
+'light_m4_Umu4_2': { 
+    'name': 'm4_Umu4_2',
+    'hierarchy': 'light',
+    'analysis_name': 'nueccqe_fgd',
+    'pars': {
+        'm4':physics_parameters['light']['ticks']['m4'],
+        'mz':physics_parameters['light']['bp']['mz'],
+        'alpha_dark':physics_parameters['light']['bp']['alpha_dark'],
+        'epsilon':physics_parameters['light']['bp']['epsilon'],
+        'Umu4_2':physics_parameters['light']['ticks']['Umu4_2'],
+        'Ud4_2':physics_parameters['light']['bp']['Ud4_2'],
+    },
+    'additional_vars': 'cut_based',
+}
+}
 # bp_h1 = {
 #     'm4':0.1,
 #     'mz':1.25,
@@ -77,14 +154,21 @@ n_lead_layers = 14
 p0d_dimensions = [210.3, 223.9, p0d_length]
 
 tpc_fiducial_volume_dimensions = [170, 196, 56.3]
-tpc_fiducial_volume_gap = 16 #maybe 15.5
+tpc_fiducial_volume = tpc_fiducial_volume_dimensions[0]*\
+                      tpc_fiducial_volume_dimensions[1]*\
+                      tpc_fiducial_volume_dimensions[2]
 
-tpc_fiducial_volume_endpoints = [[(p0d_dimensions[0] - tpc_fiducial_volume_dimensions[0])/2, 
-                                  (p0d_dimensions[0] + tpc_fiducial_volume_dimensions[0])/2],
-                                 [(p0d_dimensions[1] - tpc_fiducial_volume_dimensions[1])/2, 
-                                  (p0d_dimensions[1] + tpc_fiducial_volume_dimensions[1])/2],
-                                 [p0d_dimensions[2] + tpc_fiducial_volume_gap,
-                                  p0d_dimensions[2] + tpc_fiducial_volume_gap + tpc_fiducial_volume_dimensions[2]]]
+tpc_fiducial_volume_gap_x = (p0d_dimensions[0] - tpc_fiducial_volume_dimensions[0])/2
+tpc_fiducial_volume_gap_y = (p0d_dimensions[1] - tpc_fiducial_volume_dimensions[1])/2
+tpc_fiducial_volume_gap_z_begin = 16 #maybe 15.5
+tpc_fiducial_volume_gap_z_end = tpc_length - tpc_fiducial_volume_gap_z_begin - tpc_fiducial_volume_dimensions[2]
+
+tpc_fiducial_volume_endpoints = [[tpc_fiducial_volume_gap_x, 
+                                  tpc_fiducial_volume_gap_x + tpc_fiducial_volume_dimensions[0]],
+                                 [tpc_fiducial_volume_gap_y, 
+                                  tpc_fiducial_volume_gap_y + tpc_fiducial_volume_dimensions[1]],
+                                 [p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin,
+                                  p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin + tpc_fiducial_volume_dimensions[2]]]
 
 detector_splitting = {0: [0, 30.5],
                       1: [30.5, 209.6],
@@ -102,7 +186,7 @@ geometry_material = {
     'copper': [1],
     'zinc': [1],
     'lead': [0, 2],
-    # 'argon': [3, 4, 5],
+    'argon': [3, 4, 5],
 }
 
 atomic_mass_gev = {
@@ -112,7 +196,7 @@ atomic_mass_gev = {
     'copper': 59.637921,
     'zinc': 61.35913,
     'lead': 194.4572,
-    # 'argon': 37.54 ,
+    'argon': 37.54 ,
 }
 
 cuts_dict = {
@@ -122,23 +206,8 @@ cuts_dict = {
     'cut4' : r'$p_{ee}$ > 0.15',
 }
 
-# fgd_mass_full = 1848.6 * 1e-9 * 184**2  * 15
-# fgd_bin_centers = (fgd_binning[1:] + fgd_binning[:-1])/2
-
-# # selection = 'carbon'
-# # ratio_fgd_mass_p0d_carbon = fgd_mass / mass_material['carbon']
-
-# # upgrade
-# fgd1_fid_volume = 174.9 * 174.9 * 14.4
-# fgd1_fid_volume_gap = 5.75
-# ratio_fgd2_fgd1 = 1
-# super_fgd_volume = (192 - fgd1_fid_volume_gap) * (192 - fgd1_fid_volume_gap) * 56
-
-# # total_pot_fgd_analysis = pot_case_flux['light']['FHC'] + pot_case_flux['light']['RHC'] #nue CCQE
-# total_pot_fgd_analysis = pot_case_flux['light']['FHC'] #single photon
-# pot_before_upgrade = 4e21
-# pot_after_upgrade = 16e21
-# total_pot = pot_before_upgrade + pot_after_upgrade
-
-# fgd_sensitivity_scale_factor = (1 + ratio_fgd2_fgd1) * total_pot/total_pot_fgd_analysis +\
-#                                super_fgd_volume * pot_after_upgrade / (fgd1_fid_volume * total_pot_fgd_analysis)
+default_kde_pars = {
+    'distance': 'log',
+    'smoothing': [0.1, 0.1], 
+    'kernel': 'epa'
+}

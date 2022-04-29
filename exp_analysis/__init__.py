@@ -12,7 +12,7 @@ pyximport.install(
 
 # Handling four vectors
 from . import fourvec # python only
-from . import Cfourvec as Cfv # cython
+# from . import Cfourvec as Cfv # cython
 
 # Analysis and plotting modules 
 

@@ -70,9 +70,11 @@ def Tinv(v4, beta, theta, phi):
 
 
 def cos_opening_angle(theta1, phi1, theta2, phi2):
-    return np.sin(theta1)*np.cos(phi1) * np.sin(theta2)*np.cos(phi2) +\
+    aux = np.sin(theta1)*np.cos(phi1) * np.sin(theta2)*np.cos(phi2) +\
            np.sin(theta1)*np.sin(phi1) * np.sin(theta2)*np.sin(phi2) +\
            np.cos(theta1)*np.cos(theta2)
+    #remove values >1 or <-1 becuase of numerical precision
+    return np.where(aux>1,1, np.where(aux<-1,-1, aux))
 
 def inv_mass_massless(energy1, energy2, cos_open_angle):
     return np.sqrt(2 * energy1 * energy2 * (1 - cos_open_angle))
