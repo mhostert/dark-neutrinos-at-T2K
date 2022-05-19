@@ -1,71 +1,88 @@
 import gc
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from matplotlib import rcParams
+from matplotlib import patches
 from scipy import interpolate
 import scipy.stats
 
-from parameters_dict import likelihood_levels_2d
+from parameters_dict import likelihood_levels_2d, physics_parameters
 from analyses_dict import analyses
 from exp_analysis_class import compute_likelihood_from_retrieved
 
 from other_limits.Nlimits import *
 from other_limits.DPlimits import *
 
-# from scipy.integrate import quad
+from math import floor, log10
 
+def fexp(f):
+    return int(floor(log10(abs(f)))) if f != 0 else 0
 
-# from matplotlib import rc, rcParams
-# from matplotlib.pyplot import *
-# from matplotlib.legend_handler import HandlerLine2D
-# import matplotlib.colors as colors
-# import scipy.ndimage as ndimage
+def fman(f):
+    return f/10**fexp(f)
 
-
-fsize = 12
+fsize = 12   
 def set_plot_style():
-    # rcParams['text.usetex'] = True
-    rcParams['text.usetex'] = False
+    rcParams['text.usetex'] = True
     rcParams['font.family'] = 'serif'
-    rcParams['font.serif'] = ['Computer Modern Roman', 'serif']
+    rcParams['font.serif'] = ['computer modern roman', 'serif']
     rcParams['figure.figsize'] = (1.2*3.7,1.2*2.3617)
-    # rcParams['lines.linewidth'] = 1.0
     rcParams['hatch.linewidth'] = 0.3
-    # rcParams['axes.linewidth'] = 0.4
     rcParams['axes.labelsize'] = fsize
-    # rcParams['xtick.direction'] = 'in'
-    # rcParams['xtick.major.width'] = 0.4
-    # rcParams['xtick.minor.width'] = 0.4
     rcParams['xtick.labelsize'] = fsize
-    # rcParams['ytick.direction'] = 'in'
-    # rcParams['ytick.major.width'] = 0.4
-    # rcParams['ytick.minor.width'] = 0.4
     rcParams['ytick.labelsize'] = fsize
+    rcParams['axes.titlesize'] = 10
     rcParams['legend.frameon'] = False
     rcParams['legend.fontsize'] = 0.8*fsize
-    rcParams['legend.loc'] = 'lower right'
-    # rcParams["text.latex.preamble"] = r'''
-    #     \usepackage{amsmath,amssymb,amsthm}
-    #     \usepackage{siunitx}
-    # '''
+    rcParams['legend.loc'] = 'best'
+
+def set_canvas_basic():
+    fig = plt.figure()
+    axes_form = [0.17,0.17,0.79,0.74]
+    ax = fig.add_axes(axes_form)
+    
+    return ax
 
 def set_canvas(plot_type):
-    fig = plt.figure()
-    axes_form = [0.14,0.15,0.82,0.76]
-    ax = fig.add_axes(axes_form)
-    # ax.set_xlim(X_MIN, X_MAX)
-    # ax.set_ylim(Y_MIN, Y_MAX)
+    ax = set_canvas_basic()
     ax.set_xscale('log')
     ax.set_yscale('log')
-    ax.set_title('Preliminary', loc='right', style='italic')
+    # ax.set_title('Preliminary', loc='right', style='italic')
     
     if plot_type == 'mz_epsilon':
-        ax.set_xlabel(r'$m_{Z^\prime}$ [GeV]')
+        ax.set_xlabel(r'$m_{Z^{\prime}}$ [GeV]')
         ax.set_ylabel(r'$\varepsilon$')
     elif plot_type == 'm4_Umu4_2':
         ax.set_xlabel(r'$m_{N}$ [GeV]')
-        ax.set_ylabel(r'$|U_{\mu N}|^2$')
+        ax.set_ylabel(r'$|V_{\mu N}|^2$')
     return ax
 
+def set_plot_title(ax=None, m4=None, mz=None, alpha_dark=None, epsilon=None, Umu4_2=None, Ud4_2=None):
+    if ax is None:
+        ax = plt.gca()
+    
+    title_string_elements = []
+    if m4 is not None:
+        title_string_elements.append(f'$m_N = {m4}$ GeV')
+    if mz is not None:
+        title_string_elements.append(f'$m_{{Z^{{\prime}}}} = {mz}$ GeV')
+    if alpha_dark is not None:
+        title_string_elements.append(f'$\\alpha_D = {alpha_dark}$')
+    if epsilon is not None:
+        if epsilon > 1e-2:
+            title_string_elements.append(f'$\\varepsilon = {epsilon:.2g}$')
+        else:
+            title_string_elements.append(f'$\\varepsilon = {fman(epsilon):.2g}\\times 10^{{{fexp(epsilon)}}}$')
+    if Umu4_2 is not None:
+        title_string_elements.append(f'$|V_{{\mu N}}|^2 = {fman(Umu4_2):.2g}\\times 10^{{{fexp(Umu4_2)}}}$')
+    if Ud4_2 is not None:
+        title_string_elements.append(f'$|V_{{N}}|^2 = {Ud4_2}$')
+    
+    if len(title_string_elements) > 4:
+        title_string_elements[int(len(title_string_elements)/2)] = ('\n' + title_string_elements[int(len(title_string_elements)/2)])
+    
+    ax.set_title(', '.join(title_string_elements), loc='left')
+    
 def compute_likes(retrieved, my_exp_analyses, hierarchy, D_or_M, analysis_names, analyses=analyses):
     likes = {}
     mus = {}
@@ -99,12 +116,17 @@ def basic_contour_plot(case_vars,
                        retrieved, 
                        likes,
                        analysis_names,
+                       hierarchy='heavy',
                        save_name=None,
                        save_folder=None,
                        ax=None,
                        legend_loc='best',
                        colors=['deepskyblue', 'blue', 'navy'],
-                       linestyles=['-', '-', '-'], levels=[likelihood_levels_2d[0.9]]):
+                       fill=None,
+                       poster_setting=False,
+                       linestyles=['-', '-', '-'], 
+                       legend_outside=False,
+                       levels=[likelihood_levels_2d[0.9], np.inf]):
     contours = {}
     if ax is None:
         ax = set_canvas(f'{case_vars[0]}_{case_vars[1]}')
@@ -114,20 +136,50 @@ def basic_contour_plot(case_vars,
                                              likes[analysis_name].T, 
                                              levels=levels, 
                                              colors=[colors[i]], linestyles=[linestyles[i]])
+        if fill is not None:
+            if fill[i]:
+                ax.contourf(retrieved['FHC']['pars'][case_vars[0]], 
+                                                 retrieved['FHC']['pars'][case_vars[1]], 
+                                                 likes[analysis_name].T, 
+                                                 levels=levels, 
+                                                 colors=[colors[i]], alpha=0.2)
     ax.loglog()
+    
+    if not poster_setting:
+        aux = ax.plot(physics_parameters[hierarchy]['bp'][case_vars[0]],
+                physics_parameters[hierarchy]['bp'][case_vars[1]],
+                'r*',
+                label='Benchmark point')
+        set_plot_title(ax, **{key:value for (key,value) in retrieved['FHC']['pars'].items() if key not in case_vars})
+    else:
+        ax.set_title('Preliminary', loc='right', style='italic', fontsize=fsize*0.9)
     
     handles, labels = ax.get_legend_handles_labels()
     handles += [cntr.legend_elements()[0][0] for cntr in contours.values()]
     labels += contours.keys()
+    if not legend_outside:
+        ax.legend(handles,
+                  labels,
+                   frameon=False,
+                   loc=legend_loc)
+    else:
+        ax.legend(handles,
+                  labels,
+                  frameon=False,
+                  bbox_to_anchor=(1.8, 0.2))
     
-    ax.legend(handles,
-              labels,
-               frameon=False,
-               loc=legend_loc)
+    nticks = 10
+    maj_loc = ticker.LogLocator(numticks=nticks)
+    min_loc = ticker.LogLocator(subs='all', numticks=nticks)
+    ax.yaxis.set_major_locator(maj_loc)
+    ax.yaxis.set_minor_locator(min_loc)
     if save_name is not None:
-        plt.savefig(save_folder + f'{case_vars[0]}_{case_vars[1]}_{save_name}.pdf', bbox_inches='tight')
-
-def mz_epsilon_heavy_plot(ax, m4, mz_ticks):
+        if not poster_setting:
+            plt.savefig(save_folder + f'{hierarchy}_{case_vars[0]}_{case_vars[1]}_{save_name}.pdf')
+        else:
+            plt.savefig(save_folder + f'{hierarchy}_{case_vars[0]}_{case_vars[1]}_{save_name}.png', dpi=500, transparent=True)
+        
+def mz_epsilon_heavy_plot(ax, m4, mz_ticks, poster_setting=False):
     FNAL_run_combined = gminus2.weighted_average(gminus2.DELTA_FNAL, gminus2.DELTA_BNL)
 
     energy, one_over_alpha = np.loadtxt("./other_limits/DPlimits/digitized/alphaQED/alpha_QED_running_posQ2.dat", unpack = True)
@@ -138,7 +190,7 @@ def mz_epsilon_heavy_plot(ax, m4, mz_ticks):
     gminus2_sigmas = [2.]
     gminus2_colors = ['dodgerblue']
 
-    semi_visible_DP.plot_constraints(ax, mz_ticks[0], mz_ticks[-1], separated=False)
+    semi_visible_DP.plot_constraints(ax, mz_ticks[0], mz_ticks[-1], separated=False, poster_setting=poster_setting)
 
     gminus2.compute_and_plot_gminus2_region(
         ax = ax,
@@ -147,49 +199,28 @@ def mz_epsilon_heavy_plot(ax, m4, mz_ticks):
         error = FNAL_run_combined[1],
         factor = FACTOR,
         sigmas = gminus2_sigmas,
-        colors = gminus2_colors
+        colors = gminus2_colors,
     )
 
-#     ax.axvline(x=m4, color='black', lw=1)
-#     ax.annotate('', xy=(2e-2, 1.2e-4), xytext=(m4, 1.2e-4), 
-#                 arrowprops=dict(arrowstyle="-|>", mutation_scale=7, color='black', lw=1))
-
-#     ax.annotate(r"$m_{4} > m_{Z'}$"+'\nN short lived\nno constraint', 
-#                 xy=(9e-2, 3e-5), 
-#                 fontsize=0.7*fsize, 
-#                 color='black', 
-#                 horizontalalignment='right')
-    ax.annotate(r'$(g-2)_\mu$', xy=(2e-2,1.6e-3), rotation=4, fontsize=0.7*fsize, color='darkblue')
+    ax.annotate(r'$(g-2)_\mu$', xy=(2e-1,4.5e-3), rotation=7, fontsize=0.7*fsize, color='darkblue')
 
     # miniboone ROI
     plt.fill_between([1, 2], [2e-3, 2e-3], [2.5e-2, 2.5e-2], color='green', alpha=0.4)
-    ax.annotate('MiniBooNE\nROI', xy=(2.3, 5e-3), fontsize=0.7*fsize, color='green')
-
-    ax.set_title('Preliminary', loc='right', style='italic')
+    ax.annotate('MiniBooNE\nROI', xy=(2.3, 2e-3), fontsize=0.7*fsize, color='green')
+    
     ax.set_xlim(mz_ticks[0], mz_ticks[-1])
     
 def m4_Umu4_2_heavy_plot(ax, m4_ticks):
-    # usqr_bound = umu4.USQR(m4_ticks)
     usqr_bound_inv = umu4.USQR_inv(m4_ticks)
 
-    ##############################################
-    # Constraints on U\alpha4^2
-    # Minimal HNL -- no Zprime and all that
-    # ax.plot(MN, usqr_bound, color='navy', )
-    # ax.fill_between(MN, usqr_bound, np.ones(np.size(MN)), 
-    #             fc='dodgerblue', ec='None', lw =0.0, alpha=0.5, label=r'all bounds')
-
-    # most model independent bounds
-    # ax.plot(MN, usqr_bound_inv, color='navy', lw=1)
     ax.fill_between(m4_ticks, usqr_bound_inv, np.ones(np.size(m4_ticks)), 
                 fc='lightgrey', ec='None', lw =0.0, alpha=0.95)
-    ax.annotate('Model\nindependent\nconstraints', xy=(0.0012, 0.02), rotation=0, fontsize=0.7*fsize, color='black')
+    ax.annotate('Model\nindependent\nconstraints', xy=(0.0012, 3e-4), rotation=0, fontsize=0.7*fsize, color='black')
 
-    # MiniBooNE ROI
     plt.fill_between([0.100, 0.300], [1e-7, 1e-7], [1e-5, 1e-5], color='green', alpha=0.4)
-    ax.annotate('MiniBooNE\nROI', xy=(0.4, 4e-7), fontsize=0.7*fsize, color='green')
-
-    # ax.set_yticks([1e-10, 1e-8, 1e-6, 1e-4, 1e-2, 1])
+    ax.annotate('MiniBooNE\nROI', xy=(0.4, 1e-7), fontsize=0.7*fsize, color='green')
+    ax.set_xlim(m4_ticks[0], m4_ticks[-1])
+    ax.set_ylim(1e-10, 1e-2)
 
 def plot_band(ax, mheavy, y, nevents, chi2, color_l, color, ls=1, alpha=0.1, label='', Nint=100):
     mheavyl = np.log10(mheavy)
@@ -201,8 +232,6 @@ def plot_band(ax, mheavy, y, nevents, chi2, color_l, color, ls=1, alpha=0.1, lab
                                     (xi[None,:], yi[:,None]),\
                                     method='linear', fill_value="Nan", rescale=True)
 
-    # zi_g = scipy.ndimage.filters.gaussian_filter(zi, 0.8, mode='nearest', order = 0, cval=0)
-    # lw = 1.3
     Contour = ax.contour(xi, yi, zi, [4.61], colors=['None'], linewidths=0, alpha=alpha)
 
     l1 = Contour.collections[0].get_paths()[0].vertices  # grab the 1st path
@@ -215,54 +244,34 @@ def plot_band(ax, mheavy, y, nevents, chi2, color_l, color, ls=1, alpha=0.1, lab
     return l
     
 def m4_Umu4_2_light_plot(ax):
-    # model independent limits
-    # ax.annotate(r"Excluded", xy=(0.12,0.04), fontsize=fsize, color = 'black' )
     x,y = np.loadtxt("../digitized/Pedros_paper/experimental_constraints.dat", unpack=True)
     ax.fill_between(x, np.sqrt(y), np.ones(np.size(y)), hatch='\\\\\\\\\\\\\\\\',facecolor='None', alpha=0.5, lw=0.0)
 
-    # fsize = 10
-    # # S_GAUSS = 0.1
-    # rc('text', usetex=True)
-    # params={'axes.labelsize':fsize,
-    #         'xtick.labelsize':fsize,
-    #         'ytick.labelsize':fsize,
-    #         'figure.figsize':(6, 5)}
-    #         # 'figure.figsize':(3.39,1.2*2.3617)}
-    # rc('font', **{'family':'serif', 'serif': ['computer modern roman']})
-    # rcParams.update(params)
-    # axes_form  = [0.18,0.16,0.77,0.75]
-
-    # fig = plt.figure()
-    # ax = fig.add_axes(axes_form)
-
-    
-
-    # proxy2 = plt.Rectangle((0,0), 1, 1, fc = "orange", ec=None, alpha=ALPHA_FIT, lw=0.7) 
-    # proxy1 = plt.Rectangle((0,0), 1, 1, fc = "#EFFF00", ec=None, alpha=ALPHA_FIT, lw=0.7) 
-
-    # leg = ax.legend([proxy1,proxy2], [r"$1 \sigma$", r"$3 \sigma$"], fontsize=fsize*0.85, frameon=False, loc=(0.078, 0.470), ncol=1)
-    # ax.add_artist(leg);
-    # ax.annotate('MiniBooNE', xy=(0.038,0.0016), fontsize=0.9*fsize, color = 'black' )
-    # ax.annotate('energy fit', xy=(0.043,0.001), fontsize=0.9*fsize, color = 'black' )
-
-    # plt.setp(leg.get_title(),fontsize=fsize*0.85)
-    ALPHA_FIT = 0.9
+    ALPHA_FIT = 0.4
     xu,yu = np.loadtxt("../digitized/Pedro_v3/upper_3_sigma.dat", unpack=True)
     xl,yl = np.loadtxt("../digitized/Pedro_v3/low_3_sigma.dat", unpack=True)
     x = np.logspace(np.log10(0.042), np.log10(0.68), 100)
     up = np.interp(x,xu,yu)
     low = np.interp(x,xl,yl)
-    ax.fill_between(x, low,up, facecolor='orange', lw=0.0, alpha=ALPHA_FIT, label=r'$3 \, \sigma$')
-    ax.fill_between(x, low,up, edgecolor='black', facecolor="None", lw=0.1, linestyle = '-', alpha=ALPHA_FIT)
+    ax.fill_between(x, low,up, facecolor='green', lw=0.0, alpha=ALPHA_FIT)
+    ax.annotate(r'Best fit $3 \, \sigma$', xy=(0.06, 1.3e-9), fontsize=0.7*fsize, color='green')
+    # ax.fill_between(x, low,up, edgecolor='black', facecolor="None", lw=0.1, linestyle = '-', alpha=ALPHA_FIT)
 
+    # ax.fill_between(x, low,up, facecolor='orange', lw=0.0, alpha=ALPHA_FIT, label=r'Best fit $3 \, \sigma$')
+    # ax.fill_between(x, low,up, edgecolor='black', facecolor="None", lw=0.1, linestyle = '-', alpha=ALPHA_FIT)
+    
     xu,yu = np.loadtxt("../digitized/Pedro_v3/upper_1_sigma.dat", unpack=True)
     xl,yl = np.loadtxt("../digitized/Pedro_v3/low_1_sigma.dat", unpack=True)
     x = np.logspace(np.log10(0.068), np.log10(0.21), 100)
     up = np.interp(x,xu,yu)
     low = np.interp(x,xl,yl)
-    ax.fill_between(x, low,up, facecolor='#EFFF00', lw=0.7, alpha=ALPHA_FIT, label=r'$1 \, \sigma$')
-    ax.fill_between(x, low,up, edgecolor='black', facecolor="None", lw=0.1, linestyle = '-', alpha=ALPHA_FIT)
-
+    ax.fill_between(x, low,up, facecolor='yellow', lw=0.7, alpha=ALPHA_FIT)
+    ax.annotate(r'Best fit $1 \, \sigma$', xy=(0.06, 3.4e-9), fontsize=0.7*fsize, color='yellow')
+    # ax.fill_between(x, low,up, edgecolor='black', facecolor="None", lw=0.1, linestyle = '-', alpha=ALPHA_FIT)
+    
+    # ax.fill_between(x, low,up, facecolor='#EFFF00', lw=0.7, alpha=ALPHA_FIT, label=r'Best fit $1 \, \sigma$')
+    # ax.fill_between(x, low,up, edgecolor='black', facecolor="None", lw=0.1, linestyle = '-', alpha=ALPHA_FIT)
+    
     sensitivity_LE = np.load("../digitized/minerva_charm_limits/sensitivity_LE_vAugust2019.npy")
     sensitivity_ME = np.load("../digitized/minerva_charm_limits/sensitivity_ME_vAugust2019.npy")
     sensitivity_CH = np.load("../digitized/minerva_charm_limits/sensitivity_CH_vAugust2019.npy")
@@ -279,17 +288,18 @@ def m4_Umu4_2_light_plot(ax):
     CHARM_COLOR = "dodgerblue"
     CHARM_COLOR_L = "dodgerblue"
 
-    MINERVA_COLOR = "green"
-    MINERVA_COLOR_L = "darkgreen"
+    # MINERVA_COLOR = "green"
+    # MINERVA_COLOR_L = "darkgreen"
 
-    ME_COLOR = "firebrick"
-    ME_COLOR_L = "darkred"
+    ME_COLOR = "navy"
+    ME_COLOR_L = "navy"
 
     # shouldn't this be the sum of nevents_CH + nevents_CH_bar
-    l1 = plot_band(ax, mheavy_CH, Umu42_CH, nevents_CH, chi2_CH, CHARM_COLOR_L, CHARM_COLOR, label='CHARM-II')
+    l1 = plot_band(ax, mheavy_CH, Umu42_CH, nevents_CH, chi2_CH, CHARM_COLOR_L, CHARM_COLOR)
+    ax.annotate(r'CHARM-II', xy=(0.4, 8e-9), fontsize=0.7*fsize, color=CHARM_COLOR_L)
     # plot_band(ax, mheavy_LE, Umu42_LE, nevents_LE, chi2_LE, label, MINERVA_COLOR_L, MINERVA_COLOR)
-    l3 = plot_band(ax, mheavy_ME, Umu42_ME, nevents_ME, chi2_ME, ME_COLOR_L, ME_COLOR, label='MINERvA ME')
-
+    l3 = plot_band(ax, mheavy_ME, Umu42_ME, nevents_ME, chi2_ME, ME_COLOR_L, ME_COLOR)
+    ax.annotate(r'MINER$\nu$A ME', xy=(0.43, 8e-8), fontsize=0.7*fsize, color=ME_COLOR_L)
     # ax.legend(frameon=False, handles=[l1,l3], fontsize=0.8*fsize, loc='lower right')
     # ax.legend(frameon=False, loc='lower right')
     ########################################
@@ -297,3 +307,51 @@ def m4_Umu4_2_light_plot(ax):
 
     # ax.plot(x, y, color='black', lw=0.5, hatch='///')
 
+def plot_data_from_analysis(ax, analysis, plot_data=True):
+    if analysis['var'] is not None:
+        binning = analysis['binning']
+    else:
+        binning = np.array([-1, 1])
+
+    bin_centers = np.atleast_1d((binning[:-1] + binning[1:])/2)
+    bin_width = binning[1] - binning[0]
+
+    analysis['mc'] = np.atleast_1d(analysis['mc'])
+    ax.bar(bin_centers, 
+           analysis['mc'], 
+            width=bin_width,
+            alpha=0.2, color='C0', label='SM expectation')
+    
+    for i, (m, v) in enumerate(zip(bin_centers, analysis['mc'])):
+        e = v * analysis['syst']
+        if i == 0:
+            ax.add_patch(
+                patches.Rectangle(
+                    (m - bin_width/2, v - e),
+                    bin_width,
+                    2 * e,
+                    hatch="\\\\\\\\\\",
+                    fill=False,
+                    linewidth=0,
+                    alpha=0.4,
+                    label='systematics',
+                )
+            )
+        else:
+            ax.add_patch(
+                patches.Rectangle(
+                    (m - bin_width/2, v - e),
+                    bin_width,
+                    2 * e,
+                    hatch="\\\\\\\\\\",
+                    fill=False,
+                    linewidth=0,
+                    alpha=0.4,
+                )
+            )
+    
+    if plot_data:
+        analysis['data'] = np.atleast_1d(analysis['data'])
+        ax.errorbar(bin_centers, analysis['data'], yerr=np.sqrt(analysis['data']), fmt='k.', label='data')
+    
+    ax.set_ylabel(r'Number of entries')

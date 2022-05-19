@@ -146,9 +146,9 @@ class experiment():
 			self.EMAX = 20.0
 			# Detector targets
 			# self.POTS = 12.34e20
-			self.MATERIALS_NAME=['H1', 'C12', 'Ar']
-			self.MATERIALS_A=[1, 12, 40]
-			self.MATERIALS_Z=[1, 6, 18]
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Ar']
+			self.MATERIALS_A=[1, 12, 16, 40]
+			self.MATERIALS_Z=[1, 6, 8, 18]
 			self.FLAVOURS = [pdg.numu]
 
 		elif self.EXP_FLAG == "nd280_nubar_light":
@@ -158,9 +158,9 @@ class experiment():
 			self.EMAX = 20.0
 			# Detector targets
 			# self.POTS = 12.34e20
-			self.MATERIALS_NAME=['H1', 'C12', 'Ar']
-			self.MATERIALS_A=[1, 12, 40]
-			self.MATERIALS_Z=[1, 6, 18]
+			self.MATERIALS_NAME=['H1', 'C12', 'O16', 'Ar']
+			self.MATERIALS_A=[1, 12, 16, 40]
+			self.MATERIALS_Z=[1, 6, 8, 18]
 			self.FLAVOURS = [pdg.numubar]
             
 		else:

@@ -258,43 +258,41 @@ class exp_analysis(object):
     def compute_pot_ntarget_weights(df, ntarget_per_material, pot):
         out_weights = np.zeros(len(df))
         for material, ntarget in ntarget_per_material.items():
-            # ntarget_material = mass*ton2grams/molar_mass[material]*mol2natoms
-            # material_mask = (df['recoil_mass', ''] == gev_mass[material])
-            # if material_mask.sum() == 0:
-            #     continue
-            # df[material, ''] = material_mask
-            # df.loc[material_mask, ('actual_weight', '')] = df['generator_weight', ''][material_mask] * ntarget_material[material] * pot
-            # out_weights[df[material]] = df['generator_weight'][df[material]] * ntarget * pot
             out_weights[df[material]] = ntarget * pot
         return out_weights
 
     @staticmethod
     def compute_interaction_point(df):
         rg = np.random.default_rng()
-
-        df['int_point', 'x'] = rg.uniform(0, p0d_dimensions[0], len(df))
-        df['int_point', 'y'] = rg.uniform(0, p0d_dimensions[1], len(df))
         
         for material in atomic_mass_gev.keys():
             material_mask = df[material, '']
-            region = rg.choice(geometry_material[material], len(df))
+            region = rg.choice(geometry_material[material], len(df), p=mass_weights[material])
 
-            for splitting, boundaries in detector_splitting.items():
+            for splitting in detector_splitting_x.keys():
                 region_mask = (region == splitting)
                 total_mask = material_mask & region_mask
-                df.loc[total_mask, ('int_point', 'z')] = rg.uniform(*boundaries, total_mask.sum())
-                    
+                df.loc[total_mask, ('int_point', 'x')] = rg.uniform(*(detector_splitting_x[splitting]), total_mask.sum())
+                df.loc[total_mask, ('int_point', 'y')] = rg.uniform(*(detector_splitting_y[splitting]), total_mask.sum())
+                df.loc[total_mask, ('int_point', 'z')] = rg.uniform(*(detector_splitting_z[splitting]), total_mask.sum())
+                
     @staticmethod
     def is_point_in_tpc(x, y, z):
         is_in_x = (tpc_fiducial_volume_endpoints[0][0] < x) & (x < tpc_fiducial_volume_endpoints[0][1])
         is_in_y = (tpc_fiducial_volume_endpoints[1][0] < y) & (y < tpc_fiducial_volume_endpoints[1][1])
         is_in_z_tpc1 = (tpc_fiducial_volume_endpoints[2][0] < z) & (z < tpc_fiducial_volume_endpoints[2][1])
-        z_tpc2 = z - tpc_length - fgd_length
+        z_tpc2 = z - tpc_outer_volume[2] - fgd_outer_volume[2]
         is_in_z_tpc2 = (tpc_fiducial_volume_endpoints[2][0] < z_tpc2) & (z_tpc2 < tpc_fiducial_volume_endpoints[2][1])
-        z_tpc3 = z - 2 * (tpc_length - fgd_length)
+        z_tpc3 = z - 2 * (tpc_outer_volume[2] - fgd_outer_volume[2])
         is_in_z_tpc3 = (tpc_fiducial_volume_endpoints[2][0] < z_tpc3) & (z_tpc3 < tpc_fiducial_volume_endpoints[2][1])
         return is_in_x & is_in_y & (is_in_z_tpc1 | is_in_z_tpc2 | is_in_z_tpc3)
-        
+    
+    @staticmethod
+    def is_point_in_tpc2(x, y):
+        is_in_x = (tpc_fiducial_volume_endpoints[0][0] <= x) & (x <= tpc_fiducial_volume_endpoints[0][1])
+        is_in_y = (tpc_fiducial_volume_endpoints[1][0] <= y) & (y <= tpc_fiducial_volume_endpoints[1][1])
+        return is_in_x & is_in_y
+
     @staticmethod
     def compute_decay_integral(df):
         df['pdark_dir', 'x'] = df['pdark', 'x']/df['p3dark', '']
@@ -305,12 +303,20 @@ class exp_analysis(object):
         t_0_0 = (tpc_fiducial_volume_endpoints[2][0] - int_point_z)/df['pdark_dir', 'z']
         t_0_1 = (tpc_fiducial_volume_endpoints[2][1] - int_point_z)/df['pdark_dir', 'z']
         
-        t_1_0 = (tpc_fiducial_volume_endpoints[2][0] + tpc_length + fgd_length - int_point_z)/df['pdark_dir', 'z']
-        t_1_1 = (tpc_fiducial_volume_endpoints[2][1] + tpc_length + fgd_length - int_point_z)/df['pdark_dir', 'z']
+        t_1_0 = (tpc_fiducial_volume_endpoints[2][0] + tpc_outer_volume[2] + fgd_outer_volume[2] - int_point_z)/df['pdark_dir', 'z']
+        t_1_1 = (tpc_fiducial_volume_endpoints[2][1] + tpc_outer_volume[2] + fgd_outer_volume[2] - int_point_z)/df['pdark_dir', 'z']
         
-        t_2_0 = (tpc_fiducial_volume_endpoints[2][0] + 2 * (tpc_length + fgd_length) - int_point_z)/df['pdark_dir', 'z']
-        t_2_1 = (tpc_fiducial_volume_endpoints[2][1] + 2 * (tpc_length + fgd_length) - int_point_z)/df['pdark_dir', 'z']
-    
+        t_2_0 = (tpc_fiducial_volume_endpoints[2][0] + 2 * (tpc_outer_volume[2] + fgd_outer_volume[2]) - int_point_z)/df['pdark_dir', 'z']
+        t_2_1 = (tpc_fiducial_volume_endpoints[2][1] + 2 * (tpc_outer_volume[2] + fgd_outer_volume[2]) - int_point_z)/df['pdark_dir', 'z']
+
+        exp_integral_points = np.stack([t_0_0, t_0_1, t_1_0, t_1_1, t_2_0, t_2_1,], axis=1)
+        exp_integral_points = np.where(df['pdark_dir', 'z'].values[..., np.newaxis] >= 0,
+                                       exp_integral_points,
+                                       np.flip(exp_integral_points, axis=1))
+        exp_integral_points = np.where(exp_integral_points > 0,
+                               exp_integral_points,
+                               0)
+
         # now computing integral of the exponential in the volume
         poe_x_min = (tpc_fiducial_volume_endpoints[0][0] - df['int_point', 'x'])/df['pdark_dir', 'x']
         poe_x_max = (tpc_fiducial_volume_endpoints[0][1] - df['int_point', 'x'])/df['pdark_dir', 'x']
@@ -319,14 +325,6 @@ class exp_analysis(object):
         
         # I want to check this next block
         poe_s = np.stack([poe_x_min, poe_x_max, poe_y_min, poe_y_max], axis=1)
-        
-        exp_integral_points = np.stack([t_0_0, t_0_1, t_1_0, t_1_1, t_2_0, t_2_1,], axis=1)
-        exp_integral_points = np.where(df['pdark_dir', 'z'].values[..., np.newaxis] >= 0,
-                                       exp_integral_points,
-                                       np.flip(exp_integral_points, axis=1))
-        exp_integral_points = np.where(exp_integral_points > 0,
-                               exp_integral_points,
-                               0)
         
         min_points = np.min(np.where(poe_s > 0, poe_s, np.inf), axis=1)
                  
@@ -343,7 +341,7 @@ class exp_analysis(object):
                                                    exp_integral_points[:, 5])
         for i in range(6):
             df[f'exp_integral_points_{i}'] = exp_integral_points[:,i]
-        
+
     @staticmethod
     def compute_ctau_integral_weights(df, ctau):
         ctau = np.asarray(ctau)
@@ -456,6 +454,7 @@ class exp_analysis(object):
     def compute_expectation(self, df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2,
                             ntarget_per_material, 
                             pot,
+                            external_ctau=False,
                             selection_query=None,
                             efficiency_factor=1,
                             distance=default_kde_pars['distance'], 
@@ -482,28 +481,37 @@ class exp_analysis(object):
         upscattering_weights = np.expand_dims(upscattering_weights, axis=[0, 1, 2, 6])
         
         # ctau weights
-        if self.hierarchy == 'heavy':
-            grid_m4, grid_mz, grid_Ud4_2, grid_alpha_dark, grid_epsilon = np.meshgrid(m4,
-                                                                                   mz,
-                                                                                   Ud4_2,
-                                                                                   alpha_dark,
-                                                                                   epsilon,
-                                                                                   indexing='ij')
-            ctaus = ctau_heavy(grid_m4, 
-                               grid_mz, 
-                               grid_alpha_dark * grid_Ud4_2 * alphaQED * grid_epsilon**2, 
-                               self.D_or_M)
-            ctaus = np.expand_dims(ctaus, axis=[5])
-            ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
-        elif self.hierarchy == 'light':
+        if external_ctau is False:
+            if self.hierarchy == 'heavy':
+                grid_m4, grid_mz, grid_Ud4_2, grid_alpha_dark, grid_epsilon = np.meshgrid(m4,
+                                                                                       mz,
+                                                                                       Ud4_2,
+                                                                                       alpha_dark,
+                                                                                       epsilon,
+                                                                                       indexing='ij')
+                ctaus = ctau_heavy(grid_m4, 
+                                   grid_mz, 
+                                   grid_alpha_dark * grid_Ud4_2 * alphaQED * grid_epsilon**2, 
+                                   self.D_or_M)
+                ctaus = np.expand_dims(ctaus, axis=[5])
+                ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
+            elif self.hierarchy == 'light':
+                ctaus = None
+                ctau_weights = np.ones(len(aux_df))
+                ctau_weights = np.expand_dims(ctau_weights, axis=list(range(1, 7)))
+        elif external_ctau is None:
             ctaus = None
             ctau_weights = np.ones(len(aux_df))
             ctau_weights = np.expand_dims(ctau_weights, axis=list(range(1, 7)))
+        else:
+            # ctau weights are in the position of Ud4_2
+            ctaus = np.expand_dims(external_ctau, axis=[1, 2, 3, 4, 5])
+            ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
             
         # kde weights
         kde_weights = self.kde_on_a_point(aux_df, np.stack(np.meshgrid(m4, mz, indexing='ij'), axis=-1),
                                          distance, smoothing, kernel)
-        kde_weights = np.expand_dims(kde_weights, axis=(3, 4, 5, 6))
+        kde_weights = np.expand_dims(kde_weights, axis=[3, 4, 5, 6])
         N_kde = np.count_nonzero(kde_weights, axis=0)
         
         all_weights = generator_weights *\

@@ -1,9 +1,30 @@
 import numpy as np
+from copy import deepcopy
 from const import alphaQED
 
 likelihood_levels_2d = {0.68: 2.3/2,
           0.9: 4.61/2,
           0.95: 5.99/2}
+
+atomic_mass_gev = {
+    'hydrogen': 0.9385,
+    'carbon': 11.262,
+    'oxygen': 15.016,
+    'copper': 59.637921,
+    'zinc': 61.35913,
+    'lead': 194.4572,
+    'argon': 37.54 ,
+}
+
+molar_mass = {
+    'hydrogen': 1.00784,
+    'carbon': 12.0107,
+    'oxygen': 15.999,
+    'copper': 63.546,
+    'zinc': 65.38,
+    'lead': 207.2,
+    'argon': 39.948
+}
 
 upper_bound_epsilon = 0.05 # model independent constraint on epsilon - probably we can push to 3.5%
 upper_bound_Umu4_2 = 0.03 # 
@@ -117,15 +138,6 @@ likelihood_calculation_pars = {
     'additional_vars': 'cut_based',
 }
 }
-# bp_h1 = {
-#     'm4':0.1,
-#     'mz':1.25,
-#     'Umu4_2':2.2e-7,
-#     'Ud4_2':1,
-#     'alpha_dark':0.4,
-#     'epsilon':2.1e-2,
-# }
-
 
 for physics_params in physics_parameters.values():
     physics_params['upper_bound_epsilon'] = upper_bound_epsilon
@@ -140,64 +152,159 @@ for physics_params in physics_parameters.values():
     physics_params['upper_bound_Valpha4_alpha_epsilon2'] = alphaQED *\
                                                         upper_bound_epsilon**2
 
+#####
+# Detector numbers
 
-    # physics_params['upper_bound_log10_Vmu4_alpha_epsilon2'] = np.log10(physics_params['upper_bound_Vmu4_alpha_epsilon2'])
-    # physics_params['lower_bound_log10_Vmu4_alpha_epsilon2'] = np.log10(physics_params['lower_bound_Vmu4_alpha_epsilon2'])
-    # physics_params['upper_bound_log10_Valpha4_alpha_epsilon2'] = np.log10(physics_params['upper_bound_Valpha4_alpha_epsilon2'])
+p0d_dimensions = [210.3, 223.9, 240]
 
-tpc_length = 100 #cm
-fgd_length = 36.5 #cm
-p0d_length = 240 #cm
-lead_layer_thickness = 0.45 #cm
-n_lead_layers = 14
+tpc_outer_volume = [210.3, 223.9, 100]
+tpc_active_volume = [186, 206, 78.1]
+tpc_fiducial_volume = [170, 196, 56.3]
 
-p0d_dimensions = [210.3, 223.9, p0d_length]
+fgd_outer_volume = [230, 240, 36.5]
+fgd_active_volume = [186.4, 186.4, 30.3]
+fgd_fiducial_volume = [174.9, 174.9, 28.76]
 
-tpc_fiducial_volume_dimensions = [170, 196, 56.3]
-tpc_fiducial_volume = tpc_fiducial_volume_dimensions[0]*\
-                      tpc_fiducial_volume_dimensions[1]*\
-                      tpc_fiducial_volume_dimensions[2]
+tpc_total_fiducial_volume = tpc_fiducial_volume[0]*tpc_fiducial_volume[1]*tpc_fiducial_volume[2]
+tpc_total_active_volume = tpc_active_volume[0]*tpc_active_volume[1]*tpc_active_volume[2]
 
-tpc_fiducial_volume_gap_x = (p0d_dimensions[0] - tpc_fiducial_volume_dimensions[0])/2
-tpc_fiducial_volume_gap_y = (p0d_dimensions[1] - tpc_fiducial_volume_dimensions[1])/2
+fgd_total_fiducial_volume = fgd_fiducial_volume[0]*fgd_fiducial_volume[1]*fgd_fiducial_volume[2]
+fgd_total_active_volume = fgd_active_volume[0]*fgd_active_volume[1]*fgd_active_volume[2]
+fgd_fiducial_volume_factor = fgd_total_fiducial_volume/fgd_total_active_volume
+
+detector_splitting_x = {0: [-p0d_dimensions[0], p0d_dimensions[0]],
+                      1: [-p0d_dimensions[0], p0d_dimensions[0]],
+                      2: [-p0d_dimensions[0], p0d_dimensions[0]],
+                      3: [-tpc_active_volume[0], tpc_active_volume[0]],
+                      4: [-fgd_active_volume[0], fgd_active_volume[0]],
+                      5: [-tpc_active_volume[0], tpc_active_volume[0]],
+                      6: [-fgd_active_volume[0], fgd_active_volume[0]],
+                      7: [-tpc_active_volume[0], tpc_active_volume[0]],}
+
+detector_splitting_y = {0: [-p0d_dimensions[1], p0d_dimensions[1]],
+                      1: [-p0d_dimensions[1], p0d_dimensions[1]],
+                      2: [-p0d_dimensions[1], p0d_dimensions[1]],
+                      3: [-tpc_active_volume[1], tpc_active_volume[1]],
+                      4: [-fgd_active_volume[1], fgd_active_volume[1]],
+                      5: [-tpc_active_volume[1], tpc_active_volume[1]],
+                      6: [-fgd_active_volume[1], fgd_active_volume[1]],
+                      7: [-tpc_active_volume[1], tpc_active_volume[1]],}
+
+detector_splitting_z = {0: [0, 30.5],
+                       1: [30.5, 209.6],
+                       2: [209.6, p0d_dimensions[2]],
+                       3: [p0d_dimensions[2] + (tpc_outer_volume[2] - tpc_active_volume[2])/2, 
+                           p0d_dimensions[2] + (tpc_outer_volume[2] + tpc_active_volume[2])/2],
+                       4: [p0d_dimensions[2] + tpc_outer_volume[2] + (fgd_outer_volume[2] - fgd_active_volume[2])/2, 
+                           p0d_dimensions[2] + tpc_outer_volume[2] + (fgd_outer_volume[2] + fgd_active_volume[2])/2],
+                       5: [p0d_dimensions[2] + tpc_outer_volume[2] + fgd_outer_volume[2] + (tpc_outer_volume[2] - tpc_active_volume[2])/2, 
+                           p0d_dimensions[2] + tpc_outer_volume[2] + fgd_outer_volume[2] + (tpc_outer_volume[2] + tpc_active_volume[2])/2],
+                       6: [p0d_dimensions[2] + 2*tpc_outer_volume[2] + fgd_outer_volume[2] + (fgd_outer_volume[2] - fgd_active_volume[2])/2, 
+                           p0d_dimensions[2] + 2*tpc_outer_volume[2] + fgd_outer_volume[2] + (fgd_outer_volume[2] + fgd_active_volume[2])/2],
+                       7: [p0d_dimensions[2] + 2*(tpc_outer_volume[2] + fgd_outer_volume[2]) + (tpc_outer_volume[2] - tpc_active_volume[2])/2, 
+                           p0d_dimensions[2] + 2*(tpc_outer_volume[2] + fgd_outer_volume[2]) + (tpc_outer_volume[2] + tpc_active_volume[2])/2]}
+
 tpc_fiducial_volume_gap_z_begin = 16 #maybe 15.5
-tpc_fiducial_volume_gap_z_end = tpc_length - tpc_fiducial_volume_gap_z_begin - tpc_fiducial_volume_dimensions[2]
-
-tpc_fiducial_volume_endpoints = [[tpc_fiducial_volume_gap_x, 
-                                  tpc_fiducial_volume_gap_x + tpc_fiducial_volume_dimensions[0]],
-                                 [tpc_fiducial_volume_gap_y, 
-                                  tpc_fiducial_volume_gap_y + tpc_fiducial_volume_dimensions[1]],
+tpc_fiducial_volume_endpoints = [[-tpc_fiducial_volume[0], tpc_fiducial_volume[0]],
+                                 [-tpc_fiducial_volume[1], tpc_fiducial_volume[1]],
                                  [p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin,
-                                  p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin + tpc_fiducial_volume_dimensions[2]]]
-
-detector_splitting = {0: [0, 30.5],
-                      1: [30.5, 209.6],
-                      2: [209.6, 240.0],
-                      3: [tpc_fiducial_volume_endpoints[2][0], tpc_fiducial_volume_endpoints[2][1]],
-                      4: [tpc_fiducial_volume_endpoints[2][0] + tpc_length + fgd_length, 
-                          tpc_fiducial_volume_endpoints[2][1] + tpc_length + fgd_length],
-                      5: [tpc_fiducial_volume_endpoints[2][0] + 2*(tpc_length + fgd_length), 
-                          tpc_fiducial_volume_endpoints[2][1] + 2*(tpc_length + fgd_length)]}
+                                  p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin + tpc_fiducial_volume[2]]]
 
 geometry_material = {
-    'hydrogen': [0, 1, 2],
-    'oxygen': [1],
-    'carbon': [0, 1, 2],
+    'hydrogen': [0, 1, 2, 4, 6],
+    'oxygen': [1, 4, 6],
+    'carbon': [0, 1, 2, 4, 6],
     'copper': [1],
     'zinc': [1],
     'lead': [0, 2],
-    'argon': [3, 4, 5],
+    'argon': [3, 5, 7],
 }
 
-atomic_mass_gev = {
-    'hydrogen': 0.9385,
-    'carbon': 11.262,
-    'oxygen': 15.016,
-    'copper': 59.637921,
-    'zinc': 61.35913,
-    'lead': 194.4572,
-    'argon': 37.54 ,
+n_fgd1_xy_modules = 15
+n_fgd2_xy_modules = 7
+n_fgd2_water_modules = 6
+
+fgd_xy_module_carbon = 1.8486*fgd_active_volume[0]*fgd_active_volume[1]*1e-6 #ton, the first is the density in mg/cm^2
+fgd_xy_module_hydrogen = 0.1579*fgd_active_volume[0]*fgd_active_volume[1]*1e-6
+fgd_xy_module_oxygen = 0.0794*fgd_active_volume[0]*fgd_active_volume[1]*1e-6
+
+fgd_water_module_carbon = 0.422*fgd_active_volume[0]*fgd_active_volume[1]*1e-6
+fgd_water_module_hydrogen = 0.2916*fgd_active_volume[0]*fgd_active_volume[1]*1e-6
+fgd_water_module_oxygen = 2.0601*fgd_active_volume[0]*fgd_active_volume[1]*1e-6
+
+fgd1_carbon_mass = fgd_xy_module_carbon*n_fgd1_xy_modules
+fgd2_carbon_mass = fgd_xy_module_carbon*n_fgd2_xy_modules+fgd_water_module_carbon*n_fgd2_water_modules
+
+fgd1_hydrogen_mass = fgd_xy_module_hydrogen*n_fgd1_xy_modules
+fgd2_hydrogen_mass = fgd_xy_module_hydrogen*n_fgd2_xy_modules+fgd_water_module_hydrogen*n_fgd2_water_modules
+
+fgd1_oxygen_mass = fgd_xy_module_oxygen*n_fgd1_xy_modules
+fgd2_oxygen_mass = fgd_xy_module_oxygen*n_fgd2_xy_modules+fgd_water_module_oxygen*n_fgd2_water_modules
+
+p0d_hydrogen_mass = 3.3*2*molar_mass['hydrogen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen'])
+p0d_oxygen_mass = 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen'])
+p0d_carbon_mass = 8.221
+
+# tpc masses
+tpc_masses = {
+    'hydrogen': p0d_hydrogen_mass + fgd1_hydrogen_mass + fgd2_hydrogen_mass,
+    'oxygen': 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']) + fgd1_oxygen_mass + fgd2_oxygen_mass,
+    'carbon': 8.221 + fgd1_carbon_mass + fgd2_carbon_mass,
+    'copper': 1.315*0.66, # percentage of copper in typical brass
+    'zinc': 1.315*0.34, # percentage of zinc in typical brass
+    'lead': 3.634, # it seems 3.35 should be a better number
+    'argon': 0.016020 # 3 tpc total argon - needs to be reduced for light case and for projections
 }
+
+mass_material = {
+    'hydrogen': [p0d_hydrogen_mass/3, p0d_hydrogen_mass/3, p0d_hydrogen_mass/3, fgd1_hydrogen_mass, fgd2_hydrogen_mass],
+    'oxygen': [p0d_oxygen_mass, fgd1_oxygen_mass, fgd2_oxygen_mass],
+    'carbon': [p0d_carbon_mass/3, p0d_carbon_mass/3, p0d_carbon_mass/3, fgd1_carbon_mass, fgd2_carbon_mass],
+    'copper': [1],
+    'zinc': [1],
+    'lead': [1, 1],
+    'argon': [1, 1, 1],
+}
+mass_weights = {key:np.array(value)/np.array(value).sum() for key, value in mass_material.items()}
+
+###
+tpc_masses_light_case = {'argon': 0.01} #3 tpc, but only in the fiducial volume
+
+new_tpc_fid_volume = 2 *\
+                 (200 - 2*(tpc_active_volume[0]-tpc_fiducial_volume[0])) *\
+                 (80 - 2*(tpc_active_volume[1]-tpc_fiducial_volume[1])) *\
+                 (180 - 2*(tpc_active_volume[2]-tpc_fiducial_volume[2]))
+
+tpc_masses_projection_phase2 = {
+    'argon': tpc_masses_light_case['argon'] * (1 + new_tpc_fid_volume/(3*tpc_total_fiducial_volume))
+}
+
+# fgd masses
+fgd1_masses = {'hydrogen': fgd1_hydrogen_mass *fgd_fiducial_volume_factor,
+              'carbon': fgd1_carbon_mass *fgd_fiducial_volume_factor,
+            #   'oxygen': fgd1_oxygen_mass *fgd_fiducial_volume_factor,
+              'argon': 0
+             }
+
+fgd_masses_projection_phase1 = {'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor,
+                                'carbon': (fgd1_carbon_mass + fgd2_carbon_mass)*fgd_fiducial_volume_factor,
+                                #   'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor,
+                                'argon': 0
+                                }
+
+super_fgd_fiducial_volume = (192 - 2*(fgd_active_volume[0]-fgd_fiducial_volume[0])) *\
+                            (56 - 2*(fgd_active_volume[1]-fgd_fiducial_volume[1])) *\
+                            (192 - 2*(fgd_active_volume[2]-fgd_fiducial_volume[2]))
+
+fgd_projection_volume_scale_factor_phase2 = super_fgd_fiducial_volume/fgd_total_fiducial_volume
+
+fgd_masses_projection_phase2 = {'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor + fgd1_hydrogen_mass*fgd_projection_volume_scale_factor_phase2,
+                                'carbon': (fgd1_carbon_mass + fgd2_carbon_mass)*fgd_fiducial_volume_factor + fgd1_carbon_mass*fgd_projection_volume_scale_factor_phase2,
+                                #   'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor + fgd1_oxygen_mass*fgd_projection_volume_scale_factor_phase2,
+                                'argon': 0
+                                }
+
+####
 
 cuts_dict = {
     'cut1' : r'cos $\theta_{ee, beam}$ > 0.99',
@@ -211,3 +318,6 @@ default_kde_pars = {
     'smoothing': [0.1, 0.1], 
     'kernel': 'epa'
 }
+
+# lead_layer_thickness = 0.45 #cm
+# n_lead_layers = 14
