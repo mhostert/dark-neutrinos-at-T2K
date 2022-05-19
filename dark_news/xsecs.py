@@ -251,11 +251,11 @@ class dsigma_zprime(vg.BatchIntegrand):
 					# 	# averaged
 					# 	# dsigma = (cij*cji*(params.epsilon*params.epsilon)*(const.eQED*const.eQED)*(FCOH*FCOH)*Sqrt((mHNL*mHNL*mHNL*mHNL + (M*M - s)*(M*M - s) - 2*(mHNL*mHNL)*(M*M + s))/(s*s))*(-((4*(M*M) - t)*(mHNL*mHNL - t)) - 2*(((-(M*M) + s)*(2*(M*M) + mHNL*mHNL - 2*s - t))/2. + ((2*(M*M) + mHNL*mHNL - 2*s - t)*(-(M*M) - mHNL*mHNL + s + t))/2.))*(Z*Z))/(16.*pi*Sqrt((1 - (M*M)/s - (mHNL*mHNL)/s)*(1 - (M*M)/s - (mHNL*mHNL)/s) - (4*(M*M)*(mHNL*mHNL))/(s*s))*Sqrt((1 - (M*M)/s)*(1 - (M*M)/s))*Sqrt((M*M - s)*(M*M - s))*s*((mzprime*mzprime - t)*(mzprime*mzprime - t)))
 
-					dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
+				dsigma *= (Q2lmax - Q2lmin)*np.exp(Q2l)
 
-					# print(dsigma*1e10)
-					####################################
-					return dsigma
+				# print(dsigma*1e10)
+				####################################
+				return dsigma
 
 def get_sigma_zprime(params, Enu, MA, Z, nu_produced=pdg.neutrino4, h_upscattered=-1, neval=20000, nitn=20):
 	

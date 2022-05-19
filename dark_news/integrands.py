@@ -366,7 +366,7 @@ class threebody(vg.BatchIntegrand):
 				if params.scan:
 					Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
 					Mzprime = (params.mzprime_max-np.maximum(Mn,params.mzprime_min))* x[:,-2] + np.maximum(Mn,params.mzprime_min)
-					jacobian_scan *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))/jac[:,-1]/jac[:,-2]
+					jacobian_scan *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))#/jac[:,-1]/jac[:,-2]
                     
 				Emin = 1.05*(Mn**2/2.0/MA + Mn)
 				Enu = (self.Emax - Emin) * x[:, 1] + Emin
@@ -533,14 +533,14 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= 2
 				dgamma *= 2*np.pi
 				####################################
-				return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma,
-                        'decay rate N' : jacobian_scan*dgamma/jac[:,0]/jac[:,1],
-						'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma/jac[:,2]/jac[:,3]/jac[:,4]/jac[:,5],}
+				# return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma,
+                #         'decay rate N' : jacobian_scan*dgamma/jac[:,0]/jac[:,1],
+				# 		'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma/jac[:,2]/jac[:,3]/jac[:,4]/jac[:,5],}
 
 				# ####################################
-				# return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4*self.flux(Enu)*dgamma*mzprime**4/Mn**5,
-                #         'decay rate N' : jacobian_scan*dgamma*mzprime**4/Mn**5,
-				# 		'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4,}
+				return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4*self.flux(Enu)*dgamma*mzprime**4/Mn**5,
+                        'decay rate N' : jacobian_scan*dgamma*mzprime**4/Mn**5/jac[:,0]/jac[:,1],
+						'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4/jac[:,2]/jac[:,3]/jac[:,4]/jac[:,5],}
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 
