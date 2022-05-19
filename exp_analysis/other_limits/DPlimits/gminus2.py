@@ -89,7 +89,11 @@ def plot_gminus2_region(ax, mz, gminus2_down, gminus2_up, sigma, color, **kwargs
           - color: color of the band and of the edges;
           - kwargs: other keyword arguments to tune plotting parameters.
     '''
-    return ax.fill_between(mz, gminus2_down, gminus2_up, facecolor = color, edgecolor = color, alpha = 0.7, label=r'$\Delta a_\mu^{\rm combined} \pm '+ "{:1.0f}".format(sigma) + r'\sigma$', **kwargs)
+    # if not poster_setting:
+    #     label = (r'$\Delta a_\mu^{\rm combined} \pm '+ "{:1.0f}".format(sigma) + r'\sigma$')
+    # else:
+    #     label = None
+    return ax.fill_between(mz, gminus2_down, gminus2_up, facecolor = color, edgecolor = color, alpha = 0.7, **kwargs)
 
 def compute_and_plot_gminus2_region(ax, mz, delta_amu, error, factor, sigmas, colors, **kwargs):
     ''' Compute and plot the g-2 region according to the passed parameters:

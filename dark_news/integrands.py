@@ -1,5 +1,7 @@
 import numpy as np
+import scipy
 import vegas as vg
+import random 
 
 #CYTHON
 import pyximport
@@ -11,6 +13,8 @@ from . import Cfourvec as Cfv
 
 
 from . import const
+from . import fourvec
+from . import decay_rates
 from . import pdg 
 
 def Power(x,n):
@@ -29,7 +33,7 @@ class cascade(vg.BatchIntegrand):
 		self.MC_case = MC_case
 		self.flux = MC_case.flux
 				
-	def __call__(self, x, jac):
+	def __call__(self, x):
 
 		MA = self.MC_case.MA
 		Z = self.MC_case.Z
@@ -57,7 +61,7 @@ class cascade(vg.BatchIntegrand):
 		if params.scan:
 			Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
 			Mzprime = (np.minimum(params.mzprime_max,Mn)-params.mzprime_min) * x[:,-2] + params.mzprime_min
-			jacobian_scan *= (params.M4_max-params.M4_min)*(np.minimum(params.mzprime_max,Mn)-params.mzprime_min)/jac[:,-1]/jac[:,-2]
+			jacobian_scan *= (params.M4_max-params.M4_min)*(np.minimum(params.mzprime_max,Mn)-params.mzprime_min)
 
 
 
@@ -144,16 +148,9 @@ class cascade(vg.BatchIntegrand):
 
 
 		#############
-		return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*dgammaZprime*jacobian_scan,
-				'decay rate N' : dgamma*dgammaZprime*jacobian_scan/jac[:,0]/jac[:,1],
-				'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan/jac[:,2]}
-
-
-
-		# #############
-		# return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5,
-		# 		'decay rate N' : dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5/jac[:,0]/jac[:,1],
-		# 		'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan}
+		return {'full integrand' : const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5,
+				'decay rate N' : dgamma*dgammaZprime*jacobian_scan*Mzprime**2/Mn**3.5,
+				'cross section' : const.GeV2_to_cm2*dsigma*jacobian_scan}
 
 
 
@@ -341,7 +338,7 @@ class threebody(vg.BatchIntegrand):
 					self.mp = 0
 
 
-			def __call__(self, x, jac):
+			def __call__(self, x):
 
 				g = const.g			
 				gweak = const.g	
@@ -366,7 +363,7 @@ class threebody(vg.BatchIntegrand):
 				if params.scan:
 					Mn = (params.M4_max-params.M4_min) * x[:,-1] + params.M4_min
 					Mzprime = (params.mzprime_max-np.maximum(Mn,params.mzprime_min))* x[:,-2] + np.maximum(Mn,params.mzprime_min)
-					jacobian_scan *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))#/jac[:,-1]/jac[:,-2]
+					jacobian_scan *= (params.M4_max-params.M4_min)*(params.mzprime_max-np.maximum(Mn,params.mzprime_min))
                     
 				Emin = 1.05*(Mn**2/2.0/MA + Mn)
 				Enu = (self.Emax - Emin) * x[:, 1] + Emin
@@ -533,14 +530,10 @@ class threebody(vg.BatchIntegrand):
 				dgamma *= 2
 				dgamma *= 2*np.pi
 				####################################
-				# return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*self.flux(Enu)*dgamma,
-                #         'decay rate N' : jacobian_scan*dgamma/jac[:,0]/jac[:,1],
-				# 		'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma/jac[:,2]/jac[:,3]/jac[:,4]/jac[:,5],}
-
-				# ####################################
 				return {'full integrand' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4*self.flux(Enu)*dgamma*mzprime**4/Mn**5,
-                        'decay rate N' : jacobian_scan*dgamma*mzprime**4/Mn**5/jac[:,0]/jac[:,1],
-						'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4/jac[:,2]/jac[:,3]/jac[:,4]/jac[:,5],}
+                        'decay rate N' : jacobian_scan*dgamma*mzprime**4/Mn**5,
+						'cross section' : jacobian_scan*const.GeV2_to_cm2*dsigma*mzprime**4,}
+
 
 def cascade_phase_space(samples=None, MC_case=None, w=None, I=None):
 

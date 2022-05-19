@@ -17,7 +17,7 @@ def bound(filename, xmin, xmax, npoints = 1000):
     x = np.linspace(np.log10(xmin), np.log10(xmax), npoints)
     return [np.power(10, x), np.power(10, y(x))]
 
-def plot_constraints(ax, xmin, xmax, separated=True):
+def plot_constraints(ax, xmin, xmax, separated=True, poster_setting=False):
     # GENERAL BOUNDS
     lw = 0.5
     dashes = (6, 0.1)
@@ -56,7 +56,12 @@ def plot_constraints(ax, xmin, xmax, separated=True):
 #     ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', hatch='\\\\\\', lw = 0.5, alpha = alpha, zorder=-1)
     ax.fill_between(x, y, np.ones(np.size(y)), facecolor = 'None', edgecolor='black', lw = 0.5, alpha = alpha, zorder=-1)
     # ax.fill_between(x, y, np.ones(np.size(y)), facecolor = color_fill, edgecolor = color_line, lw = lw, alpha = alpha)
-    ax.annotate(r'BaBar$^*$'+'\n'+r'$|V_{{ND}}|^2 = 10^{-4}$', xy=(5.5, 1.2e-3), rotation=0, fontsize=0.7*fsize, color=color_line, horizontalalignment='right')
+    # if not poster_setting:
+    #     babar_annotation = r'BaBar$^*$'+'\n'+r'$|V_{{ND}}|^2 = 10^{-4}$'
+    # else:
+    #     babar_annotation = r'BaBar$^*$'
+    babar_annotation = r'BaBar$^*$'
+    ax.annotate(babar_annotation, xy=(5.5, 0.9e-3), rotation=0, fontsize=0.7*fsize, color=color_line, horizontalalignment='right')
 
     x, y = bound(fpath('Curtin_et_al', 'LHC_current.dat'), xmin = xmin, xmax = xmax)
     if separated:
@@ -74,4 +79,4 @@ def plot_constraints(ax, xmin, xmax, separated=True):
         ax.annotate(r'DIS', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
 
     if not separated:
-        ax.annotate('Other dark\nphoton constraints', xy=(0.011, 0.018), rotation=0, fontsize=0.7*fsize, color=color_line)
+        ax.annotate('Other dark\nphoton constraints', xy=(0.15, 0.022), rotation=0, fontsize=0.7*fsize, color=color_line)

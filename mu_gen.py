@@ -77,7 +77,9 @@ def main(argv):
 																		"miniboone",
 																		"uboone",
 																		"nd280_nu",
-																		"nd280_nubar"],
+																		"nd280_nubar",
+                                                                        "nd280_nu_light",
+																		"nd280_nubar_light"],
 																		default="nd280_nu")
 
 	parser.add_argument("--nodif", help="remove diffractive events", action="store_true")
