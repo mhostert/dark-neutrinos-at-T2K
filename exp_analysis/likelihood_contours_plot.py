@@ -1,4 +1,5 @@
 import gc
+import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import rcParams
@@ -12,6 +13,8 @@ from exp_analysis_class import compute_likelihood_from_retrieved
 
 from other_limits.Nlimits import *
 from other_limits.DPlimits import *
+from other_limits.DPlimits import semi_visible_DP
+from other_limits.DPlimits import visible
 
 from math import floor, log10
 
@@ -57,7 +60,7 @@ def set_canvas(plot_type):
         ax.set_ylabel(r'$|V_{\mu N}|^2$')
     return ax
 
-def set_plot_title(ax=None, m4=None, mz=None, alpha_dark=None, epsilon=None, Umu4_2=None, Ud4_2=None):
+def set_plot_title(ax=None, m4=None, mz=None, alpha_dark=None, epsilon=None, Umu4_2=None, Ud4_2=None, external_ctau=None):
     if ax is None:
         ax = plt.gca()
     
@@ -81,7 +84,10 @@ def set_plot_title(ax=None, m4=None, mz=None, alpha_dark=None, epsilon=None, Umu
     if len(title_string_elements) > 4:
         title_string_elements[int(len(title_string_elements)/2)] = ('\n' + title_string_elements[int(len(title_string_elements)/2)])
     
-    ax.set_title(', '.join(title_string_elements), loc='left')
+    if ax is False:
+        return ', '.join(title_string_elements)
+    else:
+        ax.set_title(', '.join(title_string_elements), loc='left')
     
 def compute_likes(retrieved, my_exp_analyses, hierarchy, D_or_M, analysis_names, analyses=analyses):
     likes = {}
@@ -117,6 +123,7 @@ def basic_contour_plot(case_vars,
                        likes,
                        analysis_names,
                        hierarchy='heavy',
+                       D_or_M='dirac',
                        save_name=None,
                        save_folder=None,
                        ax=None,
@@ -130,6 +137,8 @@ def basic_contour_plot(case_vars,
     contours = {}
     if ax is None:
         ax = set_canvas(f'{case_vars[0]}_{case_vars[1]}')
+        ax.set_xlim(retrieved['FHC']['pars'][case_vars[0]][0], retrieved['FHC']['pars'][case_vars[0]][-1])
+        ax.set_ylim(retrieved['FHC']['pars'][case_vars[1]][0], retrieved['FHC']['pars'][case_vars[1]][-1])
     for i, analysis_name in enumerate(analysis_names):
         contours[analysis_name] = ax.contour(retrieved['FHC']['pars'][case_vars[0]], 
                                              retrieved['FHC']['pars'][case_vars[1]], 
@@ -146,10 +155,10 @@ def basic_contour_plot(case_vars,
     ax.loglog()
     
     if not poster_setting:
-        aux = ax.plot(physics_parameters[hierarchy]['bp'][case_vars[0]],
+        ax.plot(physics_parameters[hierarchy]['bp'][case_vars[0]],
                 physics_parameters[hierarchy]['bp'][case_vars[1]],
                 'r*',
-                label='Benchmark point')
+                label='Benchmark\n point')
         set_plot_title(ax, **{key:value for (key,value) in retrieved['FHC']['pars'].items() if key not in case_vars})
     else:
         ax.set_title('Preliminary', loc='right', style='italic', fontsize=fsize*0.9)
@@ -175,9 +184,9 @@ def basic_contour_plot(case_vars,
     ax.yaxis.set_minor_locator(min_loc)
     if save_name is not None:
         if not poster_setting:
-            plt.savefig(save_folder + f'{hierarchy}_{case_vars[0]}_{case_vars[1]}_{save_name}.pdf')
+            plt.savefig(save_folder + f'{hierarchy}_{D_or_M}_{case_vars[0]}_{case_vars[1]}_{save_name}.pdf')
         else:
-            plt.savefig(save_folder + f'{hierarchy}_{case_vars[0]}_{case_vars[1]}_{save_name}.png', dpi=500, transparent=True)
+            plt.savefig(save_folder + f'{hierarchy}_{D_or_M}_{case_vars[0]}_{case_vars[1]}_{save_name}.png', dpi=500, transparent=True)
         
 def mz_epsilon_heavy_plot(ax, m4, mz_ticks, poster_setting=False):
     FNAL_run_combined = gminus2.weighted_average(gminus2.DELTA_FNAL, gminus2.DELTA_BNL)
@@ -306,6 +315,9 @@ def m4_Umu4_2_light_plot(ax):
     # Other model-indepenedent limits
 
     # ax.plot(x, y, color='black', lw=0.5, hatch='///')
+
+def mz_epsilon_light_plot(ax):
+    visible.light_dark_photon_limits(ax)
 
 def plot_data_from_analysis(ax, analysis, plot_data=True):
     if analysis['var'] is not None:

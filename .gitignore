@@ -9,7 +9,12 @@ data/*
 standardHNL/data/*
 exp_analysis/posteriors/*
 exp_analysis/likelihood_weights/*
+exp_analysis/old/posteriors/*
 
+# data file
+*.h5
+*.pckl
+ 
 # fig folder
 fig
 
