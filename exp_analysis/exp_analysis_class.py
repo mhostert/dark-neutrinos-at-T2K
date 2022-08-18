@@ -35,15 +35,17 @@ def compute_likelihood_from_retrieved(out_events_weights, exp_analysis_obj, anal
     all_weights = all_weights.T * pot_ntarget_weights * analysis['efficiency']
     return exp_analysis_obj.compute_likelihood(aux_df, all_weights.T, analysis, like_normalized)
 
-def full_likelihood(m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses, like_normalized=False):
+def full_likelihood(m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses, external_ctau=False, like_normalized=False, is_scan=True):
     leff, mu, sigma2 = 0, 0, 0
     for analysis in analyses:
         for flux, sub_analysis in analysis.items():
-            print(flux)
             this_analysis_object = exp_analyses_objects[f'{hierarchy}_{D_or_M}_{flux}']
             out = this_analysis_object.compute_likelihood_from_pars(this_analysis_object.df_base, 
-                                                            m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, sub_analysis,
-                                                                   like_normalized=like_normalized)
+                                                                    m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, 
+                                                                    sub_analysis,
+                                                                    external_ctau=external_ctau,
+                                                                    like_normalized=like_normalized,
+                                                                    is_scan=is_scan)          
             leff += out[0]
             mu += out[1]
             sigma2 += out[2]
@@ -351,21 +353,7 @@ class exp_analysis(object):
             out[mask] = aux.reshape((-1, 2))
             df[f'exp_integral_points_{tpc_index*2}'] = out[:, 0]
             df[f'exp_integral_points_{tpc_index*2+1}'] = out[:, 1]
-
-    # @staticmethod
-    # def compute_ctau_integral_weights(df, ctau):
-    #     ctau = np.asarray(ctau)
-    #     scale = np.expand_dims(df['betagamma'], axis=list(range(1, 1+len(ctau.shape))))*\
-    #             np.expand_dims(ctau, axis=0)
-    #     exp_dims = list(range(1, len(scale.shape)))
-    #     out = np.exp(-np.expand_dims(df[f'exp_integral_points_0'], axis=exp_dims)/scale) -\
-    #            np.exp(-np.expand_dims(df[f'exp_integral_points_1'], axis=exp_dims)/scale) +\
-    #            np.exp(-np.expand_dims(df[f'exp_integral_points_2'], axis=exp_dims)/scale) -\
-    #            np.exp(-np.expand_dims(df[f'exp_integral_points_3'], axis=exp_dims)/scale) +\
-    #            np.exp(-np.expand_dims(df[f'exp_integral_points_4'], axis=exp_dims)/scale) -\
-    #            np.exp(-np.expand_dims(df[f'exp_integral_points_5'], axis=exp_dims)/scale)
-    #     return out
-    
+            
     @staticmethod
     def compute_ctau_integral_weights(df, betagamma_ctau):
         scale = np.asarray(betagamma_ctau)

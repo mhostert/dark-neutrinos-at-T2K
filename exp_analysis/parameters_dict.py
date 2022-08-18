@@ -272,9 +272,10 @@ oxygen_in_water = 16/18
 active_argon_three_tpcs = 0.016020
 
 tpc_masses = {
-    'hydrogen': (n_p0dule_up_ecal+n_p0dule_central+n_p0dule_down_ecal)*p0d_p0dule_mass*hydrogen_in_p0dule +
-                n_water_central*p0d_water_bag_mass*hydrogen_in_water +
-                fgd1_hydrogen_mass + fgd2_hydrogen_mass,
+    # 'hydrogen': (n_p0dule_up_ecal+n_p0dule_central+n_p0dule_down_ecal)*p0d_p0dule_mass*hydrogen_in_p0dule +
+    #             n_water_central*p0d_water_bag_mass*hydrogen_in_water +
+    #             fgd1_hydrogen_mass + fgd2_hydrogen_mass,
+    'hydrogen': 0,
     'oxygen': n_water_central*p0d_water_bag_mass*oxygen_in_water + 
               fgd1_oxygen_mass + fgd2_oxygen_mass,
     'carbon': (n_p0dule_up_ecal+n_p0dule_central+n_p0dule_down_ecal)*p0d_p0dule_mass*carbon_in_p0dule + 
@@ -284,16 +285,6 @@ tpc_masses = {
     'lead': p0d_lead_sheet_mass * (n_lead_up_ecal + n_lead_down_ecal),
     'argon': active_argon_three_tpcs,
 }
-
-# tpc_masses = {
-#     'hydrogen': p0d_hydrogen_mass + fgd1_hydrogen_mass + fgd2_hydrogen_mass,
-#     'oxygen': 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']) + fgd1_oxygen_mass + fgd2_oxygen_mass,
-#     'carbon': 8.221 + fgd1_carbon_mass + fgd2_carbon_mass,
-#     'copper': 1.315*copper_in_brass,
-#     'zinc': 1.315*zinc_in_brass,
-#     'lead': 3.634, # it seems 3.35 should be a better number
-#     'argon': 0.016020 # 3 tpc total argon - needs to be reduced for light case and for projections
-# }
 
 mass_material = {
     'hydrogen': [n_p0dule_up_ecal*p0d_p0dule_mass*hydrogen_in_p0dule, 
@@ -328,13 +319,17 @@ tpc_masses_projection_phase2 = {
 }
 
 # fgd masses
-fgd1_masses = {'hydrogen': fgd1_hydrogen_mass *fgd_fiducial_volume_factor,
+fgd1_masses = {
+    # 'hydrogen': fgd1_hydrogen_mass *fgd_fiducial_volume_factor,
+              'hydrogen': 0,
               'carbon': fgd1_carbon_mass *fgd_fiducial_volume_factor,
               'oxygen': fgd1_oxygen_mass *fgd_fiducial_volume_factor,
               'argon': 0
              }
 
-fgd_masses_projection_phase1 = {'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor,
+fgd_masses_projection_phase1 = {
+    # 'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor,
+                                'hydrogen': 0,
                                 'carbon': (fgd1_carbon_mass + fgd2_carbon_mass)*fgd_fiducial_volume_factor,
                                 'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor,
                                 'argon': 0
@@ -346,13 +341,13 @@ super_fgd_fiducial_volume = (192 - 2*(fgd_active_volume[0]-fgd_fiducial_volume[0
 
 fgd_projection_volume_scale_factor_phase2 = super_fgd_fiducial_volume/fgd_total_fiducial_volume
 
-fgd_masses_projection_phase2 = {'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor + fgd1_hydrogen_mass*fgd_projection_volume_scale_factor_phase2,
+fgd_masses_projection_phase2 = {
+                               # 'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor + fgd1_hydrogen_mass*fgd_projection_volume_scale_factor_phase2,
+                                'hydrogen': 0,
                                 'carbon': (fgd1_carbon_mass + fgd2_carbon_mass)*fgd_fiducial_volume_factor + fgd1_carbon_mass*fgd_projection_volume_scale_factor_phase2,
-                                #   'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor + fgd1_oxygen_mass*fgd_projection_volume_scale_factor_phase2,
                                 'argon': 0
                                 }
 
-####
 
 cuts_dict = {
     'cut1' : r'cos $\theta_{ee, beam}$ > 0.99',
@@ -366,6 +361,3 @@ default_kde_pars = {
     'smoothing': [0.1, 0.1], 
     'kernel': 'epa'
 }
-
-# lead_layer_thickness = 0.45 #cm
-# n_lead_layers = 14

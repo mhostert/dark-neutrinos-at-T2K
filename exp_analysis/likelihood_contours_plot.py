@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import rcParams
 from matplotlib import patches
-from scipy import interpolate
-import scipy.stats
+from matplotlib.colors import LogNorm
+import scipy
 
 from parameters_dict import likelihood_levels_2d, physics_parameters
 from analyses_dict import analyses
@@ -133,25 +133,75 @@ def basic_contour_plot(case_vars,
                        poster_setting=False,
                        linestyles=['-', '-', '-'], 
                        legend_outside=False,
-                       levels=[likelihood_levels_2d[0.9], np.inf]):
+                       levels=[likelihood_levels_2d[0.9], np.inf],
+                       mode='contour',
+                       interpolate=False):
     contours = {}
     if ax is None:
         ax = set_canvas(f'{case_vars[0]}_{case_vars[1]}')
         ax.set_xlim(retrieved['FHC']['pars'][case_vars[0]][0], retrieved['FHC']['pars'][case_vars[0]][-1])
         ax.set_ylim(retrieved['FHC']['pars'][case_vars[1]][0], retrieved['FHC']['pars'][case_vars[1]][-1])
     for i, analysis_name in enumerate(analysis_names):
-        contours[analysis_name] = ax.contour(retrieved['FHC']['pars'][case_vars[0]], 
-                                             retrieved['FHC']['pars'][case_vars[1]], 
-                                             likes[analysis_name].T, 
-                                             levels=levels, 
-                                             colors=[colors[i]], linestyles=[linestyles[i]])
-        if fill is not None:
-            if fill[i]:
-                ax.contourf(retrieved['FHC']['pars'][case_vars[0]], 
-                                                 retrieved['FHC']['pars'][case_vars[1]], 
-                                                 likes[analysis_name].T, 
+        if interpolate:
+            grid_x, grid_y = np.mgrid[np.log(np.min(retrieved['FHC']['pars'][case_vars[0]])):np.log(np.max(retrieved['FHC']['pars'][case_vars[0]])):61j,
+                               np.log(np.min(retrieved['FHC']['pars'][case_vars[1]])):np.log(np.max(retrieved['FHC']['pars'][case_vars[1]])):60j]
+            grid_x = np.exp(grid_x)
+            grid_y = np.exp(grid_y)
+            z_i = scipy.interpolate.griddata((retrieved['FHC']['pars'][case_vars[0]], 
+                                       retrieved['FHC']['pars'][case_vars[1]]),
+                                       likes[analysis_name],
+                                       (grid_x, grid_y), method='cubic').T
+        else:
+            grid_x = retrieved['FHC']['pars'][case_vars[0]]
+            grid_y = retrieved['FHC']['pars'][case_vars[1]]
+            z_i = likes[analysis_name]
+        if mode == 'contour':
+            contours[analysis_name] = ax.contour(grid_x, 
+                                                 grid_y, 
+                                                 z_i.T, 
                                                  levels=levels, 
-                                                 colors=[colors[i]], alpha=0.2)
+                                                 colors=[colors[i]], linestyles=[linestyles[i]])
+            if fill is not None:
+                if fill[i]:
+                    ax.contourf(grid_x, 
+                                                     grid_y, 
+                                                     z_i.T, 
+                                                     levels=levels, 
+                                                     colors=[colors[i]], alpha=0.2)
+        elif mode == 'tricontour':
+            contours[analysis_name] = ax.tricontour(grid_x, 
+                                                    grid_y, 
+                                                    z_i, 
+                                                    levels=levels, 
+                                                    colors=[colors[i]], linestyles=[linestyles[i]])
+            if fill is not None:
+                if fill[i]:
+                    ax.tricontourf(grid_x, 
+                                                    grid_y, 
+                                                    z_i, 
+                                                     levels=levels, 
+                                                     colors=[colors[i]], alpha=0.2)
+        elif mode == 'pcolormesh':
+            out = ax.pcolormesh(grid_x, 
+                                grid_y, 
+                                # np.where(z_i.T > levels[0], z_i.T, -np.inf),
+                                z_i.T,
+                                norm=LogNorm(vmin=0.1, vmax=likelihood_levels_2d[0.9]))
+            plt.colorbar(out)
+            break
+        elif mode == 'tripcolor':
+            out = ax.tripcolor(grid_x, 
+                               grid_y, 
+                               # z_i,
+                                np.where(z_i > levels[0], z_i, -np.inf),
+                                norm=LogNorm())
+            plt.colorbar(out)
+            break
+        elif mode == 'simple_plot':
+            mask = z_i.T > levels[0]
+            ax.plot(grid_x[mask], 
+                    grid_y[mask],
+                    '.')
     ax.loglog()
     
     if not poster_setting:
@@ -192,7 +242,7 @@ def mz_epsilon_heavy_plot(ax, m4, mz_ticks, poster_setting=False):
     FNAL_run_combined = gminus2.weighted_average(gminus2.DELTA_FNAL, gminus2.DELTA_BNL)
 
     energy, one_over_alpha = np.loadtxt("./other_limits/DPlimits/digitized/alphaQED/alpha_QED_running_posQ2.dat", unpack = True)
-    one_over_alpha_ew = interpolate.interp1d(energy, one_over_alpha, kind="linear")
+    one_over_alpha_ew = scipy.interpolate.interp1d(energy, one_over_alpha, kind="linear")
 
     FACTOR = 1/2/np.pi/one_over_alpha_ew(gminus2.M_MU)
     

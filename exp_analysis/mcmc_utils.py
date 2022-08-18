@@ -163,7 +163,7 @@ class dark_nus_mcmc(object):
             plt.savefig(self.save_folder + 'raw_chains.pdf', bbox_inches='tight')
         return fig, axes
 
-    def corner_plot(self, which_labels, levels=[0.13], savefile=None):
+    def corner_plot(self, which_labels, levels=[0.9], savefile=None):
         samples = self.samples[which_labels].values
         corner_plot_labels = [labels_fancy[label] for label in which_labels]
         corner.corner(samples, 
@@ -173,7 +173,7 @@ class dark_nus_mcmc(object):
         if savefile is not None:
             plt.savefig(self.save_folder + savefile + '.pdf', bbox_inches='tight')
             
-    def corner_plot_raw(self, levels=[0.13], savefile=None):
+    def corner_plot_raw(self, levels=[0.9], savefile=None):
         self.corner_plot(which_labels=self.labels + ['log(p)'],
                          levels=levels,
                          savefile=savefile)
@@ -222,7 +222,7 @@ class dark_nus_mcmc(object):
 
 #         super().initialise_mcmc(nwalkers, pool, blobs_dtype, set_backend, reset_backend)
 
-#     def corner_plot_physics(self, levels=[0.13], savefile=None):
+#     def corner_plot_physics(self, levels=[0.9], savefile=None):
 #         super().corner_plot(which_labels=[f"{'log10_' if self.log_ms else ''}m4", f"{'log10_' if self.log_ms else ''}mz", 'log10_Vmu4_alpha_epsilon2', 'log10_ctau'], levels=levels, savefile=savefile)
         
 class heavy_nonminimal_mcmc(dark_nus_mcmc):
@@ -247,7 +247,7 @@ class heavy_nonminimal_mcmc(dark_nus_mcmc):
         
         super().initialise_mcmc(nwalkers, pool, blobs_dtype, set_backend, reset_backend)
 
-    def corner_plot_physics(self, levels=[0.13], savefile=None):
+    def corner_plot_physics(self, levels=[0.9], savefile=None):
         super().corner_plot(which_labels=[f"{'log10_' if self.log_ms else ''}m4", f"{'log10_' if self.log_ms else ''}mz", 'log10_Vmu4_alpha_epsilon2', 'log10_Valpha4_alpha_epsilon2', 'log10_ctau'], levels=levels, savefile=savefile)
 
 
@@ -256,21 +256,36 @@ class light_minimal_mcmc(dark_nus_mcmc):
     def initialise_mcmc(self, nwalkers, pool, blobs_dtype=None, set_backend=False, reset_backend=True, log_ms=False):
         self.log_ms = log_ms
         
-        while reset_backend:
-            print('new trial to set up start points')
-            m4_mz_0 = self.points_on_triangle(nwalkers, log=self.log_ms)
-            log10_Vmu4_alpha_epsilon2 = np.random.uniform(np.log10(self.lower_bound_Vmu4_alpha_epsilon2),
-                                           np.log10(self.upper_bound_Vmu4_alpha_epsilon2),
-                                           nwalkers)
-            p0 = np.column_stack([m4_mz_0, log10_Vmu4_alpha_epsilon2])
-            start_posterior = []
+        self.p0 = np.zeros(shape=(nwalkers, 3))
+        if reset_backend:
             for i in range(nwalkers):
-                start_posterior.append(self.posterior(p0[i]))
-            if np.isinf(start_posterior).sum() == 0:
-                self.p0 = p0
-                break
+                start_posterior = np.inf
+                while np.isinf(start_posterior):
+                    m4_mz_0 = self.points_on_triangle(1, log=self.log_ms)
+                    log10_Vmu4_alpha_epsilon2 = np.random.uniform(np.log10(self.lower_bound_Vmu4_alpha_epsilon2),
+                                                   np.log10(self.upper_bound_Vmu4_alpha_epsilon2),
+                                                   1)
+                    self.p0[i, :] = np.column_stack([m4_mz_0, log10_Vmu4_alpha_epsilon2])
+                    # print(self.p0[i, :])
+                    start_posterior = self.posterior(self.p0[i, :])[0]
+                    # print(start_posterior)
+
+        # while reset_backend:
+        #     print('new trial to set up start points')
+        #     m4_mz_0 = self.points_on_triangle(nwalkers, log=self.log_ms)
+        #     log10_Vmu4_alpha_epsilon2 = np.random.uniform(np.log10(self.lower_bound_Vmu4_alpha_epsilon2),
+        #                                    np.log10(self.upper_bound_Vmu4_alpha_epsilon2),
+        #                                    nwalkers)
+        #     p0 = np.column_stack([m4_mz_0, log10_Vmu4_alpha_epsilon2])
+        #     print(p0.shape)
+        #     start_posterior = []
+        #     for i in range(nwalkers):
+        #         start_posterior.append(self.posterior(p0[i]))
+        #     if np.isinf(start_posterior).sum() == 0:
+        #         self.p0 = p0
+        #         break
 
         super().initialise_mcmc(nwalkers, pool, blobs_dtype, set_backend, reset_backend)
 
-    def corner_plot_physics(self, levels=[0.13], savefile=None):
+    def corner_plot_physics(self, levels=[0.9], savefile=None):
         super().corner_plot(which_labels=[f"{'log10_' if self.log_ms else ''}m4", f"{'log10_' if self.log_ms else ''}mz", 'log10_Vmu4_alpha_epsilon2'], levels=levels, savefile=savefile)
