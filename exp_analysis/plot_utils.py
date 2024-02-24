@@ -40,14 +40,17 @@ def set_plot_title(ax=None, selection_query=None, m4mz=None, m4=None, mz=None, U
     else:
         plt.suptitle(title_string)
 
-def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors_to_annotate=None, colornorm='div', main_to_annotate=None, err_to_annotate=None, in_log=False, **kwargs):
+def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors_to_annotate=None, colornorm='div', main_to_annotate=None, err_to_annotate=None, in_log=False, ax=None, efficiency=False, **kwargs):
+    if ax is None:
+        fig, ax = plt.figure()
     if main_to_annotate is not None:
         assert len(main_to_annotate) == len(err_to_annotate)
     if colornorm == 'div':        
         aux_norm = colors.TwoSlopeNorm(**kwargs)
-        plt.pcolormesh(data.T, cmap='BrBG', norm=aux_norm)
+        out = ax.pcolormesh(data.T, cmap='BrBG', norm=aux_norm)
     elif colornorm == 'normal':
-        plt.pcolormesh(data.T)
+        out = ax.pcolormesh(data.T, vmin=0, vmax=1.)
+    plt.colorbar(out)
     if in_log:
         xcenters = [f'{xcenter:.2g}' for xcenter in xcenters]
         ycenters = [f'{ycenter:.2g}' for ycenter in ycenters]
@@ -61,7 +64,9 @@ def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors
             if np.isnan(this_value):
                 continue
             if main_to_annotate is None:
-                text = f"{data[i,j]:.3g}"
+                text = f"{data[i,j]:.2g}"
+                if efficiency:
+                    text += ' %'
                 if errors_to_annotate is not None:
                     text += f'\n$\pm${errors_to_annotate[i,j]:.2g}'
             else:
@@ -69,9 +74,9 @@ def annotated_2d_plot(data, xcenters, ycenters, xlabel=None, ylabel=None, errors
                 for main, err in zip(main_to_annotate, err_to_annotate):
                     text += f'{main[i,j]:.3g}\n$\pm${err[i,j]:.2g}\n'
                 text = text.strip()
-            plt.text(i + 0.5, j + 0.5, text, ha="center", va="center", color="k")
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+            ax.text(i + 0.5, j + 0.5, text, ha="center", va="center", color="k")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
 
 def kde_variable_plot(var, range, bins, m4mz, exp_analysis_obj, smoothing_pars=[0.005, 0.05], selection_query='no_cuts', additional_scaling=1, cumulative=False, existing_axis=None):
     selected_df = exp_analysis_obj.df_base.query(selection_query)

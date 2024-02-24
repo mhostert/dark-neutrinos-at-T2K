@@ -1,3 +1,4 @@
+from copy import deepcopy
 import itertools
 import numpy as np
 from scipy.interpolate import interpn
@@ -18,7 +19,7 @@ droplist = ['plm_t', 'plm_x', 'plm_y', 'plm_z', 'plp_t', 'plp_x', 'plp_y', 'plp_
             'pnu_t', 'pnu_x', 'pnu_y', 'pnu_z', 'pHad_t', 'pHad_x', 'pHad_y',
             'pHad_z', 'weight_decay', 'regime', 'pee_t',
             'pdark_t', 'pee_x', 'pdark_x', 'pee_y', 'pdark_y', 'pee_z', 'pdark_z',
-            'recoil_mass', 'p3dark']
+            'recoil_mass']
 
 def compute_likelihood_from_retrieved(out_events_weights, exp_analysis_obj, analysis, like_normalized=True):
     if analysis['selection'] is not None:
@@ -34,15 +35,17 @@ def compute_likelihood_from_retrieved(out_events_weights, exp_analysis_obj, anal
     all_weights = all_weights.T * pot_ntarget_weights * analysis['efficiency']
     return exp_analysis_obj.compute_likelihood(aux_df, all_weights.T, analysis, like_normalized)
 
-def full_likelihood(m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses, like_normalized=False):
+def full_likelihood(m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, exp_analyses_objects, hierarchy, D_or_M, analyses, external_ctau=False, like_normalized=False, is_scan=True):
     leff, mu, sigma2 = 0, 0, 0
     for analysis in analyses:
         for flux, sub_analysis in analysis.items():
-            print(flux)
             this_analysis_object = exp_analyses_objects[f'{hierarchy}_{D_or_M}_{flux}']
             out = this_analysis_object.compute_likelihood_from_pars(this_analysis_object.df_base, 
-                                                            m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, sub_analysis,
-                                                                   like_normalized=like_normalized)
+                                                                    m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, 
+                                                                    sub_analysis,
+                                                                    external_ctau=external_ctau,
+                                                                    like_normalized=like_normalized,
+                                                                    is_scan=is_scan)          
             leff += out[0]
             mu += out[1]
             sigma2 += out[2]
@@ -286,67 +289,74 @@ class exp_analysis(object):
         z_tpc3 = z - 2 * (tpc_outer_volume[2] - fgd_outer_volume[2])
         is_in_z_tpc3 = (tpc_fiducial_volume_endpoints[2][0] < z_tpc3) & (z_tpc3 < tpc_fiducial_volume_endpoints[2][1])
         return is_in_x & is_in_y & (is_in_z_tpc1 | is_in_z_tpc2 | is_in_z_tpc3)
-    
-    @staticmethod
-    def is_point_in_tpc2(x, y):
-        is_in_x = (tpc_fiducial_volume_endpoints[0][0] <= x) & (x <= tpc_fiducial_volume_endpoints[0][1])
-        is_in_y = (tpc_fiducial_volume_endpoints[1][0] <= y) & (y <= tpc_fiducial_volume_endpoints[1][1])
-        return is_in_x & is_in_y
 
+    @staticmethod
+    def is_point_in_tpc_general(c_s, coords, tpc_index=0):
+        assert len(c_s) == len(coords)
+        out = np.ones(c_s[0].shape, dtype=bool)
+        for c, coord in zip(c_s, coords):
+            if coord == 2:
+                out &= (((tpc_fiducial_volume_endpoints[coord][0] + tpc_index * (tpc_outer_volume[2] + fgd_outer_volume[2])) < c) &\
+                       (c < (tpc_fiducial_volume_endpoints[coord][1] + tpc_index * (tpc_outer_volume[2] + fgd_outer_volume[2]))))
+            else:
+                out &= ((tpc_fiducial_volume_endpoints[coord][0] < c) &\
+                          (c < tpc_fiducial_volume_endpoints[coord][1]))
+        return out
+    
     @staticmethod
     def compute_decay_integral(df):
         df['pdark_dir', 'x'] = df['pdark', 'x']/df['p3dark', '']
         df['pdark_dir', 'y'] = df['pdark', 'y']/df['p3dark', '']
         df['pdark_dir', 'z'] = df['pdark', 'z']/df['p3dark', '']
         
-        int_point_z = df['int_point', 'z']
-        t_0_0 = (tpc_fiducial_volume_endpoints[2][0] - int_point_z)/df['pdark_dir', 'z']
-        t_0_1 = (tpc_fiducial_volume_endpoints[2][1] - int_point_z)/df['pdark_dir', 'z']
+        t_x_min = (tpc_fiducial_volume_endpoints[0][0] - df['int_point', 'x'])/df['pdark_dir', 'x']
+        t_x_max = (tpc_fiducial_volume_endpoints[0][1] - df['int_point', 'x'])/df['pdark_dir', 'x']
+        t_y_min = (tpc_fiducial_volume_endpoints[1][0] - df['int_point', 'y'])/df['pdark_dir', 'y']
+        t_y_max = (tpc_fiducial_volume_endpoints[1][1] - df['int_point', 'y'])/df['pdark_dir', 'y']
         
-        t_1_0 = (tpc_fiducial_volume_endpoints[2][0] + tpc_outer_volume[2] + fgd_outer_volume[2] - int_point_z)/df['pdark_dir', 'z']
-        t_1_1 = (tpc_fiducial_volume_endpoints[2][1] + tpc_outer_volume[2] + fgd_outer_volume[2] - int_point_z)/df['pdark_dir', 'z']
-        
-        t_2_0 = (tpc_fiducial_volume_endpoints[2][0] + 2 * (tpc_outer_volume[2] + fgd_outer_volume[2]) - int_point_z)/df['pdark_dir', 'z']
-        t_2_1 = (tpc_fiducial_volume_endpoints[2][1] + 2 * (tpc_outer_volume[2] + fgd_outer_volume[2]) - int_point_z)/df['pdark_dir', 'z']
+        for tpc_index in [0, 1, 2]:
+            t_z_min = (tpc_fiducial_volume_endpoints[2][0] + tpc_index * (tpc_outer_volume[2] + fgd_outer_volume[2]) - df['int_point', 'z'])/df['pdark_dir', 'z']
+            t_z_max = (tpc_fiducial_volume_endpoints[2][1] + tpc_index * (tpc_outer_volume[2] + fgd_outer_volume[2]) - df['int_point', 'z'])/df['pdark_dir', 'z']
+            t_exit_s = np.stack([t_x_min, t_x_max, t_y_min, t_y_max, t_z_min, t_z_max], axis=1)
+            t_exit_s = np.clip(t_exit_s, a_min=0, a_max=None)
+            
+            t_x_min_in = exp_analysis.is_point_in_tpc_general((df['int_point', 'y'] + t_x_min*df['pdark_dir', 'y'], 
+                                                              df['int_point', 'z'] + t_x_min*df['pdark_dir', 'z']),
+                                                              coords=[1, 2],
+                                                              tpc_index=tpc_index)
+            t_x_max_in = exp_analysis.is_point_in_tpc_general((df['int_point', 'y'] + t_x_max*df['pdark_dir', 'y'], 
+                                                              df['int_point', 'z'] + t_x_max*df['pdark_dir', 'z']),
+                                                              coords=[1, 2],
+                                                              tpc_index=tpc_index)
+            t_y_min_in = exp_analysis.is_point_in_tpc_general((df['int_point', 'x'] + t_y_min*df['pdark_dir', 'x'], 
+                                                              df['int_point', 'z'] + t_y_min*df['pdark_dir', 'z']),
+                                                              coords=[0, 2],
+                                                              tpc_index=tpc_index)
+            t_y_max_in = exp_analysis.is_point_in_tpc_general((df['int_point', 'x'] + t_y_max*df['pdark_dir', 'x'], 
+                                                              df['int_point', 'z'] + t_y_max*df['pdark_dir', 'z']),
+                                                              coords=[0, 2],
+                                                              tpc_index=tpc_index)
+            t_z_min_in = exp_analysis.is_point_in_tpc_general((df['int_point', 'x'] + t_z_min*df['pdark_dir', 'x'], 
+                                                              df['int_point', 'y'] + t_z_min*df['pdark_dir', 'y']),
+                                                              coords=[0, 1],
+                                                              tpc_index=tpc_index)
+            t_z_max_in = exp_analysis.is_point_in_tpc_general((df['int_point', 'x'] + t_z_max*df['pdark_dir', 'x'], 
+                                                              df['int_point', 'y'] + t_z_max*df['pdark_dir', 'y']),
+                                                              coords=[0, 1],
+                                                              tpc_index=tpc_index)
 
-        exp_integral_points = np.stack([t_0_0, t_0_1, t_1_0, t_1_1, t_2_0, t_2_1,], axis=1)
-        exp_integral_points = np.where(df['pdark_dir', 'z'].values[..., np.newaxis] >= 0,
-                                       exp_integral_points,
-                                       np.flip(exp_integral_points, axis=1))
-        exp_integral_points = np.where(exp_integral_points > 0,
-                               exp_integral_points,
-                               0)
-
-        # now computing integral of the exponential in the volume
-        poe_x_min = (tpc_fiducial_volume_endpoints[0][0] - df['int_point', 'x'])/df['pdark_dir', 'x']
-        poe_x_max = (tpc_fiducial_volume_endpoints[0][1] - df['int_point', 'x'])/df['pdark_dir', 'x']
-        poe_y_min = (tpc_fiducial_volume_endpoints[1][0] - df['int_point', 'y'])/df['pdark_dir', 'y']
-        poe_y_max = (tpc_fiducial_volume_endpoints[1][1] - df['int_point', 'y'])/df['pdark_dir', 'y']
-        
-        # I want to check this next block
-        poe_s = np.stack([poe_x_min, poe_x_max, poe_y_min, poe_y_max], axis=1)
-        
-        min_points = np.min(np.where(poe_s > 0, poe_s, np.inf), axis=1)
-                 
-        which_tpc_exit = min_points[..., np.newaxis] > exp_integral_points
-        exp_integral_points[~which_tpc_exit] = 0
-        exp_integral_points[:, 1] = np.where(which_tpc_exit.sum(axis=1) == 1,
-                                                   min_points,
-                                                   exp_integral_points[:, 1])
-        exp_integral_points[:, 3] = np.where(which_tpc_exit.sum(axis=1) == 3,
-                                                   min_points,
-                                                   exp_integral_points[:, 3])
-        exp_integral_points[:, 5] = np.where(which_tpc_exit.sum(axis=1) == 5,
-                                                   min_points,
-                                                   exp_integral_points[:, 5])
-        for i in range(6):
-            df[f'exp_integral_points_{i}'] = exp_integral_points[:,i]
-
+            are_t_exit_s_in = np.stack([t_x_min_in, t_x_max_in, t_y_min_in, t_y_max_in, t_z_min_in, t_z_max_in], axis=1)
+            
+            out = np.zeros((len(df), 2))
+            mask = are_t_exit_s_in.sum(axis=1) == 2
+            aux = t_exit_s[mask][are_t_exit_s_in[mask]]
+            out[mask] = aux.reshape((-1, 2))
+            df[f'exp_integral_points_{tpc_index*2}'] = out[:, 0]
+            df[f'exp_integral_points_{tpc_index*2+1}'] = out[:, 1]
+            
     @staticmethod
-    def compute_ctau_integral_weights(df, ctau):
-        ctau = np.asarray(ctau)
-        scale = np.expand_dims(df['betagamma'], axis=list(range(1, 1+len(ctau.shape))))*\
-                np.expand_dims(ctau, axis=0)
+    def compute_ctau_integral_weights(df, betagamma_ctau):
+        scale = np.asarray(betagamma_ctau)
         exp_dims = list(range(1, len(scale.shape)))
         out = np.exp(-np.expand_dims(df[f'exp_integral_points_0'], axis=exp_dims)/scale) -\
                np.exp(-np.expand_dims(df[f'exp_integral_points_1'], axis=exp_dims)/scale) +\
@@ -367,7 +377,6 @@ class exp_analysis(object):
     def decay_in_tpc(df, ctaus):
         if type(ctaus) is not list:
             ctaus = [ctaus]
-        out = []
         for ctau in ctaus:
             df[f'decay_point_{ctau}_x'.replace('.', '')] = df['int_point_x'] + ctau*df['unitary_decay_length_x']
             df[f'decay_point_{ctau}_y'.replace('.', '')] = df['int_point_y'] + ctau*df['unitary_decay_length_y']
@@ -454,14 +463,15 @@ class exp_analysis(object):
     def compute_expectation(self, df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2,
                             ntarget_per_material, 
                             pot,
-                            external_ctau=False,
                             selection_query=None,
                             efficiency_factor=1,
+                            external_ctau=False,
                             distance=default_kde_pars['distance'], 
                             smoothing=default_kde_pars['smoothing'], 
                             kernel=default_kde_pars['kernel'],
                             out_different_weights=False,
-                            no_pot_efficiency=False):
+                            no_pot_efficiency=False,
+                            is_scan=True):
         # the output is (len(df), len(m4), len(mz), len(alpha_dark), len(epsilon), len(Umu4_2), len(Ud4_2)
         if selection_query is not None:
             aux_df = df.query(selection_query)
@@ -494,7 +504,9 @@ class exp_analysis(object):
                                    grid_alpha_dark * grid_Ud4_2 * alphaQED * grid_epsilon**2, 
                                    self.D_or_M)
                 ctaus = np.expand_dims(ctaus, axis=[5])
-                ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
+                extra_m4 = np.expand_dims(np.atleast_1d(m4), axis=[0, 2, 3, 4, 5, 6])
+                betagamma_ctaus = np.expand_dims(aux_df['p3dark'], axis=list(range(1, 7)))/extra_m4 * ctaus
+                ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, betagamma_ctaus)
             elif self.hierarchy == 'light':
                 ctaus = None
                 ctau_weights = np.ones(len(aux_df))
@@ -505,15 +517,20 @@ class exp_analysis(object):
             ctau_weights = np.expand_dims(ctau_weights, axis=list(range(1, 7)))
         else:
             # ctau weights are in the position of Ud4_2
-            ctaus = np.expand_dims(external_ctau, axis=[1, 2, 3, 4, 5])
-            ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, ctaus)
-            
+            ctaus = np.expand_dims(external_ctau, axis=[0, 1, 2, 3, 4, 5])
+            extra_m4 = np.expand_dims(np.atleast_1d(m4), axis=[0, 2, 3, 4, 5, 6])
+            betagamma_ctaus = np.expand_dims(aux_df['p3dark'], axis=list(range(1, 7)))/extra_m4 * ctaus
+            ctau_weights = exp_analysis.compute_ctau_integral_weights(aux_df, betagamma_ctaus)         
         # kde weights
-        kde_weights = self.kde_on_a_point(aux_df, np.stack(np.meshgrid(m4, mz, indexing='ij'), axis=-1),
-                                         distance, smoothing, kernel)
-        kde_weights = np.expand_dims(kde_weights, axis=[3, 4, 5, 6])
+        if is_scan:
+            kde_weights = self.kde_on_a_point(aux_df, np.stack(np.meshgrid(m4, mz, indexing='ij'), axis=-1),
+                                            distance, smoothing, kernel)
+            kde_weights = np.expand_dims(kde_weights, axis=[3, 4, 5, 6])
+        else:
+            kde_weights = np.ones(len(aux_df))
+            kde_weights = np.expand_dims(kde_weights, axis=[1, 2, 3, 4, 5, 6])
         N_kde = np.count_nonzero(kde_weights, axis=0)
-        
+
         all_weights = generator_weights *\
                           upscattering_weights *\
                           ctau_weights *\
@@ -534,12 +551,20 @@ class exp_analysis(object):
                 all_weights = np.squeeze(all_weights)
                 return aux_df, all_weights, N_kde, ctaus
 
-    def compute_likelihood_from_pars(self, df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, analysis, like_normalized=True):
-        aux_df, all_weights, N_kde, ctaus = self.compute_expectation(df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2,
-                                                                    analysis['n_target'], 
-                                                                    analysis['pot'],
-                                                                    analysis['selection'],
-                                                                    analysis['efficiency'])
+    def compute_likelihood_from_pars(self, df, m4, mz, alpha_dark, epsilon, Umu4_2, Ud4_2, analysis, external_ctau=False, like_normalized=True, is_scan=True):
+        aux_df, all_weights, N_kde, ctaus = self.compute_expectation(df=df,
+                                                                     m4=m4,
+                                                                     mz=mz,
+                                                                     alpha_dark=alpha_dark,
+                                                                     epsilon=epsilon,
+                                                                     Umu4_2=Umu4_2,
+                                                                     Ud4_2=Ud4_2,
+                                                                     external_ctau=external_ctau,
+                                                                     ntarget_per_material=analysis['n_target'], 
+                                                                     pot=analysis['pot'],
+                                                                     selection_query=analysis['selection'],
+                                                                     efficiency_factor=analysis['efficiency'],
+                                                                     is_scan=is_scan)
         return self.compute_likelihood(aux_df, all_weights, analysis, like_normalized)
     
     def compute_likelihood(self, aux_df, all_weights, analysis, like_normalized=True):
@@ -548,8 +573,6 @@ class exp_analysis(object):
         all_weights = np.squeeze(all_weights)
         mu_hist = all_weights.sum(axis=0)
         sigma2_hist = (all_weights**2).sum(axis=0)
-        mu = mu_hist
-        sigma2 = sigma2_hist
     
         if analysis['var'] is not None:
             xs = aux_df[analysis['var']].values
@@ -558,7 +581,6 @@ class exp_analysis(object):
             
             aux_mu = np.concatenate([xs, all_weights], axis=0)
             aux_sigma2 = np.concatenate([xs, all_weights**2], axis=0)
-            
             
             def hist1d(a):
                 return np.histogram(a[:n_entries], bins=analysis['binning'], weights=a[n_entries:])[0]
@@ -569,9 +591,10 @@ class exp_analysis(object):
                                           axis=0, arr=aux_sigma2)
             sigma2_hist = np.moveaxis(sigma2_hist, 0, -1)
 
+        sigma2_full = sigma2_hist + (analysis['syst']*(analysis['mc']+mu_hist))**2
         leff = LEff_v(analysis['data'], 
                       analysis['mc'] + mu_hist, 
-                        sigma2_hist + (analysis['syst']*(analysis['mc']+mu_hist))**2)
+                      sigma2_full)
         
         if analysis['var'] is not None:
             leff = leff.sum(axis=-1)
@@ -580,4 +603,4 @@ class exp_analysis(object):
             leff *= -1
             leff -= leff.min()
         
-        return leff, mu, sigma2
+        return leff, mu_hist, sigma2_hist, sigma2_full

@@ -1,6 +1,9 @@
 import numpy as np
-from copy import deepcopy
 from const import alphaQED
+
+likelihood_levels_1d = {0.68: 1/2,
+          0.9: 2.71/2,
+          0.95: 3.84/2}
 
 likelihood_levels_2d = {0.68: 2.3/2,
           0.9: 4.61/2,
@@ -37,7 +40,6 @@ physics_parameters['heavy'] = {
     'm4_scan' : [0.01, 0.1, 0.5],
     'mz_scan': [0.02, 0.2, 1, 5],
     'bp': {
-        # 'm4':0.12,
         'm4':0.1,
         'mz':1.25,
         'alpha_dark':0.4,
@@ -51,8 +53,8 @@ physics_parameters['heavy'] = {
         'epsilon': np.geomspace(1e-5, 1e-1, 25),
         'm4': np.geomspace(0.005, 1, 20),
         'Umu4_2': np.geomspace(1e-11, 1, 25),
-    }
-    # 'lower_bound_Vmu4_alpha_epsilon2': 10**(-17),
+    },
+    'lower_bound_Vmu4_alpha_epsilon2': 10**(-17),
 }
 physics_parameters['light'] = {
     'm4_limits': (0.005, 2),
@@ -73,10 +75,10 @@ physics_parameters['light'] = {
 
         'm4': np.linspace(0.0358, 1, 10),
         'Umu4_2': np.geomspace(1e-10, 1e-4, 11),
-    }
-    # 'lower_bound_Vmu4_alpha_epsilon2': 10**(-21),
-    # 'lower_bound_Vmu4': 10**(-10),
-    # 'lower_bound_epsilon': 10**(-5),
+    },
+    'lower_bound_Vmu4_alpha_epsilon2': 10**(-21),
+    'lower_bound_Vmu4': 10**(-10),
+    'lower_bound_epsilon': 10**(-5),
 }
 
 
@@ -172,23 +174,23 @@ fgd_total_fiducial_volume = fgd_fiducial_volume[0]*fgd_fiducial_volume[1]*fgd_fi
 fgd_total_active_volume = fgd_active_volume[0]*fgd_active_volume[1]*fgd_active_volume[2]
 fgd_fiducial_volume_factor = fgd_total_fiducial_volume/fgd_total_active_volume
 
-detector_splitting_x = {0: [-p0d_dimensions[0], p0d_dimensions[0]],
-                      1: [-p0d_dimensions[0], p0d_dimensions[0]],
-                      2: [-p0d_dimensions[0], p0d_dimensions[0]],
-                      3: [-tpc_active_volume[0], tpc_active_volume[0]],
-                      4: [-fgd_active_volume[0], fgd_active_volume[0]],
-                      5: [-tpc_active_volume[0], tpc_active_volume[0]],
-                      6: [-fgd_active_volume[0], fgd_active_volume[0]],
-                      7: [-tpc_active_volume[0], tpc_active_volume[0]],}
+detector_splitting_x = {0: [-p0d_dimensions[0]/2, p0d_dimensions[0]/2],
+                      1: [-p0d_dimensions[0]/2, p0d_dimensions[0]/2],
+                      2: [-p0d_dimensions[0]/2, p0d_dimensions[0]/2],
+                      3: [-tpc_active_volume[0]/2, tpc_active_volume[0]/2],
+                      4: [-fgd_active_volume[0]/2, fgd_active_volume[0]/2],
+                      5: [-tpc_active_volume[0]/2, tpc_active_volume[0]/2],
+                      6: [-fgd_active_volume[0]/2, fgd_active_volume[0]/2],
+                      7: [-tpc_active_volume[0]/2, tpc_active_volume[0]/2],}
 
-detector_splitting_y = {0: [-p0d_dimensions[1], p0d_dimensions[1]],
-                      1: [-p0d_dimensions[1], p0d_dimensions[1]],
-                      2: [-p0d_dimensions[1], p0d_dimensions[1]],
-                      3: [-tpc_active_volume[1], tpc_active_volume[1]],
-                      4: [-fgd_active_volume[1], fgd_active_volume[1]],
-                      5: [-tpc_active_volume[1], tpc_active_volume[1]],
-                      6: [-fgd_active_volume[1], fgd_active_volume[1]],
-                      7: [-tpc_active_volume[1], tpc_active_volume[1]],}
+detector_splitting_y = {0: [-p0d_dimensions[1]/2, p0d_dimensions[1]/2],
+                      1: [-p0d_dimensions[1]/2, p0d_dimensions[1]/2],
+                      2: [-p0d_dimensions[1]/2, p0d_dimensions[1]/2],
+                      3: [-tpc_active_volume[1]/2, tpc_active_volume[1]/2],
+                      4: [-fgd_active_volume[1]/2, fgd_active_volume[1]/2],
+                      5: [-tpc_active_volume[1]/2, tpc_active_volume[1]/2],
+                      6: [-fgd_active_volume[1]/2, fgd_active_volume[1]/2],
+                      7: [-tpc_active_volume[1]/2, tpc_active_volume[1]/2],}
 
 detector_splitting_z = {0: [0, 30.5],
                        1: [30.5, 209.6],
@@ -205,8 +207,8 @@ detector_splitting_z = {0: [0, 30.5],
                            p0d_dimensions[2] + 2*(tpc_outer_volume[2] + fgd_outer_volume[2]) + (tpc_outer_volume[2] + tpc_active_volume[2])/2]}
 
 tpc_fiducial_volume_gap_z_begin = 16 #maybe 15.5
-tpc_fiducial_volume_endpoints = [[-tpc_fiducial_volume[0], tpc_fiducial_volume[0]],
-                                 [-tpc_fiducial_volume[1], tpc_fiducial_volume[1]],
+tpc_fiducial_volume_endpoints = [[-tpc_fiducial_volume[0]/2, tpc_fiducial_volume[0]/2],
+                                 [-tpc_fiducial_volume[1]/2, tpc_fiducial_volume[1]/2],
                                  [p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin,
                                   p0d_dimensions[2] + tpc_fiducial_volume_gap_z_begin + tpc_fiducial_volume[2]]]
 
@@ -245,30 +247,67 @@ p0d_hydrogen_mass = 3.3*2*molar_mass['hydrogen']/(2*molar_mass['hydrogen'] + mol
 p0d_oxygen_mass = 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen'])
 p0d_carbon_mass = 8.221
 
-# tpc masses
+p0d_p0dule_mass = 0.192
+p0d_brass_sheet_mass = 0.1
+p0d_water_bag_mass = 0.1
+p0d_lead_sheet_mass = 0.222
+
+n_p0dule_up_ecal = 7
+n_lead_up_ecal = 7
+
+n_p0dule_central = 26
+n_brass_central = 25
+n_water_central = 25
+
+n_p0dule_down_ecal = 7
+n_lead_down_ecal = 7
+
+hydrogen_in_p0dule = 2/14
+carbon_in_p0dule = 12/14
+copper_in_brass = 0.66
+zinc_in_brass = 1 - copper_in_brass
+hydrogen_in_water = 2/18
+oxygen_in_water = 16/18
+
+active_argon_three_tpcs = 0.016020
+
 tpc_masses = {
-    'hydrogen': p0d_hydrogen_mass + fgd1_hydrogen_mass + fgd2_hydrogen_mass,
-    'oxygen': 3.3*molar_mass['oxygen']/(2*molar_mass['hydrogen'] + molar_mass['oxygen']) + fgd1_oxygen_mass + fgd2_oxygen_mass,
-    'carbon': 8.221 + fgd1_carbon_mass + fgd2_carbon_mass,
-    'copper': 1.315*0.66, # percentage of copper in typical brass
-    'zinc': 1.315*0.34, # percentage of zinc in typical brass
-    'lead': 3.634, # it seems 3.35 should be a better number
-    'argon': 0.016020 # 3 tpc total argon - needs to be reduced for light case and for projections
+    # 'hydrogen': (n_p0dule_up_ecal+n_p0dule_central+n_p0dule_down_ecal)*p0d_p0dule_mass*hydrogen_in_p0dule +
+    #             n_water_central*p0d_water_bag_mass*hydrogen_in_water +
+    #             fgd1_hydrogen_mass + fgd2_hydrogen_mass,
+    'hydrogen': 0,
+    'oxygen': n_water_central*p0d_water_bag_mass*oxygen_in_water + 
+              fgd1_oxygen_mass + fgd2_oxygen_mass,
+    'carbon': (n_p0dule_up_ecal+n_p0dule_central+n_p0dule_down_ecal)*p0d_p0dule_mass*carbon_in_p0dule + 
+              fgd1_carbon_mass + fgd2_carbon_mass,
+    'copper': p0d_brass_sheet_mass*n_brass_central*copper_in_brass,
+    'zinc': p0d_brass_sheet_mass*n_brass_central*zinc_in_brass,
+    'lead': p0d_lead_sheet_mass * (n_lead_up_ecal + n_lead_down_ecal),
+    'argon': active_argon_three_tpcs,
 }
 
 mass_material = {
-    'hydrogen': [p0d_hydrogen_mass/3, p0d_hydrogen_mass/3, p0d_hydrogen_mass/3, fgd1_hydrogen_mass, fgd2_hydrogen_mass],
-    'oxygen': [p0d_oxygen_mass, fgd1_oxygen_mass, fgd2_oxygen_mass],
-    'carbon': [p0d_carbon_mass/3, p0d_carbon_mass/3, p0d_carbon_mass/3, fgd1_carbon_mass, fgd2_carbon_mass],
-    'copper': [1],
-    'zinc': [1],
-    'lead': [1, 1],
-    'argon': [1, 1, 1],
+    'hydrogen': [n_p0dule_up_ecal*p0d_p0dule_mass*hydrogen_in_p0dule, 
+                 n_p0dule_central*p0d_p0dule_mass*hydrogen_in_p0dule + n_water_central*p0d_water_bag_mass*hydrogen_in_water, 
+                 n_p0dule_down_ecal*p0d_p0dule_mass*hydrogen_in_p0dule, 
+                 fgd1_hydrogen_mass,
+                 fgd2_hydrogen_mass],
+    'oxygen': [n_water_central*p0d_water_bag_mass*oxygen_in_water, 
+               fgd1_oxygen_mass, 
+               fgd2_oxygen_mass],
+    'carbon': [n_p0dule_up_ecal*p0d_p0dule_mass*carbon_in_p0dule,
+               n_p0dule_central*p0d_p0dule_mass*carbon_in_p0dule,
+               n_p0dule_down_ecal*p0d_p0dule_mass*carbon_in_p0dule,
+               fgd1_carbon_mass,
+               fgd2_carbon_mass],
+    'copper': [p0d_brass_sheet_mass*n_brass_central*copper_in_brass],
+    'zinc': [p0d_brass_sheet_mass*n_brass_central*zinc_in_brass],
+    'lead': [p0d_lead_sheet_mass*n_lead_up_ecal, p0d_lead_sheet_mass*n_lead_down_ecal],
+    'argon': [active_argon_three_tpcs/3, active_argon_three_tpcs/3, active_argon_three_tpcs/3],
 }
 mass_weights = {key:np.array(value)/np.array(value).sum() for key, value in mass_material.items()}
 
-###
-tpc_masses_light_case = {'argon': 0.01} #3 tpc, but only in the fiducial volume
+tpc_masses_light_case = {'argon': active_argon_three_tpcs*tpc_total_fiducial_volume/tpc_total_active_volume}
 
 new_tpc_fid_volume = 2 *\
                  (200 - 2*(tpc_active_volume[0]-tpc_fiducial_volume[0])) *\
@@ -280,15 +319,19 @@ tpc_masses_projection_phase2 = {
 }
 
 # fgd masses
-fgd1_masses = {'hydrogen': fgd1_hydrogen_mass *fgd_fiducial_volume_factor,
+fgd1_masses = {
+    # 'hydrogen': fgd1_hydrogen_mass *fgd_fiducial_volume_factor,
+              'hydrogen': 0,
               'carbon': fgd1_carbon_mass *fgd_fiducial_volume_factor,
-            #   'oxygen': fgd1_oxygen_mass *fgd_fiducial_volume_factor,
+              'oxygen': fgd1_oxygen_mass *fgd_fiducial_volume_factor,
               'argon': 0
              }
 
-fgd_masses_projection_phase1 = {'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor,
+fgd_masses_projection_phase1 = {
+    # 'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor,
+                                'hydrogen': 0,
                                 'carbon': (fgd1_carbon_mass + fgd2_carbon_mass)*fgd_fiducial_volume_factor,
-                                #   'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor,
+                                'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor,
                                 'argon': 0
                                 }
 
@@ -298,13 +341,13 @@ super_fgd_fiducial_volume = (192 - 2*(fgd_active_volume[0]-fgd_fiducial_volume[0
 
 fgd_projection_volume_scale_factor_phase2 = super_fgd_fiducial_volume/fgd_total_fiducial_volume
 
-fgd_masses_projection_phase2 = {'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor + fgd1_hydrogen_mass*fgd_projection_volume_scale_factor_phase2,
+fgd_masses_projection_phase2 = {
+                               # 'hydrogen': (fgd1_hydrogen_mass + fgd2_hydrogen_mass)*fgd_fiducial_volume_factor + fgd1_hydrogen_mass*fgd_projection_volume_scale_factor_phase2,
+                                'hydrogen': 0,
                                 'carbon': (fgd1_carbon_mass + fgd2_carbon_mass)*fgd_fiducial_volume_factor + fgd1_carbon_mass*fgd_projection_volume_scale_factor_phase2,
-                                #   'oxygen': (fgd1_oxygen_mass + fgd2_oxygen_mass)*fgd_fiducial_volume_factor + fgd1_oxygen_mass*fgd_projection_volume_scale_factor_phase2,
                                 'argon': 0
                                 }
 
-####
 
 cuts_dict = {
     'cut1' : r'cos $\theta_{ee, beam}$ > 0.99',
@@ -318,6 +361,3 @@ default_kde_pars = {
     'smoothing': [0.1, 0.1], 
     'kernel': 'epa'
 }
-
-# lead_layer_thickness = 0.45 #cm
-# n_lead_layers = 14

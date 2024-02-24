@@ -29,16 +29,16 @@ def gamma_heavy(m4, mz, Valpha4_alphaepsilon2, D_or_M):
     gamma[D_or_M == 'dirac'] /= 2
     return gamma
 
-def gamma_N_light(m4, mz, Valpha4_alphaepsilon2, D_or_M):
+def gamma_N_light(m4, mz, Valpha4, D_or_M):
     m4 = np.asarray(m4)
     mz = np.asarray(mz)
-    Valpha4_alphaepsilon2 = np.asarray(Valpha4_alphaepsilon2)
+    Valpha4 = np.asarray(Valpha4)
     D_or_M = np.asarray(D_or_M)
     
     gamma = 1/2 *m4**3/mz**2 * (1-mz**2/m4**2)**2 * (0.5+mz**2/m4**2)
     gamma = np.asarray(gamma)
     gamma[D_or_M == 'dirac'] /= 2
-    gamma *= Valpha4_alphaepsilon2
+    gamma *= Valpha4
     return gamma
 
 def gamma_Zprime_light(m4, mz, epsilon2, m_ell=m_e):

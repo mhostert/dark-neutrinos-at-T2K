@@ -1,7 +1,6 @@
 import numpy as np
 import scipy.interpolate as interpolate
 from matplotlib.pyplot import *
-import matplotlib.pyplot as plt
 import os
 PATH = os.path.dirname(os.path.abspath(__file__))+'/digitized'
 
@@ -77,6 +76,20 @@ def plot_constraints(ax, xmin, xmax, separated=True, poster_setting=False):
     ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
     if separated:
         ax.annotate(r'DIS', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
+
+    x, y = bound(fpath('NA62', 'NA62_2019_190308767.dat'), xmin = xmin, xmax = xmax)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
+    ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
+    if separated:
+        ax.annotate(r'NA62', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
+
+    x, y = bound(fpath('NA64', 'NA64_2019.dat'), xmin = xmin, xmax = xmax)
+    if separated:
+        ax.plot(x, y, color = color_line, lw = lw, dashes = dashes)
+    ax.fill_between(x, y, np.ones(np.size(y)), color = color_fill, lw = 0.0, alpha = alpha)
+    if separated:
+        ax.annotate(r'NA64', xy=(4, 1.3e-2), rotation=6, fontsize=0.7*fsize, color=color_line)
 
     if not separated:
         ax.annotate('Other dark\nphoton constraints', xy=(0.15, 0.022), rotation=0, fontsize=0.7*fsize, color=color_line)
